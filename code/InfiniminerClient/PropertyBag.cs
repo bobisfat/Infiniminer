@@ -545,18 +545,14 @@ namespace Infiniminer
                                                         PlayerTools.ConstructionGun,     
                                                         PlayerTools.DeconstructionGun,
                                                         PlayerTools.SpawnItem };
-                        playerBlocks = new BlockType[16] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
-                                                        BlockType.TransRed,
-                                                        BlockType.TransBlue, //playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue, //Only need one entry due to right-click
+                        playerBlocks = new BlockType[12] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                        playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue, //Only need one entry due to right-click
                                                         BlockType.Road,
                                                         BlockType.Ladder,
                                                         BlockType.Jump,
                                                         BlockType.Shock,
                                                         BlockType.Water,
-                                                        BlockType.Controller,
-                                                        BlockType.Generator,
                                                         BlockType.Pump,
-                                                        BlockType.Pipe,
                                                         playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,

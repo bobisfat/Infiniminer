@@ -1,1 +1,2 @@
 D:\infiniminer_source\code\InfiniminerShared\Content\obj\x86\Debug\ResolveAssemblyReference.cache
+D:\fork_source\code\InfiniminerShared\Content\obj\x86\Debug\ResolveAssemblyReference.cache
