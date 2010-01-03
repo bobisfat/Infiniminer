@@ -481,7 +481,7 @@ namespace Infiniminer
             }
         }
 
-        public bool allWeps = false; //Needs to be true on sandbox servers, though that requires a server mod
+        public bool allWeps = true; //Needs to be true on sandbox servers, though that requires a server mod
 
         public void equipWeps()
         {
@@ -497,7 +497,7 @@ namespace Infiniminer
                 PlayerTools.Detonator,
                 PlayerTools.SpawnItem };
 
-                playerBlocks = new BlockType[14] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[15] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
@@ -514,7 +514,7 @@ namespace Infiniminer
                                              //BlockType.Controller,
                                              //BlockType.Generator,
                                              BlockType.Pump,
-                                             //BlockType.Compressor,
+                                             BlockType.Compressor,
                                              //BlockType.Pipe,
                                              BlockType.Water };
             }

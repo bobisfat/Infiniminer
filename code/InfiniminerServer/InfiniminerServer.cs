@@ -1468,6 +1468,9 @@ namespace Infiniminer
             {
                 Disturb(x, y, z);
             }
+
+            blockListContent[x, y, z, 0] = 0;//dangerous stuff can happen if we dont set this
+
             if (blockType == BlockType.BeaconRed || blockType == BlockType.BeaconBlue)
             {
                 Beacon newBeacon = new Beacon();
@@ -1478,21 +1481,18 @@ namespace Infiniminer
             }
             else if(blockType == BlockType.Pipe)
             {
-                blockListContent[x, y, z, 0] = 0;//state
                 blockListContent[x, y, z, 1] = 0;
                 blockListContent[x, y, z, 2] = 0;
                 blockListContent[x, y, z, 3] = 0;
             }
             else if (blockType == BlockType.Compressor)
             {
-                blockListContent[x, y, z, 0] = 0;//state
                 blockListContent[x, y, z, 1] = 0;//containtype
                 blockListContent[x, y, z, 2] = 0;//amount
                 blockListContent[x, y, z, 3] = 0;
             }
             else if (blockType == BlockType.Pump)
             {
-                blockListContent[x, y, z, 0] = 0;//state
                 blockListContent[x, y, z, 1] = 0;//direction
                 blockListContent[x, y, z, 2] = 0;//x input
                 blockListContent[x, y, z, 3] = -1;//y input
@@ -2349,7 +2349,7 @@ namespace Infiniminer
                 {
                     TimeSpan timeSpan = DateTime.Now - lastFlowCalc;
 
-                    if (timeSpan.TotalMilliseconds > 250)
+                    if (timeSpan.TotalMilliseconds > 400)
                     {
                         lastFlowCalc = DateTime.Now;
                         DoStuff();
@@ -2731,19 +2731,15 @@ namespace Infiniminer
                                                 {
                                                     if (blockList[a, b, c] == BlockType.Water || blockList[a, b, c] == BlockType.Lava)
                                                     {
-                                                        SetBlock((ushort)(a), (ushort)(b), (ushort)(c), BlockType.None, PlayerTeam.None);
-                                                        blockListContent[i, j, k, 1] = (byte)(blockList[a, b, c]);// BlockType.Water;
-                                                        ConsoleWrite("" + blockListContent[i, j, k, 1] + "," + (BlockType)((blockListContent[i, j, k, 1])));
-                                                        //if (blockList[a, b, c] == BlockType.Water)
-                                                        //{
-                                                        //    blockListContent[i, j, k, 1] = (byte)BlockType.Water;// 1;// (int)(blockList[a, b, c]);
-                                                        //}
-                                                        //else//refuses to typecast from block to int using blockList
-                                                        //{
-                                                        //    blockListContent[i, j, k, 1] = (byte)BlockType.Water; //2;// (int)(blockList[a, b, c]);
-                                                        //}
-
-                                                        blockListContent[i, j, k, 2] += 1;
+                                                        if (blockListContent[i, j, k, 1] == 0)
+                                                        {
+                                                            blockListContent[i, j, k, 1] = (byte)blockList[a, b, c];
+                                                        }
+                                                        else if (blockListContent[i, j, k, 1] == (byte)blockList[a, b, c])
+                                                        {
+                                                            SetBlock((ushort)(a), (ushort)(b), (ushort)(c), BlockType.None, PlayerTeam.None);
+                                                            blockListContent[i, j, k, 2] += 1;
+                                                        }
                                                     }
                                                     
                                                 }
@@ -2760,40 +2756,23 @@ namespace Infiniminer
                                         {
                                             if (blockList[i, j + 1, k] == BlockType.None)
                                             {
-                                                //if (blockListContent[i, j, k, 1] == 1)
-                                                //{
-                                                //    SetBlock(i, (ushort)(j + 1), k, BlockType.Water, PlayerTeam.None);//places its contents in desired direction at a distance
-                                                //}
-                                                //else if (blockListContent[i, j, k, 1] == 2)
-                                                //{
-                                                //    SetBlock(i, (ushort)(j + 1), k, BlockType.Lava, PlayerTeam.None);//places its contents in desired direction at a distance
-                                                //}
                                                 SetBlock(i, (ushort)(j + 1), k, (BlockType)(blockListContent[i, j, k, 1]), PlayerTeam.None);//places its contents in desired direction at a distance
-                                                ConsoleWrite("" + (BlockType)((blockListContent[i, j, k, 1])));
                                                 blockListContent[i, j, k, 2] -= 1;
                                                 continue;
                                             }
-                                            if (blockList[i, j + 1, k] == (BlockType)(blockListContent[i,j,k,1]))//exit must be clear or same substance
+                                            else if (blockList[i, j + 1, k] == (BlockType)(blockListContent[i,j,k,1]))//exit must be clear or same substance
                                             {
-                                                for (ushort m = 1; m < 10; m++)//multiply exit area to fake upward/sideward motion
+                                                for (ushort m = 2; m < 10; m++)//multiply exit area to fake upward motion
                                                 {
                                                     if (j+m < MAPSIZE)
                                                     {
                                                         if (blockList[i,j+m,k] == BlockType.None)
                                                         {
                                                             SetBlock(i, (ushort)(j + m), k, (BlockType)(blockListContent[i, j, k, 1]), PlayerTeam.None);//places its contents in desired direction at a distance
-                                                            //if (blockListContent[i, j, k, 1] == 1)
-                                                            //{
-                                                            //    SetBlock(i, (ushort)(j + m), k, BlockType.Water, PlayerTeam.None);//places its contents in desired direction at a distance
-                                                            //}
-                                                            //else if (blockListContent[i, j, k, 1] == 2)
-                                                            //{
-                                                            //    SetBlock(i, (ushort)(j + m), k, BlockType.Lava, PlayerTeam.None);//places its contents in desired direction at a distance
-                                                            //}
                                                             blockListContent[i, j, k, 2] -= 1;
                                                             break;//done with this pump
                                                         }
-                                                        else// if (blockList[i + blockListContent[i, j, k, 5] * m, j + blockListContent[i, j, k, 6] * m, k + blockListContent[i, j, k, 7] * m] != pumpheld)//check that we're not going through walls to pump this
+                                                        else if (blockList[i, j + m, k] != (BlockType)(blockListContent[i, j, k, 1]))// if (blockList[i + blockListContent[i, j, k, 5] * m, j + blockListContent[i, j, k, 6] * m, k + blockListContent[i, j, k, 7] * m] != pumpheld)//check that we're not going through walls to pump this
                                                         {
                                                             break;//pipe has run aground .. and dont refund the intake
                                                         }
