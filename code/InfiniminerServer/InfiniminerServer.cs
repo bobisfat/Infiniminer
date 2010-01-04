@@ -13,7 +13,7 @@ namespace Infiniminer
     {
         InfiniminerNetServer netServer = null;
         public BlockType[, ,] blockList = null;    // In game coordinates, where Y points up.
-        public Int32[, ,,] blockListContent = null;
+        public Int32[, , ,] blockListContent = null;
         PlayerTeam[, ,] blockCreatorTeam = null;
         public int MAPSIZE = 64;
         Thread physics;
@@ -1418,6 +1418,7 @@ namespace Infiniminer
         Dictionary<string, Item> itemList = new Dictionary<string, Item>();
 
         Random randGen = new Random();
+        int frameid = 10000;
         public string _GenerateBeaconID()
         {
             string id = "K";
@@ -1509,29 +1510,37 @@ namespace Infiniminer
                     beaconList.Remove(new Vector3(x,y,z));
                 SendSetBeacon(new Vector3(x, y+1, z), "", PlayerTeam.None);
             }
-            
-            blockList[x, y, z] = blockType;
-            blockCreatorTeam[x, y, z] = team;
-            flowSleep[x, y, z] = false;
 
-            // x, y, z, type, all bytes
-            NetBuffer msgBuffer = netServer.CreateBuffer();
-            msgBuffer.Write((byte)InfiniminerMessage.BlockSet);
-            msgBuffer.Write((byte)x);
-            msgBuffer.Write((byte)y);
-            msgBuffer.Write((byte)z);
-            if (blockType == BlockType.Vacuum)
+            if (blockType == blockList[x, y, z])//duplicate block, no need to send players data
             {
-                msgBuffer.Write((byte)BlockType.None);
+                blockList[x, y, z] = blockType;
+                blockCreatorTeam[x, y, z] = team;
+                flowSleep[x, y, z] = false;
             }
             else
             {
-                msgBuffer.Write((byte)blockType);
+                blockList[x, y, z] = blockType;
+                blockCreatorTeam[x, y, z] = team;
+                flowSleep[x, y, z] = false;
+
+                // x, y, z, type, all bytes
+                NetBuffer msgBuffer = netServer.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.BlockSet);
+                msgBuffer.Write((byte)x);
+                msgBuffer.Write((byte)y);
+                msgBuffer.Write((byte)z);
+                if (blockType == BlockType.Vacuum)
+                {
+                    msgBuffer.Write((byte)BlockType.None);
+                }
+                else
+                {
+                    msgBuffer.Write((byte)blockType);
+                }
+                foreach (NetConnection netConn in playerList.Keys)
+                    if (netConn.Status == NetConnectionStatus.Connected)
+                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
             }
-            foreach (NetConnection netConn in playerList.Keys)
-                if (netConn.Status == NetConnectionStatus.Connected)
-                    netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
-            
             //ConsoleWrite("BLOCKSET: " + x + " " + y + " " + z + " " + blockType.ToString());
         }
 
@@ -1543,7 +1552,7 @@ namespace Infiniminer
             // Create our block world, translating the coordinates out of the cave generator (where Z points down)
             BlockType[, ,] worldData = CaveGenerator.GenerateCaveSystem(MAPSIZE, includeLava, oreFactor, includeWater);
             blockList = new BlockType[MAPSIZE, MAPSIZE, MAPSIZE];
-            blockListContent = new Int32[MAPSIZE, MAPSIZE, MAPSIZE,10];
+            blockListContent = new Int32[MAPSIZE, MAPSIZE, MAPSIZE, 20];
             blockCreatorTeam = new PlayerTeam[MAPSIZE, MAPSIZE, MAPSIZE];
             for (ushort i = 0; i < MAPSIZE; i++)
                 for (ushort j = 0; j < MAPSIZE; j++)
@@ -1556,10 +1565,11 @@ namespace Infiniminer
                         //{
                         //    blockList[i, (ushort)(MAPSIZE - 1 - k), j] = BlockType.Sand;//covers map with block
                         //}
-                        blockListContent[i,(ushort)(MAPSIZE - 1 - k), j, 0] = 0;//content data for blocks, such as pumps
-                        blockListContent[i,(ushort)(MAPSIZE - 1 - k), j, 1] = 0;
-                        blockListContent[i,(ushort)(MAPSIZE - 1 - k), j, 2] = 0;
-                        blockListContent[i,(ushort)(MAPSIZE - 1 - k), j, 3] = 0;
+                        for (ushort c = 0; c < 20; c++)
+                        {
+                            blockListContent[i, (ushort)(MAPSIZE - 1 - k), k, c] = 0;//content data for blocks, such as pumps
+                        }
+
                         blockCreatorTeam[i, j, k] = PlayerTeam.None;
 
                         if (i < 1 || j < 1 || k < 1 || i > MAPSIZE - 2 || j > MAPSIZE - 2 || k > MAPSIZE - 2)
@@ -2004,28 +2014,44 @@ namespace Infiniminer
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        player.Content = new int[30];
+                                                        player.Content = new int[50];
+                                                        for (int a = 0; a < 50; a++)
+                                                        {
+                                                            player.Content[a] = 0;
+                                                        }
                                                         break;
                                                     case PlayerClass.Miner:
                                                         player.OreMax = 200;
                                                         player.WeightMax = 8;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        player.Content = new int[30];
+                                                        player.Content = new int[50];
+                                                        for (int a = 0; a < 50; a++)
+                                                        {
+                                                            player.Content[a] = 0;
+                                                        }
                                                         break;
                                                     case PlayerClass.Prospector:
                                                         player.OreMax = 200;
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        player.Content = new int[30];
+                                                        player.Content = new int[50];
+                                                        for (int a = 0; a < 50; a++)
+                                                        {
+                                                            player.Content[a] = 0;
+                                                        }
                                                         break;
                                                     case PlayerClass.Sapper:
                                                         player.OreMax = 200;
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        player.Content = new int[30];
+                                                        player.Content = new int[50];
+                                                        for (int a = 0; a < 50; a++)
+                                                        {
+                                                            player.Content[a] = 0;
+                                                        }
                                                         break;
                                                 }
                                                 SendResourceUpdate(player);
@@ -2350,7 +2376,7 @@ namespace Infiniminer
         public void DoPhysics()
         {
             DateTime lastFlowCalc = DateTime.Now;
-            
+
             while (1==1)
             {
                 while (physicsEnabled)
@@ -2359,6 +2385,7 @@ namespace Infiniminer
 
                     if (timeSpan.TotalMilliseconds > 400)
                     {
+
                         lastFlowCalc = DateTime.Now;
                         DoStuff();
 
@@ -2370,6 +2397,9 @@ namespace Infiniminer
         }
         public void DoStuff()
         {
+
+            frameid += 1;//make unique id to prevent reprocessing gravity
+
             //volcano frequency
             if (1==0)//randGen.Next(1, 500) == 1 && physicsEnabled)
             {
@@ -2395,10 +2425,144 @@ namespace Infiniminer
                     }
                 }
             }
+
             for (ushort i = 0; i < MAPSIZE; i++)
                 for (ushort j = 0; j < MAPSIZE; j++)
                     for (ushort k = 0; k < MAPSIZE; k++)
                     {
+                        //gravity
+                        if (blockListContent[i, j, k, 10] > 0)
+                        if (frameid != blockListContent[i, j, k, 10])
+                        {// divide acceleration vector by 100 to create ghetto float vector
+                            Vector3 newpoint = new Vector3((float)(blockListContent[i, j, k, 14] + blockListContent[i, j, k, 11]) / 100, (float)(blockListContent[i, j, k, 15] + blockListContent[i, j, k, 12]) / 100, (float)(blockListContent[i, j, k, 16] + blockListContent[i, j, k, 13]) / 100);
+                            
+                            ushort nx = (ushort)(newpoint.X);
+                            ushort ny = (ushort)(newpoint.Y);
+                            ushort nz = (ushort)(newpoint.Z);
+
+                            blockListContent[i, j, k, 10] = 0;
+
+                            if (nx < MAPSIZE - 1 && ny < MAPSIZE - 1 && nz < MAPSIZE - 1 && nx > 0 && ny > 0 && nz > 0)
+                            {
+                                if (BlockAtPoint(newpoint) == BlockType.None && blockList[i, j, k] != BlockType.None)
+                                {
+                                    SetBlock(nx, ny, nz, blockList[i, j, k], blockCreatorTeam[i, j, k]);
+                                    for (ushort c = 0; c < 14; c++)//copy content from 0-13
+                                    {
+                                        blockListContent[nx, ny, nz, c] = blockListContent[i, j, k, c];
+
+                                    }
+                                    blockListContent[nx, ny, nz, 10] = frameid;
+
+                                    if (blockListContent[nx, ny, nz, 12] > -50)//stop gravity from overflowing and skipping tiles
+                                        blockListContent[nx, ny, nz, 12] = (int)((float)(blockListContent[nx, ny, nz, 12] - 50.0f));
+                                    else
+                                    {
+                                        blockListContent[nx, ny, nz, 12] = -100;
+                                    }
+
+                                    blockListContent[nx, ny, nz, 14] = (int)(newpoint.X * 100);
+                                    blockListContent[nx, ny, nz, 15] = (int)(newpoint.Y * 100);//120 for curve
+                                    blockListContent[nx, ny, nz, 16] = (int)(newpoint.Z * 100);
+
+                                    if (blockListContent[i, j, k, 17] > 0 && blockList[i, j, k] == BlockType.Explosive)//explosive list for tnt update
+                                    {
+                                        foreach (Player p in playerList.Values)
+                                        {
+                                            if (p.ID == (uint)(blockListContent[i, j, k, 17]))
+                                            {
+                                                //found explosive this belongs to
+                                                p.ExplosiveList.Add(new Vector3(nx, ny, nz));
+                                                blockListContent[nx, ny, nz, 17] = blockListContent[i, j, k, 17];
+                                                p.ExplosiveList.Remove(new Vector3(i, j, k));
+                                                blockListContent[i, j, k, 17] = 0;
+
+                                            }
+                                        }
+                                    }
+                                    SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
+                                }
+                                else
+                                {
+                                    if (j > 0)
+                                        if (blockList[i, j - 1, k] == BlockType.None)//still nothing underneath us, but gravity state has just ended
+                                        {
+
+                                            blockListContent[i, j, k, 11] = 0;
+                                            blockListContent[i, j, k, 12] = -100;
+                                            blockListContent[i, j, k, 13] = 0;
+
+                                            SetBlock(i, (ushort)(j - 1), k, blockList[i, j, k], blockCreatorTeam[i, j, k]);
+                                            for (ushort c = 0; c < 14; c++)//copy content from 0-13
+                                            {
+                                                blockListContent[i, j - 1, k, c] = blockListContent[i, j, k, c];
+
+                                            }
+                                            blockListContent[i, j - 1, k, 10] = frameid;
+                                            blockListContent[i, j - 1, k, 14] = (int)(i * 100);
+                                            blockListContent[i, j - 1, k, 15] = (int)(j * 100);//120 for curve
+                                            blockListContent[i, j - 1, k, 16] = (int)(k * 100);
+
+                                            if (blockListContent[i, j, k, 17] > 0 && blockList[i, j, k] == BlockType.Explosive)//explosive list for tnt update
+                                            {
+                                                foreach (Player p in playerList.Values)
+                                                {
+                                                    if (p.ID == (uint)(blockListContent[i, j, k, 17]))
+                                                    {
+                                                        //found explosive this belongs to
+                                                        p.ExplosiveList.Add(new Vector3(i, j - 1, k));
+                                                        blockListContent[i, j - 1, k, 17] = blockListContent[i, j, k, 17];
+                                                        p.ExplosiveList.Remove(new Vector3(i, j, k));
+                                                        blockListContent[i, j, k, 17] = 0;
+
+                                                    }
+                                                }
+                                            }
+                                            SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
+                                        }
+                                }
+                            }
+                            else
+                            {
+                                if (j > 0)//entire section is to allow blocks to drop once they have hit ceiling
+                                    if (blockList[i, j - 1, k] == BlockType.None)//still nothing underneath us, but gravity state has just ended
+                                    {
+
+                                        blockListContent[i, j, k, 11] = 0;
+                                        blockListContent[i, j, k, 12] = -100;
+                                        blockListContent[i, j, k, 13] = 0;
+
+                                        SetBlock(i, (ushort)(j - 1), k, blockList[i, j, k], blockCreatorTeam[i, j, k]);
+                                        for (ushort c = 0; c < 14; c++)//copy content from 0-13
+                                        {
+                                            blockListContent[i, j - 1, k, c] = blockListContent[i, j, k, c];
+
+                                        }
+                                        blockListContent[i, j - 1, k, 10] = frameid;
+                                        blockListContent[i, j - 1, k, 14] = (int)(i * 100);
+                                        blockListContent[i, j - 1, k, 15] = (int)(j * 100);//120 for curve
+                                        blockListContent[i, j - 1, k, 16] = (int)(k * 100);
+
+                                        if (blockListContent[i, j, k, 17] > 0 && blockList[i, j, k] == BlockType.Explosive)//explosive list for tnt update
+                                        {
+                                            foreach (Player p in playerList.Values)
+                                            {
+                                                if (p.ID == (uint)(blockListContent[i, j, k, 17]))
+                                                {
+                                                    //found explosive this belongs to
+                                                    p.ExplosiveList.Add(new Vector3(i, j - 1, k));
+                                                    blockListContent[i, j - 1, k, 17] = blockListContent[i, j, k, 17];
+                                                    p.ExplosiveList.Remove(new Vector3(i, j, k));
+                                                    blockListContent[i, j, k, 17] = 0;
+
+                                                }
+                                            }
+                                        }
+                                        SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
+                                    }
+                            }
+
+                        }
                         //temperature
                         if (blockList[i, j, k] == BlockType.Lava && blockListContent[i, j, k, 1] > 0)//block is temperature sensitive
                         {
@@ -2807,9 +2971,11 @@ namespace Infiniminer
                                                 {
                                                     if (blockList[a, b, c] == BlockType.Water || blockList[a, b, c] == BlockType.Lava)
                                                     {
-                                                        if (blockListContent[i, j, k, 1] == 0)
+                                                        if (blockListContent[i, j, k, 1] == 0 || blockListContent[i, j, k, 2] == 0)
                                                         {
                                                             blockListContent[i, j, k, 1] = (byte)blockList[a, b, c];
+                                                            SetBlock((ushort)(a), (ushort)(b), (ushort)(c), BlockType.None, PlayerTeam.None);
+                                                            blockListContent[i, j, k, 2] += 1;
                                                         }
                                                         else if (blockListContent[i, j, k, 1] == (byte)blockList[a, b, c])
                                                         {
@@ -2895,10 +3061,17 @@ namespace Infiniminer
                             {
                                 if (j - 1 > 0)
                                 {
-                                    if (blockList[i, j - 1, k] == BlockType.None)
+                                    if (blockList[i, j - 1, k] == BlockType.None && blockListContent[i, j, k, 10] == 0)
                                     {
-                                        SetBlock(i, (ushort)(j - 1), k, BlockType.Sand, PlayerTeam.None);
-                                        SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
+                                        blockListContent[i, j, k, 10] = frameid;
+                                        blockListContent[i, j, k, 11] = 0;
+                                        blockListContent[i, j, k, 12] = -100;
+                                        blockListContent[i, j, k, 13] = 0;
+                                        blockListContent[i, j, k, 14] = i*100;
+                                        blockListContent[i, j, k, 15] = j*100;
+                                        blockListContent[i, j, k, 16] = k*100;
+                                        //SetBlock(i, (ushort)(j - 1), k, BlockType.Sand, PlayerTeam.None);
+                                        //SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
                                         continue;
                                     }
                                     for (ushort m = 1; m < 2; m++)//how many squares to fall over
@@ -2938,10 +3111,17 @@ namespace Infiniminer
                             {
                                 if (j + 1 < MAPSIZE && j - 1 > 0 && i - 1 > 0 && i + 1 < MAPSIZE && k - 1 > 0 && k + 1 < MAPSIZE)
                                     if (blockList[i, j - 1, k] == BlockType.None)
-                                        if (blockList[i, j + 1, k] == BlockType.None && blockList[i + 1, j, k] == BlockType.None && blockList[i - 1, j, k] == BlockType.None && blockList[i, j, k + 1] == BlockType.None && blockList[i, j, k - 1] == BlockType.None)
+                                        if (blockList[i, j + 1, k] == BlockType.None && blockList[i + 1, j, k] == BlockType.None && blockList[i - 1, j, k] == BlockType.None && blockList[i, j, k + 1] == BlockType.None && blockList[i, j, k - 1] == BlockType.None && blockListContent[i, j, k, 10] == 0)
                                         {//no block above or below, so fall
-                                            SetBlock(i, (ushort)(j - 1), k, BlockType.Dirt, PlayerTeam.None);
-                                            SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
+                                            blockListContent[i, j, k, 10] = frameid;
+                                            blockListContent[i, j, k, 11] = 0;
+                                            blockListContent[i, j, k, 12] = -100;
+                                            blockListContent[i, j, k, 13] = 0;
+                                            blockListContent[i, j, k, 14] = i * 100;
+                                            blockListContent[i, j, k, 15] = j * 100;
+                                            blockListContent[i, j, k, 16] = k * 100;
+                                           // SetBlock(i, (ushort)(j - 1), k, BlockType.Dirt, PlayerTeam.None);
+                                            //SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
                                             continue;
                                         }
                             }
@@ -3216,7 +3396,7 @@ namespace Infiniminer
                     //else
                     {
                         //begin throw
-                        buildPoint = headPosition + (playerHeading * 2);
+                        buildPoint = headPosition + (playerHeading*2);
                             //RayCollisionExactNone(playerPosition, playerHeading, 2, 10, ref hitPoint, ref buildPoint);
                         //
                     }
@@ -3238,6 +3418,12 @@ namespace Infiniminer
                 {
 
                     case BlockType.Dirt:
+                    case BlockType.Pump:
+                    case BlockType.Compressor:
+                    case BlockType.Pipe:
+                    case BlockType.Rock:
+                    case BlockType.Spring:
+                    case BlockType.MagmaVent:
                     case BlockType.Mud:
                     case BlockType.Sand:
                     case BlockType.DirtSign:
@@ -3248,10 +3434,36 @@ namespace Infiniminer
                     case BlockType.Ore:
                     case BlockType.Gold:
                     case BlockType.Diamond:
+                    case BlockType.Explosive:
                         grabBlock = true;
                         giveWeight = 1;
                         sound = InfiniminerSound.DigMetal;
                         break;
+                    case BlockType.SolidBlue:
+                        if (player.Team == PlayerTeam.Blue)
+                        {
+                            grabBlock = true;
+                            giveWeight = 1;
+                            sound = InfiniminerSound.DigMetal;
+                        }
+                        break;
+                    case BlockType.SolidRed:
+                        if (player.Team == PlayerTeam.Red)
+                        {
+                            grabBlock = true;
+                            giveWeight = 1;
+                            sound = InfiniminerSound.DigMetal;
+                        }
+                        break;
+                }
+
+                if (blockCreatorTeam[x, y, z] == PlayerTeam.Blue && player.Team == PlayerTeam.Red)
+                {
+                    return;//dont allow enemy team to manipulate other teams team-blocks
+                }
+                else if (blockCreatorTeam[x, y, z] == PlayerTeam.Red && player.Team == PlayerTeam.Blue)
+                {
+                    return;
                 }
 
                 if (giveWeight > 0)
@@ -3262,48 +3474,87 @@ namespace Infiniminer
                         SendResourceUpdate(player);
                     }
                     else
+                    {
                         grabBlock = false;
+                    }
                 }
 
                 if (grabBlock)
                 {
                     player.Content[5] = (byte)block;
-                    for (uint cc = 0; cc < 10; cc++)//copy the ten content values
+                    for (uint cc = 0; cc < 20; cc++)//copy the content values
                     {
-                     //   if (blockListContent[x, y, z, cc] != null)
-                     //   {
-                            player.Content[6 + cc] = blockListContent[x, y, z, cc];
-                     //   }
+                        player.Content[6 + cc] = blockListContent[x, y, z, cc];
                     }
+
+                    if (block == BlockType.Explosive)//must update player explosive keys
+                    {                        
+                        foreach (Player p in playerList.Values)
+                        {
+                            int cc = p.ExplosiveList.Count;
+
+                            int ca = 0;
+                            while(ca < cc+1)
+                            {
+                                if (p.ExplosiveList[ca].X == x && p.ExplosiveList[ca].Y == y && p.ExplosiveList[ca].Z == z)
+                                {
+                                    player.Content[6 + 17] = (int)p.ID;
+                                    p.ExplosiveList.RemoveAt(ca);//experimental
+                                    break;
+                                }
+                                ca += 1;
+                            }
+                        }
+
+                    }
+
+                    SendResourceUpdate(player);
                     SetBlock(x, y, z, BlockType.None, PlayerTeam.None);
                     PlaySound(sound, player.Position);
                 }
-                return;
             }
             else
-            {
+            {//throw the block
                 BlockType block = (BlockType)(player.Content[5]);
                 if (block != BlockType.None)
                 {
                     ushort bx = (ushort)buildPoint.X;
                     ushort by = (ushort)buildPoint.Y;
                     ushort bz = (ushort)buildPoint.Z;
-                   // if (blockList[x, y, z] == BlockType.None)
-                   // {
+                    if (blockList[bx, by, bz] == BlockType.None)
+                    {
                         SetBlock(bx, by, bz, block, PlayerTeam.None);
                         player.Weight -= 1;
                         player.Content[5] = 0;
                         SendResourceUpdate(player);
-                        for (uint cc = 0; cc < 10; cc++)//copy the ten content values
+                        for (uint cc = 0; cc < 20; cc++)//copy the content values
                         {
-                           // if (player.Content[5 + cc] != null)//doesnt seem to care about nulls
-                          //  {
-                                blockListContent[x, y, z, cc] = player.Content[6 + cc];
-                                player.Content[6 + cc] = 0;
-                           // }
+                            blockListContent[bx, by, bz, cc] = player.Content[6 + cc];
+                            if (cc == 17 && block == BlockType.Explosive)//explosive list for tnt update
+                            {
+                                foreach (Player p in playerList.Values)
+                                {
+                                    if (p.ID == (uint)(blockListContent[bx, by, bz, cc]))
+                                    {
+                                        //found explosive this belongs to
+                                        p.ExplosiveList.Add(new Vector3(bx,by,bz));
+                                    }
+                                }
+                            }
+                            player.Content[6 + cc] = 0;
                         }
+
+                        blockListContent[bx, by, bz, 10] = 1;//undergoing gravity changes 
+                        blockListContent[bx, by, bz, 11] = (int)((playerHeading.X*1.2)*100);//1.2 = throw strength
+                        blockListContent[bx, by, bz, 12] = (int)((playerHeading.Y*1.2)*100);
+                        blockListContent[bx, by, bz, 13] = (int)((playerHeading.Z*1.2)*100);
+                        blockListContent[bx, by, bz, 14] = (int)((buildPoint.X) * 100);
+                        blockListContent[bx, by, bz, 15] = (int)((buildPoint.Y) * 100);
+                        blockListContent[bx, by, bz, 16] = (int)((buildPoint.Z) * 100);
+
+                        blockCreatorTeam[bx, by, bz] = player.Team;
                         PlaySound(InfiniminerSound.GroundHit, player.Position);
-                  //  }
+                    }
                 }
             }
         }
@@ -3456,7 +3707,7 @@ namespace Infiniminer
 
                 // If it's an explosive block, add it to our list.
                 if (blockType == BlockType.Explosive)
-                    player.ExplosiveList.Add(buildPoint);
+                    player.ExplosiveList.Add(new Vector3(x,y,z) );
             }            
         }
 
@@ -3961,6 +4212,7 @@ namespace Infiniminer
             msgBuffer.Write((uint)teamCashBlue);
             msgBuffer.Write((uint)player.Health);
             msgBuffer.Write((uint)player.HealthMax);
+            msgBuffer.Write((int)player.Content[5]);
             netServer.SendMessage(msgBuffer, player.NetConn, NetChannel.ReliableInOrder1);
         }
 

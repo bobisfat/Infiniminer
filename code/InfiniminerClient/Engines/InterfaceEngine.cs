@@ -94,9 +94,19 @@ namespace Infiniminer
             blockIcons[BlockType.StealthBlockR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_stealth");
             blockIcons[BlockType.TrapB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
             blockIcons[BlockType.TrapR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
-            blockIcons[BlockType.Dirt] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_generator");
+            blockIcons[BlockType.Dirt] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_dirt");
             blockIcons[BlockType.Pump] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pump");
             blockIcons[BlockType.Compressor] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_compressor");
+            //held icons
+            blockIcons[BlockType.Diamond] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_diamond");
+            blockIcons[BlockType.MagmaVent] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
+            blockIcons[BlockType.Gold] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_silver");
+            blockIcons[BlockType.Ore] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_ore");
+            blockIcons[BlockType.DirtSign] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_dirt_sign");
+            blockIcons[BlockType.Rock] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_rock");
+            blockIcons[BlockType.Sand] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_sand");
+            blockIcons[BlockType.Spring] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_spring");
+    
             //blockIcons[BlockType.Spring] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_rock");
             blockIcons[BlockType.None] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_deconstruction");
 
@@ -294,7 +304,25 @@ namespace Infiniminer
                                                             graphicsDevice.Viewport.Height / 2 - texCrosshairs.Height / 2,
                                                             texCrosshairs.Width,
                                                             texCrosshairs.Height), Color.White);
+            switch (_P.playerClass)
+            {
+                case PlayerClass.Miner:
+                    if (_P.Content[5] > 0)
+                    {
+                        BlockType held = (BlockType)(byte)(_P.Content[5]);
 
+                        int screenWidth = graphicsDevice.Viewport.Width;
+                        int screenHeight = graphicsDevice.Viewport.Height;
+                        graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Point;
+
+                        int drawX = screenWidth / 2 + 61 * 3;
+                        int drawY = screenHeight - 91 * 3;
+
+                        spriteBatch.Draw(blockIcons[held], new Rectangle(drawX + 37 * 3, drawY + 50 * 3, 117, 63), Color.White);
+
+                    }
+                    break;
+            }
             // If equipped, draw the tool.
             switch (_P.playerTools[_P.playerToolSelected])
             {

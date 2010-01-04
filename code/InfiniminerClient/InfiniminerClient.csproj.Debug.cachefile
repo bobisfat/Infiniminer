@@ -120,6 +120,8 @@ Content\blocks\tex_block_dirt_trans.xnb
 Content\icons\tex_icon_stealth.xnb
 Content\blocks\tex_block_trapVis.xnb
 Content\icons\tex_icon_trap.xnb
+Content\icons\tex_icon_compressor.xnb
+Content\blocks\tex_compressor.xnb
 Content\font_04b08.xnb
 Content\font_04b03b.xnb
 Content\sounds\build.xnb
@@ -138,8 +140,15 @@ Content\sounds\teleport.xnb
 Content\sounds\radar-high.xnb
 Content\sounds\radar-low.xnb
 Content\song_title.xnb
-Content\icons\tex_icon_compressor.xnb
-Content\blocks\tex_compressor.xnb
 Content\tmp.xnb
+Content\icons\tex_icon_diamond.xnb
+Content\icons\tex_icon_dirt.xnb
+Content\icons\tex_icon_dirt_sign.xnb
+Content\icons\tex_icon_magmavent.xnb
+Content\icons\tex_icon_rock.xnb
+Content\icons\tex_icon_sand.xnb
+Content\icons\tex_icon_silver.xnb
+Content\icons\tex_icon_spring.xnb
+Content\icons\tex_icon_ore.xnb
 Content\song_title.wma
 Content\tmp.wma
