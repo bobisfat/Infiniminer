@@ -55,7 +55,7 @@ namespace Infiniminer
         public uint playerWeight = 0;
         public uint playerOreMax = 0;
 
-        public int[] Content = null;
+        public int[] Content = new Int32[50];
 
         public uint playerWeightMax = 0;
         public float playerHoldBreath = 20;
@@ -113,9 +113,10 @@ namespace Infiniminer
             //netClient.SimulatedLatencyVariance = 0.05f;
             //netClient.SimulatedLoss = 0.1f;
             //netClient.SimulatedDuplicates = 0.05f;
-            Content = new Int32[50];
             for (int a = 0; a < 50; a++)
+            {
                 Content[a] = 0;
+            }
 
             netClient.Start();
 
@@ -128,6 +129,7 @@ namespace Infiniminer
 
             // Create a camera.
             playerCamera = new Camera(gameInstance.GraphicsDevice);
+
             UpdateCamera();
 
             // Load sounds.

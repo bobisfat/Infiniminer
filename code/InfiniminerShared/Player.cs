@@ -73,7 +73,7 @@ namespace Infiniminer
         public uint Ore = 0;
         public uint Weight = 0;
         public uint Cash = 0;
-        public int[] Content = null;  
+        public int[] Content = new Int32[50];
         public bool Alive = false;
         public List<Vector3> ExplosiveList = new List<Vector3>();
         public uint ID;
@@ -218,7 +218,6 @@ namespace Infiniminer
             if (netConn != null)
                 this.IP = netConn.RemoteEndpoint.Address.ToString();
 
-            Content = new int[50];
             for (int a = 0; a < 50; a++)
             {
                 Content[a] = 0;
