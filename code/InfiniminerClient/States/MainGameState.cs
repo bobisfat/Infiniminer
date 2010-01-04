@@ -519,6 +519,17 @@ namespace Infiniminer.States
                         }
                     }
                     break;
+                case Buttons.AltFire:
+                    if (_P.playerToolCooldown <= 0)
+                    {
+                        switch (_P.playerClass)
+                        {
+                            case PlayerClass.Miner:
+                                _P.StrongArm();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
+                                break;
+                        }
+                    }
+                    break;
                 case Buttons.Jump:
                     {
                        // Vector3 belowfootPosition = _P.playerPosition + new Vector3(0f, -2.5f, 0f);

@@ -9,7 +9,7 @@ Space = Jump
 Shift = Sprint
 Control = Crouch
 LeftButton = Fire
-RightButton = Fire
+RightButton = AltFire
 
 #Loadout
 D1 = Tool1

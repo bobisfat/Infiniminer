@@ -182,6 +182,7 @@ namespace Infiniminer
         public void CreateDefaultSet()
         {
             mouseBinds.Add(MouseButton.LeftButton, Buttons.Fire);
+            mouseBinds.Add(MouseButton.RightButton, Buttons.AltFire);
 
             keyBinds.Add(Keys.W, Buttons.Forward);
             keyBinds.Add(Keys.S, Buttons.Backward);

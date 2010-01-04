@@ -1969,6 +1969,9 @@ namespace Infiniminer
                                                     case PlayerTools.Pickaxe:
                                                         UsePickaxe(player, playerPosition, playerHeading);
                                                         break;
+                                                    case PlayerTools.StrongArm:
+                                                        UseStrongArm(player, playerPosition, playerHeading);
+                                                        break;
                                                     case PlayerTools.ConstructionGun:
                                                         UseConstructionGun(player, playerPosition, playerHeading, blockType);
                                                         break;
@@ -2000,24 +2003,28 @@ namespace Infiniminer
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
+                                                        player.Content = new int[30];
                                                         break;
                                                     case PlayerClass.Miner:
                                                         player.OreMax = 200;
                                                         player.WeightMax = 8;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
+                                                        player.Content = new int[30];
                                                         break;
                                                     case PlayerClass.Prospector:
                                                         player.OreMax = 200;
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
+                                                        player.Content = new int[30];
                                                         break;
                                                     case PlayerClass.Sapper:
                                                         player.OreMax = 200;
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
+                                                        player.Content = new int[30];
                                                         break;
                                                 }
                                                 SendResourceUpdate(player);
@@ -2586,6 +2593,8 @@ namespace Infiniminer
                                                         SetBlock(a, (ushort)(j - 1), b, liquid, PlayerTeam.None);
                                                         blockListContent[a, j - 1, b, 1] = blockListContent[i, j, k, 1];
                                                         SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
+                                                        a = 3;
+                                                        break;
                                                     }
                                             }
                                         }
@@ -2990,6 +2999,23 @@ namespace Infiniminer
             return startPosition;
         }
 
+        public Vector3 RayCollisionExactNone(Vector3 startPosition, Vector3 rayDirection, float distance, int searchGranularity, ref Vector3 hitPoint, ref Vector3 buildPoint)
+        {//returns a point in space when it reaches distance
+            Vector3 testPos = startPosition;
+            Vector3 buildPos = startPosition;
+
+            for (int i = 0; i < searchGranularity; i++)
+            {
+                testPos += rayDirection * distance / searchGranularity;
+                BlockType testBlock = BlockAtPoint(testPos);
+
+                if (testBlock != BlockType.None)
+                {
+                    return startPosition;
+                }
+            }
+            return testPos;
+        }
         public void UsePickaxe(Player player, Vector3 playerPosition, Vector3 playerHeading)
         {
             player.QueueAnimationBreak = true;
@@ -3100,6 +3126,120 @@ namespace Infiniminer
             }
         }
 
+        public void UseStrongArm(Player player, Vector3 playerPosition, Vector3 playerHeading)
+        {
+            player.QueueAnimationBreak = true;
+            Vector3 headPosition = playerPosition + new Vector3(0f, 0.1f, 0f);
+            // Figure out what we're hitting.
+            Vector3 hitPoint = Vector3.Zero;
+            Vector3 buildPoint = Vector3.Zero;
+
+            if (player.Content[5] == 0)
+                if (!RayCollision(playerPosition, playerHeading, 2, 10, ref hitPoint, ref buildPoint, BlockType.Water))
+                    return;
+
+            if (player.Content[5] > 0)
+            {
+                //Vector3 throwPoint = RayCollisionExact(playerPosition, playerHeading, 10, 100, ref hitPoint, ref buildPoint);
+                //if (throwPoint != playerPosition)
+                //{
+                    //double dist = Distf(playerPosition, throwPoint);
+                    //if (dist < 2)
+                     //   return;//distance of ray should be strength
+                    //else
+                    {
+                        //begin throw
+                        buildPoint = headPosition + (playerHeading * 2);
+                            //RayCollisionExactNone(playerPosition, playerHeading, 2, 10, ref hitPoint, ref buildPoint);
+                        //
+                    }
+              //  }
+            }
+            ushort x = (ushort)hitPoint.X;
+            ushort y = (ushort)hitPoint.Y;
+            ushort z = (ushort)hitPoint.Z;
+            // Figure out what the result is.
+            bool grabBlock = false;
+
+            if (player.Content[5] == 0)
+            {
+                uint giveWeight = 0;
+                InfiniminerSound sound = InfiniminerSound.DigDirt;
+
+                BlockType block = BlockAtPoint(hitPoint);
+                switch (block)
+                {
+
+                    case BlockType.Dirt:
+                    case BlockType.Mud:
+                    case BlockType.Sand:
+                    case BlockType.DirtSign:
+                    case BlockType.StealthBlockB:
+                    case BlockType.StealthBlockR:
+                    case BlockType.TrapB:
+                    case BlockType.TrapR:
+                    case BlockType.Ore:
+                    case BlockType.Gold:
+                    case BlockType.Diamond:
+                        grabBlock = true;
+                        giveWeight = 1;
+                        sound = InfiniminerSound.DigMetal;
+                        break;
+                }
+
+                if (giveWeight > 0)
+                {
+                    if (player.Weight < player.WeightMax)
+                    {
+                        player.Weight = Math.Min(player.Weight + giveWeight, player.WeightMax);
+                        SendResourceUpdate(player);
+                    }
+                    else
+                        grabBlock = false;
+                }
+
+                if (grabBlock)
+                {
+                    player.Content[5] = (byte)block;
+                    for (uint cc = 0; cc < 10; cc++)//copy the ten content values
+                    {
+                     //   if (blockListContent[x, y, z, cc] != null)
+                     //   {
+                            player.Content[6 + cc] = blockListContent[x, y, z, cc];
+                     //   }
+                    }
+                    SetBlock(x, y, z, BlockType.None, PlayerTeam.None);
+                    PlaySound(sound, player.Position);
+                }
+                return;
+            }
+            else
+            {
+                BlockType block = (BlockType)(player.Content[5]);
+                if (block != BlockType.None)
+                {
+                    ushort bx = (ushort)buildPoint.X;
+                    ushort by = (ushort)buildPoint.Y;
+                    ushort bz = (ushort)buildPoint.Z;
+                   // if (blockList[x, y, z] == BlockType.None)
+                   // {
+                        SetBlock(bx, by, bz, block, PlayerTeam.None);
+                        player.Weight -= 1;
+                        player.Content[5] = 0;
+                        SendResourceUpdate(player);
+                        for (uint cc = 0; cc < 10; cc++)//copy the ten content values
+                        {
+                           // if (player.Content[5 + cc] != null)//doesnt seem to care about nulls
+                          //  {
+                                blockListContent[x, y, z, cc] = player.Content[6 + cc];
+                                player.Content[6 + cc] = 0;
+                           // }
+                        }
+                        PlaySound(InfiniminerSound.GroundHit, player.Position);
+                  //  }
+                }
+            }
+        }
         //private bool LocationNearBase(ushort x, ushort y, ushort z)
         //{
         //    for (int i=0; i<MAPSIZE; i++)

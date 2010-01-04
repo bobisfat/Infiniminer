@@ -23,7 +23,7 @@ namespace Infiniminer
         Ping,
         Deposit,
         Withdraw,
-        
+
         //All buttons past this point will never be sent to the server
         SayAll,
         SayTeam,
@@ -40,7 +40,7 @@ namespace Infiniminer
         ToolDown,
         
         BlockUp,
-        BlockDown
+        BlockDown,
     }
 
     public enum MouseButton

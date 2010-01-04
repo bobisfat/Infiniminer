@@ -54,6 +54,9 @@ namespace Infiniminer
         public uint playerCash = 0;
         public uint playerWeight = 0;
         public uint playerOreMax = 0;
+
+        public int[] Content = null;
+
         public uint playerWeightMax = 0;
         public float playerHoldBreath = 20;
         public DateTime lastBreath = DateTime.Now;
@@ -674,6 +677,24 @@ namespace Infiniminer
                 }
             }
             msgBuffer.Write((byte)nb);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
+
+        public void StrongArm()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+            playerToolCooldown = GetToolCooldown(PlayerTools.ConstructionGun);//should have its own
+            constructionGunAnimation = -5;
+
+            // Send the message.
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+            msgBuffer.Write(playerPosition);
+            msgBuffer.Write(playerCamera.GetLookVector());
+            msgBuffer.Write((byte)PlayerTools.StrongArm);
+            msgBuffer.Write(true);//possibly cause network problems
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
