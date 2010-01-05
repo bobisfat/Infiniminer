@@ -194,6 +194,19 @@ namespace Infiniminer.States
             }
             else
             {
+                float size = 0.1f;//box collision for falling prevents inside walls problems
+                bool allow = true;
+                for (int x = -1; x < 2; x++)
+                        for (int z = -1; z < 2; z++)
+                        {
+                            Vector3 box = new Vector3(size * x, 0, size * z);
+                            if (_P.blockEngine.SolidAtPointForPlayer(footPosition + (_P.playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds) + box))
+                            {
+                                allow = false;
+                            }
+                        }
+
+                if (allow == true)
                 _P.playerVelocity.Y += GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
             }
 
@@ -261,9 +274,8 @@ namespace Infiniminer.States
                 {
                     int blockIn = (int)(headPosition.Y);
                     _P.playerPosition.Y = (float)(blockIn - 0.15f);
-
                 }
-
+                
                 // If the player is stuck in the ground, bring them out.
                 // This happens because we're standing on a block at -1.5, but stuck in it at -1.4, so -1.45 is the sweet spot.
                 if (_P.blockEngine.SolidAtPointForPlayer(footPosition))
@@ -312,7 +324,7 @@ namespace Infiniminer.States
             }
             if (!_P.blockEngine.SolidAtPointForPlayer(midPosition + _P.playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds))
             {
-                _P.playerPosition += _P.playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+               _P.playerPosition += _P.playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
             }
             // Death by falling off the map.
             if (_P.playerPosition.Y < -30)
@@ -407,6 +419,20 @@ namespace Infiniminer.States
             Vector3 midBodyPoint = movePosition + new Vector3(0, -0.7f, 0);
             Vector3 lowerBodyPoint = movePosition + new Vector3(0, -1.4f, 0);
 
+            float size = 0.1f;
+            bool allow = true;
+            for (int x = -1; x < 2; x++)
+                for (int y = -1; y < 2; y++)
+                    for (int z = -1; z < 2; z++)
+                    {
+                        Vector3 box = new Vector3(size * x, size * y, size * z);
+                        if (_P.blockEngine.SolidAtPointForPlayer(movePosition + box))
+                        {
+                            allow = false;
+                        }
+                    }
+
+            if(allow == true)
             if (!_P.blockEngine.SolidAtPointForPlayer(movePosition) && !_P.blockEngine.SolidAtPointForPlayer(lowerBodyPoint) && !_P.blockEngine.SolidAtPointForPlayer(midBodyPoint))
             {
                 testVector = moveVector;
