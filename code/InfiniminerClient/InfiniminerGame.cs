@@ -353,7 +353,7 @@ namespace Infiniminer
                                             uint expStrength = msgBuffer.ReadUInt32();
 
                                             // Play the explosion sound.
-                                            propertyBag.PlaySound(InfiniminerSound.Explosion, blockPos, (int)(expStrength/1.5));
+                                            propertyBag.PlaySound(InfiniminerSound.Explosion, blockPos);//, (int)(expStrength/1.5));
 
                                             // Create some particles.
                                             propertyBag.particleEngine.CreateExplosionDebris(blockPos);

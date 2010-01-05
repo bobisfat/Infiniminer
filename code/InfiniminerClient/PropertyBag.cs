@@ -54,7 +54,7 @@ namespace Infiniminer
         public uint playerCash = 0;
         public uint playerWeight = 0;
         public uint playerOreMax = 0;
-
+        public AudioListener listenPos = new AudioListener();
         public int[] Content = new Int32[50];
 
         public uint playerWeightMax = 0;
@@ -94,6 +94,8 @@ namespace Infiniminer
 
         // Sound stuff.
         public Dictionary<InfiniminerSound, SoundEffect> soundList = new Dictionary<InfiniminerSound, SoundEffect>();
+        public Dictionary<int, SoundEffectInstance> soundListInstance = new Dictionary<int, SoundEffectInstance>();
+        public Dictionary<int, AudioEmitter> soundListEmitter = new Dictionary<int, AudioEmitter>();
 
         // Chat stuff.
         public ChatMessageType chatMode = ChatMessageType.None;
@@ -109,7 +111,8 @@ namespace Infiniminer
 
             netClient = new NetClient(netConfig);
             netClient.SetMessageTypeEnabled(NetMessageType.ConnectionRejected, true);
-            //netClient.SimulatedMinimumLatency = 0.1f;
+
+            //netClient.SimulatedMinimumLatency = 1.0f;
             //netClient.SimulatedLatencyVariance = 0.05f;
             //netClient.SimulatedLoss = 0.1f;
             //netClient.SimulatedDuplicates = 0.05f;
@@ -150,6 +153,7 @@ namespace Infiniminer
                 soundList[InfiniminerSound.RadarHigh] = gameInstance.Content.Load<SoundEffect>("sounds/radar-high");
                 soundList[InfiniminerSound.RadarLow] = gameInstance.Content.Load<SoundEffect>("sounds/radar-low");
                 soundList[InfiniminerSound.RadarSwitch] = gameInstance.Content.Load<SoundEffect>("sounds/switch");
+                soundList[InfiniminerSound.RockFall] = gameInstance.Content.Load<SoundEffect>("sounds/rockfall");
             }
         }
 
@@ -161,11 +165,13 @@ namespace Infiniminer
                 case BlockType.SolidBlue:
                 case BlockType.BeaconBlue:
                 case BlockType.BankBlue:
+                case BlockType.BaseBlue:
                 case BlockType.StealthBlockB:
                 case BlockType.TrapB:
                     return PlayerTeam.Blue;
                 case BlockType.TransRed:
                 case BlockType.SolidRed:
+                case BlockType.BaseRed:
                 case BlockType.BeaconRed:
                 case BlockType.BankRed:
                 case BlockType.StealthBlockR:
@@ -260,25 +266,28 @@ namespace Infiniminer
             soundList[sound].Play(volumeLevel);
         }
 
-        public void PlaySound(InfiniminerSound sound, Vector3 position, int magnification)
-        {
-            if (soundList.Count == 0)
-                return;
-
-            float distance = (position - playerPosition).Length()-magnification;
-            float volume = Math.Max(0, 64 - distance) / 10.0f * volumeLevel;
-            volume = volume > 1.0f ? 1.0f : volume < 0.0f ? 0.0f : volume;
-            soundList[sound].Play(volume);
-        }
         public void PlaySound(InfiniminerSound sound, Vector3 position)
         {
             if (soundList.Count == 0)
                 return;
 
             float distance = (position - playerPosition).Length();
-            float volume = Math.Max(0, 10 - distance) / 10.0f * volumeLevel;
-            volume = volume > 1.0f ? 1.0f : volume < 0.0f ? 0.0f : volume;
-            soundList[sound].Play(volume);
+            float volume = 1.0f;// Math.Max(0, 20 - (0)) / 10.0f * volumeLevel;
+
+            if (distance > 24)//we cant hear this far
+                return;
+            AudioEmitter emitter = new AudioEmitter();
+            emitter.Position = position;
+            int ns = soundListInstance.Count;
+            float pitch = 0.0f;
+
+            if (sound == InfiniminerSound.RockFall)
+            {
+                pitch = (float)(randGen.NextDouble() * 0.5);
+            }
+            
+            soundListInstance[ns] = soundList[sound].Play3D(listenPos,emitter,volume,pitch,false);
+            soundListEmitter[ns] = emitter;
         }
 
         public void PlaySoundForEveryone(InfiniminerSound sound, Vector3 position)
@@ -292,6 +301,8 @@ namespace Infiniminer
             msgBuffer.Write((byte)sound);
             msgBuffer.Write(position);
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+
+            PlaySound(sound);//plays the sound locally
         }
 
         public void addChatMessage(string chatString, ChatMessageType chatType, float timestamp)
@@ -422,6 +433,20 @@ namespace Infiniminer
             else
             {
                 playerCamera.Position = playerPosition;
+                listenPos.Position = playerPosition;
+                listenPos.Up = playerCamera.GetUpVector();
+                listenPos.Forward = playerCamera.GetLookVector();
+
+                //go through all sounds and sort positionally
+               
+                foreach (KeyValuePair<int, SoundEffectInstance> bPair in soundListInstance)
+                {
+                    if (soundListEmitter.ContainsKey(bPair.Key))
+                    {
+                        soundListInstance[bPair.Key].Apply3D(listenPos, soundListEmitter[bPair.Key]);
+                    }
+                }
+                //
             }
             playerCamera.Update();
         }
@@ -637,15 +662,89 @@ namespace Infiniminer
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
 
-            playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+            //play sound locally
+            Vector3 hitPoint = Vector3.Zero;
+            Vector3 buildPoint = Vector3.Zero;
+            if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2, 10, ref hitPoint, ref buildPoint, BlockType.Water))
+                return;
+            ushort x = (ushort)hitPoint.X;
+            ushort y = (ushort)hitPoint.Y;
+            ushort z = (ushort)hitPoint.Z;
 
-            NetBuffer msgBuffer = netClient.CreateBuffer();
-            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
-            msgBuffer.Write(playerPosition);
-            msgBuffer.Write(playerCamera.GetLookVector());
-            msgBuffer.Write((byte)PlayerTools.Pickaxe);
-            msgBuffer.Write((byte)BlockType.None);
-            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+            // Figure out what the result is.
+            bool removeBlock = false;
+            uint giveOre = 0;
+            uint giveCash = 0;
+            uint giveWeight = 0;
+
+            InfiniminerSound sound = InfiniminerSound.DigDirt;
+
+            switch (blockEngine.BlockAtPoint(hitPoint))
+            {
+                case BlockType.Dirt:
+                case BlockType.Mud:
+                case BlockType.Sand:
+                case BlockType.DirtSign:
+                    removeBlock = true;
+                    sound = InfiniminerSound.DigDirt;
+                    break;
+                case BlockType.StealthBlockB:
+                    removeBlock = true;
+                    sound = InfiniminerSound.DigDirt;
+                    break;
+                case BlockType.StealthBlockR:
+                    removeBlock = true;
+                    sound = InfiniminerSound.DigDirt;
+                    break;
+                case BlockType.TrapB:
+                    removeBlock = true;
+                    sound = InfiniminerSound.DigDirt;
+                    break;
+                case BlockType.TrapR:
+                    removeBlock = true;
+                    sound = InfiniminerSound.DigDirt;
+                    break;
+                case BlockType.Ore:
+                    removeBlock = true;
+                    sound = InfiniminerSound.DigMetal;
+                    break;
+
+                case BlockType.Gold:
+                    removeBlock = true;
+                    sound = InfiniminerSound.DigMetal;
+                    break;
+
+                case BlockType.Diamond:
+                    removeBlock = true;
+                    sound = InfiniminerSound.DigMetal;
+                    break;
+            }
+
+            if (removeBlock == true)
+            {
+                playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+
+                NetBuffer msgBuffer = netClient.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+                msgBuffer.Write(playerPosition);
+                msgBuffer.Write(playerCamera.GetLookVector());
+                msgBuffer.Write((byte)PlayerTools.Pickaxe);
+                msgBuffer.Write((byte)BlockType.None);
+                netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+                blockEngine.RemoveBlock(x,y,z);//local block removal//needs a sync check
+                PlaySound(sound);//local sound effect
+            }
+            else//it doesnt play the sound effect, but will still try send server ray for lag compensation
+            {
+                //playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+                //NetBuffer msgBuffer = netClient.CreateBuffer();
+                //msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+                //msgBuffer.Write(playerPosition);
+                //msgBuffer.Write(playerCamera.GetLookVector());
+                //msgBuffer.Write((byte)PlayerTools.Pickaxe);
+                //msgBuffer.Write((byte)BlockType.None);
+                //netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+            }
         }
 
         public void FireConstructionGun(BlockType blockType)
@@ -907,7 +1006,7 @@ namespace Infiniminer
         {
             switch (tool)
             {
-                case PlayerTools.Pickaxe: return 0.55f;
+                case PlayerTools.Pickaxe: return 1.0f;// 0.55f;
                 case PlayerTools.Detonator: return 0.01f;
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;

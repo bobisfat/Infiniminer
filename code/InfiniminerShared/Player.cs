@@ -48,6 +48,14 @@ namespace Infiniminer
         Blue
     }
 
+    public class PlayerBase
+    {
+        public PlayerTeam team;
+        public int X;
+        public int Y;
+        public int Z;
+    }
+
     public class Player
     {
         public bool Kicked = false; // set to true when a player is kicked to let other clients know they were kicked

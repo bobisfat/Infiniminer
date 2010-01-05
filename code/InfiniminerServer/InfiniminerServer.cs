@@ -15,6 +15,10 @@ namespace Infiniminer
         public BlockType[, ,] blockList = null;    // In game coordinates, where Y points up.
         public Int32[, , ,] blockListContent = null;
         PlayerTeam[, ,] blockCreatorTeam = null;
+        Dictionary<PlayerTeam, PlayerBase> basePosition = new Dictionary<PlayerTeam, PlayerBase>();
+        PlayerBase RedBase;
+        PlayerBase BlueBase;
+
         public int MAPSIZE = 64;
         Thread physics;
         Dictionary<NetConnection, Player> playerList = new Dictionary<NetConnection, Player>();
@@ -105,7 +109,15 @@ namespace Infiniminer
                     //SendResourceUpdate(pl);
                     //SendPlayerDead(pl);
 
-                    ConsoleWrite("refused" + pl.Handle + " " + pos.X + "/" + pos.Y + "/" + pos.Z);
+                   // ConsoleWrite("refused" + pl.Handle + " " + pos.X + "/" + pos.Y + "/" + pos.Z);
+                    ushort x = (ushort)pos.X;
+                    ushort y = (ushort)pos.Y;
+                    ushort z = (ushort)pos.Z;
+
+                    if (x < 0 || y < 0 || z < 0 || x >= MAPSIZE || y >= MAPSIZE || z >= MAPSIZE)
+                        return pl.Position;
+
+                    SetBlockForPlayer(x, y, z, blockList[x, y, z], blockCreatorTeam[x, y, z], pl);
                     return pl.Position;
                 }
                 else//player is dead, return position silent
@@ -1460,6 +1472,35 @@ namespace Infiniminer
                 itemList[newItem.ID] = newItem;
                 SendSetItem(newItem.ID, newItem.Position, newItem.Team, newItem.Heading);
         }
+
+        public void SetBlockForPlayer(ushort x, ushort y, ushort z, BlockType blockType, PlayerTeam team, Player player)
+        {
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.BlockSet);
+            msgBuffer.Write((byte)x);
+            msgBuffer.Write((byte)y);
+            msgBuffer.Write((byte)z);
+
+            if (blockType == BlockType.Vacuum)
+            {
+                msgBuffer.Write((byte)BlockType.None);
+            }
+            else
+            {
+                msgBuffer.Write((byte)blockType);
+            }
+
+            foreach (NetConnection netConn in playerList.Keys)
+                if (netConn.Status == NetConnectionStatus.Connected)
+                {
+                    if (playerList[netConn] == player)
+                    {
+                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+                        return;
+                    }
+                }
+        }
+
         public void SetBlock(ushort x, ushort y, ushort z, BlockType blockType, PlayerTeam team)
         {
             if (x <= 0 || y <= 0 || z <= 0 || (int)x > MAPSIZE - 1 || (int)y > MAPSIZE - 1 || (int)z > MAPSIZE - 1)
@@ -1547,7 +1588,32 @@ namespace Infiniminer
             }
             //ConsoleWrite("BLOCKSET: " + x + " " + y + " " + z + " " + blockType.ToString());
         }
-
+        public void createBase(PlayerTeam team)
+        {
+            int pos = randGen.Next(10, 50);
+            if(team == PlayerTeam.Red)
+            {
+                RedBase = new PlayerBase();
+                basePosition.Add(PlayerTeam.Red,RedBase);
+                basePosition[PlayerTeam.Red].team = PlayerTeam.Red;
+                basePosition[PlayerTeam.Red].X = pos;
+                basePosition[PlayerTeam.Red].Y = 61;
+                basePosition[PlayerTeam.Red].Z = 50;
+                blockList[pos, 61, 50] = BlockType.BaseRed;
+                blockCreatorTeam[pos, 61, 50] = PlayerTeam.Red;
+            }
+            else
+            {
+                BlueBase = new PlayerBase();
+                basePosition.Add(PlayerTeam.Blue,BlueBase);
+                basePosition[PlayerTeam.Blue].team = PlayerTeam.Blue;
+                basePosition[PlayerTeam.Blue].X = pos;
+                basePosition[PlayerTeam.Blue].Y = 61;
+                basePosition[PlayerTeam.Blue].Z = 14;
+                blockList[pos, 61, 14] = BlockType.BaseBlue;
+                blockCreatorTeam[pos, 61, 14] = PlayerTeam.Blue;
+            }
+        }
         public int newMap()
         {
             physicsEnabled = false;
@@ -1564,7 +1630,6 @@ namespace Infiniminer
                     {
                         flowSleep[i, j, k] = false;
                         blockList[i, (ushort)(MAPSIZE - 1 - k), j] = worldData[i, j, k];
-
                         //if (blockList[i, (ushort)(MAPSIZE - 1 - k), j] == BlockType.Dirt)
                         //{
                         //    blockList[i, (ushort)(MAPSIZE - 1 - k), j] = BlockType.Sand;//covers map with block
@@ -1582,6 +1647,10 @@ namespace Infiniminer
                         }
                     }
 
+            //add bases
+            createBase(PlayerTeam.Red);
+            createBase(PlayerTeam.Blue);
+           
             for (int i = 0; i < MAPSIZE * 2; i++)
             {
                 DoStuff();
@@ -2222,7 +2291,7 @@ namespace Infiniminer
                                             {
                                                 InfiniminerSound sound = (InfiniminerSound)msgBuffer.ReadByte();
                                                 Vector3 position = msgBuffer.ReadVector3();
-                                                PlaySound(sound, position);
+                                                PlaySoundForEveryoneElse(sound, position,player);
                                             }
                                             break;
 
@@ -2522,6 +2591,10 @@ namespace Infiniminer
                                             }
                                             SetBlock(i, j, k, oldblock, PlayerTeam.None);
                                         }
+                                        else
+                                        {
+                                            PlaySound(InfiniminerSound.RockFall, new Vector3(i, j, k));
+                                        }
                                 }
                             }
                             else
@@ -2562,6 +2635,10 @@ namespace Infiniminer
                                             }
                                         }
                                         SetBlock(i, j, k, oldblock, PlayerTeam.None);
+                                    }
+                                    else
+                                    {
+                                        PlaySound(InfiniminerSound.RockFall, new Vector3(i,j,k));
                                     }
                             }
 
@@ -3360,11 +3437,19 @@ namespace Infiniminer
             Vector3 hitPoint = Vector3.Zero;
             Vector3 buildPoint = Vector3.Zero;
             if (!RayCollision(playerPosition, playerHeading, 2, 10, ref hitPoint, ref buildPoint, BlockType.Water))
+            {
+                //ConsoleWrite(player.Handle + " lost a block sync.");
                 return;
+            }
             ushort x = (ushort)hitPoint.X;
             ushort y = (ushort)hitPoint.Y;
             ushort z = (ushort)hitPoint.Z;
 
+            if (player.Alive == false)
+            {
+                //ConsoleWrite("fixed " + player.Handle + " synchronization");
+                SetBlockForPlayer(x, y, z, blockList[x, y, z], blockCreatorTeam[x, y, z], player);
+            }
             // Figure out what the result is.
             bool removeBlock = false;
             uint giveOre = 0;
@@ -3457,8 +3542,12 @@ namespace Infiniminer
             if (removeBlock)
             {
                 SetBlock(x, y, z, BlockType.None, PlayerTeam.None);
-
-                PlaySound(sound, player.Position);
+                PlaySoundForEveryoneElse(sound, player.Position, player);
+            }
+            else
+            {//player was out of sync, replace his empty block
+                //ConsoleWrite("fixed " + player.Handle + " synchronization");
+                SetBlockForPlayer(x, y, z, blockList[x, y, z], blockCreatorTeam[x, y, z], player);
             }
         }
 
@@ -4630,6 +4719,23 @@ namespace Infiniminer
             foreach (NetConnection netConn in playerList.Keys)
                 if (netConn.Status == NetConnectionStatus.Connected)
                     netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+        }
+
+        public void PlaySoundForEveryoneElse(InfiniminerSound sound, Vector3 position, Player p)
+        {
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.PlaySound);
+            msgBuffer.Write((byte)sound);
+            msgBuffer.Write(true);
+            msgBuffer.Write(position);
+            foreach (NetConnection netConn in playerList.Keys)
+                if (netConn.Status == NetConnectionStatus.Connected)
+                {
+                    if (playerList[netConn] != p)
+                    {
+                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+                    }
+                }
         }
 
         Thread updater;

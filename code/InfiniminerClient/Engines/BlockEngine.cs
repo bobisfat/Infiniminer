@@ -164,6 +164,18 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.BankFrontBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_front_blue"));
             blockTextures[(byte)BlockTexture.BankRightBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_right_blue"));
             blockTextures[(byte)BlockTexture.BankBackBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_back_blue"));
+            //base block
+            blockTextures[(byte)BlockTexture.BaseTopRed] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_top_red"));
+            blockTextures[(byte)BlockTexture.BaseLeftRed] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_left_red"));
+            blockTextures[(byte)BlockTexture.BaseFrontRed] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_front_red"));
+            blockTextures[(byte)BlockTexture.BaseRightRed] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_right_red"));
+            blockTextures[(byte)BlockTexture.BaseBackRed] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_back_red"));
+            blockTextures[(byte)BlockTexture.BaseTopBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_top_blue"));
+            blockTextures[(byte)BlockTexture.BaseLeftBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_left_blue"));
+            blockTextures[(byte)BlockTexture.BaseFrontBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_front_blue"));
+            blockTextures[(byte)BlockTexture.BaseRightBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_right_blue"));
+            blockTextures[(byte)BlockTexture.BaseBackBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_back_blue"));
+            //base block
             blockTextures[(byte)BlockTexture.TeleSideA] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_teleporter_a"));
             blockTextures[(byte)BlockTexture.TeleSideB] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_teleporter_b"));
             blockTextures[(byte)BlockTexture.TeleTop] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_teleporter_top"));
@@ -261,6 +273,25 @@ namespace Infiniminer
                 testPos += rayDirection * distance / searchGranularity;
                 BlockType testBlock = BlockAtPoint(testPos);
                 if (testBlock != BlockType.None && testBlock != BlockType.Water)
+                {
+                    hitPoint = testPos;
+                    buildPoint = buildPos;
+                    return true;
+                }
+                buildPos = testPos;
+            }
+            return false;
+        }
+
+        public bool RayCollision(Vector3 startPosition, Vector3 rayDirection, float distance, int searchGranularity, ref Vector3 hitPoint, ref Vector3 buildPoint, BlockType block)
+        {
+            Vector3 testPos = startPosition;
+            Vector3 buildPos = startPosition;
+            for (int i = 0; i < searchGranularity; i++)
+            {
+                testPos += rayDirection * distance / searchGranularity;
+                BlockType testBlock = BlockAtPoint(testPos);
+                if (testBlock != BlockType.None && testBlock != block)
                 {
                     hitPoint = testPos;
                     buildPoint = buildPos;

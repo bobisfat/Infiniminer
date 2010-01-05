@@ -21,6 +21,8 @@ namespace Infiniminer
         Shock,
         BankRed,
         BankBlue,
+        BaseRed,
+        BaseBlue,
         BeaconRed,
         BeaconBlue,
         Road,
@@ -77,6 +79,16 @@ namespace Infiniminer
         BankRightBlue,
         BankBackRed,
         BankBackBlue,
+        BaseTopRed,
+        BaseTopBlue,
+        BaseFrontRed,
+        BaseFrontBlue,
+        BaseLeftRed,
+        BaseLeftBlue,
+        BaseRightRed,
+        BaseRightBlue,
+        BaseBackRed,
+        BaseBackBlue,
         TeleTop,
         TeleBottom,
         TeleSideA,
@@ -239,6 +251,26 @@ namespace Infiniminer
                     }
 
                 case BlockType.BankBlue:
+                    switch (faceDir)
+                    {
+                        case BlockFaceDirection.XIncreasing: return BlockTexture.BankFrontBlue;
+                        case BlockFaceDirection.XDecreasing: return BlockTexture.BankBackBlue;
+                        case BlockFaceDirection.ZIncreasing: return BlockTexture.BankLeftBlue;
+                        case BlockFaceDirection.ZDecreasing: return BlockTexture.BankRightBlue;
+                        default: return BlockTexture.BankTopBlue;
+                    }
+
+                case BlockType.BaseRed:
+                    switch (faceDir)
+                    {
+                        case BlockFaceDirection.XIncreasing: return BlockTexture.BankFrontRed;
+                        case BlockFaceDirection.XDecreasing: return BlockTexture.BankBackRed;
+                        case BlockFaceDirection.ZIncreasing: return BlockTexture.BankLeftRed;
+                        case BlockFaceDirection.ZDecreasing: return BlockTexture.BankRightRed;
+                        default: return BlockTexture.BankTopRed;
+                    }
+
+                case BlockType.BaseBlue:
                     switch (faceDir)
                     {
                         case BlockFaceDirection.XIncreasing: return BlockTexture.BankFrontBlue;

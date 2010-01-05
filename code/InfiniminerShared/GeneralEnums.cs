@@ -81,6 +81,7 @@ namespace Infiniminer
         RadarLow,
         RadarHigh,
         RadarSwitch,
+        RockFall
     }
 
     public enum InfiniminerMessage : byte

@@ -35,6 +35,11 @@ namespace Infiniminer
             return Vector3.Transform(Vector3.Right, rotation);
         }
 
+        public Vector3 GetUpVector()
+        {
+            Matrix rotation = Matrix.CreateRotationX(Pitch) * Matrix.CreateRotationY(Yaw);
+            return Vector3.Transform(Vector3.Up, rotation);
+        }
         public void Update()
         {
             Vector3 target = Position + GetLookVector();
