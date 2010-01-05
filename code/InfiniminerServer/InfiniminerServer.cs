@@ -1486,6 +1486,10 @@ namespace Infiniminer
                 blockListContent[x, y, z, 2] = 0;//Is pipe a source? [0-1]
                 blockListContent[x, y, z, 3] = 0;//Pipes connected
                 blockListContent[x, y, z, 4] = 0;//Is pipe destination?
+                blockListContent[x, y, z, 5] = 0;//src x
+                blockListContent[x, y, z, 6] = 0;//src y
+                blockListContent[x, y, z, 7] = 0;//src z
+                blockListContent[x, y, z, 8] = 0;//pipe must not contain liquid
             }
             else if (blockType == BlockType.Compressor)
             {
@@ -2019,7 +2023,7 @@ namespace Infiniminer
                                                             player.Content[a] = 0;
                                                         }
                                                         break;
-                                                    case PlayerClass.Miner:
+                                                    case PlayerClass.Miner://berserker/charge that knocks people and blocks away/repairs block
                                                         player.OreMax = 200;
                                                         player.WeightMax = 8;
                                                         player.HealthMax = 400;
@@ -2029,7 +2033,7 @@ namespace Infiniminer
                                                             player.Content[a] = 0;
                                                         }
                                                         break;
-                                                    case PlayerClass.Prospector:
+                                                    case PlayerClass.Prospector://profiteer/has prospectron/stealth/climb/traps
                                                         player.OreMax = 200;
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
@@ -2040,7 +2044,7 @@ namespace Infiniminer
                                                             player.Content[a] = 0;
                                                         }
                                                         break;
-                                                    case PlayerClass.Sapper:
+                                                    case PlayerClass.Sapper://
                                                         player.OreMax = 200;
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
@@ -2895,9 +2899,8 @@ namespace Infiniminer
                             else if (blockList[i, j, k] == BlockType.Pipe) // Do pipe stuff
                             {
                                 // Check if pipe connected to a source
-                                int LiquidIn = 0;
+
                                 int PipesConnected = 0;
-                                int PipeIsSource = 0;
                                 BlockType PipeSourceLiquid = BlockType.None;
 
                                 for (ushort a = (ushort)(-1 + i); a < 2 + i; a++)
@@ -2908,29 +2911,54 @@ namespace Infiniminer
                                         {
                                             if (a > 0 && b > 0 && c > 0 && a < 64 && b < 64 && c < 64)
                                             {
-                                                if (a != i || b != j || c != k)
+                                                if (a == i && b == j && c == k)
+                                                {
+                                                }
+                                                else
                                                 {
                                                     if (blockList[a, b, c] == BlockType.Pipe)//Found a pipe surrounding this pipe
                                                     {
-                                                        if (blockListContent[a, b, c, 1] == 1)//Check if other pipe connected to a source
+                                                        if (blockListContent[a, b, c, 1] == 1 && (a == i || b == j || c == k))//Check if other pipe connected to a source
                                                         {
                                                             //ChainConnectedToSource = 1;
                                                             blockListContent[i, j, k, 1] = 1; //set as connected chain connected to source
                                                         }
+                                                        if (blockListContent[a, b, c, 5] > 0)// && blockListContent[i, j, k, 5] == 0)//this pipe knows the source! hook us up man.
+                                                        {
+                                                            blockListContent[i, j, k, 5] = blockListContent[a, b, c, 5];//record src 
+                                                            blockListContent[i, j, k, 6] = blockListContent[a, b, c, 6];
+                                                            blockListContent[i, j, k, 7] = blockListContent[a, b, c, 7];
+                                                           // ConsoleWrite("i" + i + "j" + j + "k" + k + " got src: " + blockListContent[a, b, c, 5] + "/" + blockListContent[a, b, c, 6] + "/" + blockListContent[a, b, c, 7]);
+                                                        }
+                                                        if (blockListContent[i, j, k, 5] > 0)
+                                                        {
+                                                            if (blockListContent[blockListContent[i, j, k, 5], blockListContent[i, j, k, 6], blockListContent[i, j, k, 7], 3] != 1)
+                                                            {//src no longer valid
+                                                                blockListContent[i, j, k, 5] = 0;
+                                                                ConsoleWrite("src negated");
+                                                            }
+                                                        }
+
                                                         PipesConnected += 1;
                                                         blockListContent[i, j, k, 3] = PipesConnected;// Set number of pipes connected to pipe
                                                     }
-                                                    if (blockList[a, b, c] == BlockType.Water || blockList[a, b, c] == BlockType.Lava)
+                                                    if (blockList[a, b, c] == BlockType.Water || blockList[a, b, c] == BlockType.Lava)//we are either the dst or src
                                                     {
                                                         PipeSourceLiquid = blockList[a, b, c];
                                                         blockListContent[i, j, k, 1] = 1; // Set as connected
                                                         //ChainConnectedToSource = 1;
-                                                        if (blockListContent[i, j, k, 4] != 1 && blockListContent[i, j, k, 3] == 1)
+                                                        if (blockListContent[i, j, k, 4] != 1 && blockListContent[i, j, k, 3] == 1)//too early to have full connection count here
                                                         {
                                                             blockListContent[i, j, k, 2] = 1;// Set as a source pipe
+
+                                                            blockListContent[i, j, k, 5] = i;
+                                                            blockListContent[i, j, k, 6] = j;
+                                                            blockListContent[i, j, k, 7] = k;//src happens to know itself to spread the love
+                                                            SetBlock(a, b, c, BlockType.None, PlayerTeam.None);
+                                                            blockListContent[i, j, k, 9] = (byte)(blockList[a, b, c]);
+                                                            blockListContent[i, j, k, 8] += 1;//liquidin
+                                                           // blockListContent[i, j, k, 8] = 0;//pipe starts with no liquid
                                                         }
-                                                        blockList[a, b, c] = BlockType.None;
-                                                        LiquidIn += 1;
                                                     }
                                                 }
                                             }
@@ -2942,20 +2970,23 @@ namespace Infiniminer
                                     blockListContent[i, j, k, 2] = 0;// Set as a source pipe
                                 }
 
-                                if ((blockListContent[i, j, k, 1] == 1) && (blockListContent[i, j, k, 3] == 1) && (blockListContent[i, j, k, 2] == 0))
+                                if (blockListContent[i, j, k, 1] == 1 && blockListContent[i, j, k, 3] == 1 && blockListContent[i, j, k, 2] == 0)
                                 {
                                     blockListContent[i, j, k, 4] = 1; //Set as a Destination Pipe
+                                    if(blockListContent[i,j,k,5] > 0)//do we know where the src is?
+                                    if (blockListContent[blockListContent[i, j, k, 5], blockListContent[i, j, k, 6], blockListContent[i, j, k, 7], 2] == 1 && blockList[blockListContent[i, j, k, 5], blockListContent[i, j, k, 6], blockListContent[i, j, k, 7]] == BlockType.Pipe)
                                     for (ushort bob = (ushort)(-1 + i); bob < 2 + i; bob++)
                                     {
                                         for (ushort fat = (ushort)(-1 + k); fat < 2 + k; fat++)
                                         {
                                             if (blockList[bob, j + 1, fat] == BlockType.None)
                                             {
-                                                if (LiquidIn > 0)
+                                                if (blockListContent[blockListContent[i, j, k, 5], blockListContent[i, j, k, 6], blockListContent[i, j, k, 7], 8] > 0)
                                                 {
                                                     //blockList[bob, j + 1, fat] = PipeSourceLiquid;
-                                                    blockList[bob, j + 1, fat] = BlockType.Water;
-                                                    LiquidIn -= 1;
+                                                    SetBlock(bob, (ushort)(j + 1), fat, BlockType.Water, PlayerTeam.None);// (BlockType)(blockListContent[blockListContent[i, j, k, 5], blockListContent[i, j, k, 6], blockListContent[i, j, k, 7], 9]), PlayerTeam.None);
+                                                    ConsoleWrite("pump attempt");
+                                                    blockListContent[blockListContent[i, j, k, 5], blockListContent[i, j, k, 6], blockListContent[i, j, k, 7], 8] -= 1;
                                                 }
                                             }
                                         }
@@ -4014,8 +4045,7 @@ namespace Infiniminer
         {
             if (blockList[x, y, z] == BlockType.Pipe)
             {
-                ConsoleWrite("clicked "+btn+" on pipe!");// do pipe
-                ConsoleWrite("Pipe Status - Chain connected to source:" + blockListContent[x, y, z, 1] + " Pipe is Source: " + blockListContent[x, y, z, 2] + " DstPipe: " + blockListContent[x, y, z, 4] + " Pipes Connected: " + blockListContent[x, y, z, 3]);
+                ConsoleWrite("Chain connected to src:" + blockListContent[x, y, z, 1] + " src: " + blockListContent[x, y, z, 2] + " dest: " + blockListContent[x, y, z, 4] + " Connections: " + blockListContent[x, y, z, 3]);
             }
             else if (blockList[x, y, z] == BlockType.Compressor)
             {
