@@ -2912,9 +2912,29 @@ namespace Infiniminer
                                             {
                                                 if (a == i && b == j && c == k)
                                                 {
+                                                    continue;
                                                 }
                                                 else
                                                 {
+                                                    if (blockList[a, b, c] == BlockType.Water || blockList[a, b, c] == BlockType.Lava)//we are either the dst or src
+                                                    {
+                                                        PipeSourceLiquid = blockList[a, b, c];
+                                                        blockListContent[i, j, k, 1] = 1; // Set as connected
+                                                        //ChainConnectedToSource = 1;
+                                                        if (blockListContent[i, j, k, 4] != 1 && blockListContent[i, j, k, 3] == 1)//too early to have full connection count here
+                                                        {
+                                                            blockListContent[i, j, k, 2] = 1;// Set as a source pipe
+
+                                                            blockListContent[i, j, k, 5] = i;
+                                                            blockListContent[i, j, k, 6] = j;
+                                                            blockListContent[i, j, k, 7] = k;//src happens to know itself to spread the love
+                                                            SetBlock(a, b, c, BlockType.None, PlayerTeam.None);
+                                                            blockListContent[i, j, k, 9] = (byte)(blockList[a, b, c]);
+                                                            blockListContent[i, j, k, 8] += 1;//liquidin
+                                                            // blockListContent[i, j, k, 8] = 0;//pipe starts with no liquid
+                                                        }
+                                                    }
+
                                                     if (blockList[a, b, c] == BlockType.Pipe)//Found a pipe surrounding this pipe
                                                     {
                                                         if (blockListContent[a, b, c, 1] == 1 && (a == i || b == j || c == k))//Check if other pipe connected to a source
@@ -2940,24 +2960,6 @@ namespace Infiniminer
 
                                                         PipesConnected += 1;
                                                         blockListContent[i, j, k, 3] = PipesConnected;// Set number of pipes connected to pipe
-                                                    }
-                                                    if (blockList[a, b, c] == BlockType.Water || blockList[a, b, c] == BlockType.Lava)//we are either the dst or src
-                                                    {
-                                                        PipeSourceLiquid = blockList[a, b, c];
-                                                        blockListContent[i, j, k, 1] = 1; // Set as connected
-                                                        //ChainConnectedToSource = 1;
-                                                        if (blockListContent[i, j, k, 4] != 1 && blockListContent[i, j, k, 3] == 1)//too early to have full connection count here
-                                                        {
-                                                            blockListContent[i, j, k, 2] = 1;// Set as a source pipe
-
-                                                            blockListContent[i, j, k, 5] = i;
-                                                            blockListContent[i, j, k, 6] = j;
-                                                            blockListContent[i, j, k, 7] = k;//src happens to know itself to spread the love
-                                                            SetBlock(a, b, c, BlockType.None, PlayerTeam.None);
-                                                            blockListContent[i, j, k, 9] = (byte)(blockList[a, b, c]);
-                                                            blockListContent[i, j, k, 8] += 1;//liquidin
-                                                           // blockListContent[i, j, k, 8] = 0;//pipe starts with no liquid
-                                                        }
                                                     }
                                                 }
                                             }
