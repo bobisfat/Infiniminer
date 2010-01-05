@@ -673,9 +673,6 @@ namespace Infiniminer
 
             // Figure out what the result is.
             bool removeBlock = false;
-            uint giveOre = 0;
-            uint giveCash = 0;
-            uint giveWeight = 0;
 
             InfiniminerSound sound = InfiniminerSound.DigDirt;
 
