@@ -2038,7 +2038,6 @@ namespace Infiniminer
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        player.Content = new int[50];
                                                         for (int a = 0; a < 50; a++)
                                                         {
                                                             player.Content[a] = 0;
