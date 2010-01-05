@@ -2937,29 +2937,44 @@ namespace Infiniminer
 
                                                     if (blockList[a, b, c] == BlockType.Pipe)//Found a pipe surrounding this pipe
                                                     {
-                                                        if (blockListContent[a, b, c, 1] == 1 && (a == i || b == j || c == k))//Check if other pipe connected to a source
+                                                        if ((a == (ushort)(i + 1) || a == (ushort)(i - 1) || a == (ushort)(i)) && b != j && c != k)
                                                         {
-                                                            //ChainConnectedToSource = 1;
-                                                            blockListContent[i, j, k, 1] = 1; //set as connected chain connected to source
+                                                            continue;
                                                         }
-                                                        if (blockListContent[a, b, c, 5] > 0)// && blockListContent[i, j, k, 5] == 0)//this pipe knows the source! hook us up man.
+                                                        else if (a != i && (b == (ushort)(j + 1) || b == (ushort)(j - 1) || b == (ushort)(j)) && c != k)
                                                         {
-                                                            blockListContent[i, j, k, 5] = blockListContent[a, b, c, 5];//record src 
-                                                            blockListContent[i, j, k, 6] = blockListContent[a, b, c, 6];
-                                                            blockListContent[i, j, k, 7] = blockListContent[a, b, c, 7];
-                                                           // ConsoleWrite("i" + i + "j" + j + "k" + k + " got src: " + blockListContent[a, b, c, 5] + "/" + blockListContent[a, b, c, 6] + "/" + blockListContent[a, b, c, 7]);
+                                                            continue;
                                                         }
-                                                        if (blockListContent[i, j, k, 5] > 0)
+                                                        else if (a != i && b != j && (c == (ushort)(k + 1) || c == (ushort)(k - 1) || c == (ushort)(k)))
+                                                       {
+                                                            continue;
+                                                        }
+                                                        if (blockList[a, b, c] == BlockType.Pipe)//Found a pipe surrounding this pipe
                                                         {
-                                                            if (blockListContent[blockListContent[i, j, k, 5], blockListContent[i, j, k, 6], blockListContent[i, j, k, 7], 3] != 1)
-                                                            {//src no longer valid
-                                                                blockListContent[i, j, k, 5] = 0;
-                                                                ConsoleWrite("src negated");
+                                                            if (blockListContent[a, b, c, 1] == 1 && (a == i || b == j || c == k))//Check if other pipe connected to a source
+                                                            {
+                                                                //ChainConnectedToSource = 1;
+                                                                blockListContent[i, j, k, 1] = 1; //set as connected chain connected to source
                                                             }
-                                                        }
+                                                            if (blockListContent[a, b, c, 5] > 0)// && blockListContent[i, j, k, 5] == 0)//this pipe knows the source! hook us up man.
+                                                            {
+                                                                blockListContent[i, j, k, 5] = blockListContent[a, b, c, 5];//record src 
+                                                                blockListContent[i, j, k, 6] = blockListContent[a, b, c, 6];
+                                                                blockListContent[i, j, k, 7] = blockListContent[a, b, c, 7];
+                                                                // ConsoleWrite("i" + i + "j" + j + "k" + k + " got src: " + blockListContent[a, b, c, 5] + "/" + blockListContent[a, b, c, 6] + "/" + blockListContent[a, b, c, 7]);
+                                                            }
+                                                            if (blockListContent[i, j, k, 5] > 0)
+                                                            {
+                                                                if (blockListContent[blockListContent[i, j, k, 5], blockListContent[i, j, k, 6], blockListContent[i, j, k, 7], 3] != 1)
+                                                                {//src no longer valid
+                                                                    blockListContent[i, j, k, 5] = 0;
+                                                                    ConsoleWrite("src negated");
+                                                                }
+                                                            }
 
-                                                        PipesConnected += 1;
-                                                        blockListContent[i, j, k, 3] = PipesConnected;// Set number of pipes connected to pipe
+                                                            PipesConnected += 1;
+                                                            blockListContent[i, j, k, 3] = PipesConnected;// Set number of pipes connected to pipe
+                                                        }
                                                     }
                                                 }
                                             }
