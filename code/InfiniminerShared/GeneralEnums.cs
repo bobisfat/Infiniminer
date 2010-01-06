@@ -91,6 +91,10 @@ namespace Infiniminer
         UseTool,                // position, heading, tool, blocktype 
         SelectClass,            // class
         ResourceUpdate,         // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash: ReliableInOrder1
+        HealthUpdate,
+        WeightUpdate,
+        ContentUpdate,          // sends all player.content to player
+        ContentSpecificUpdate,   //sends a single content update to a player
         DepositOre,
         DepositCash,
         WithdrawOre,

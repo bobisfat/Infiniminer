@@ -24,7 +24,7 @@ namespace Infiniminer
         public PlayerEngine playerEngine = null;
         public SkyplaneEngine skyplaneEngine = null;
         public ParticleEngine particleEngine = null;
-
+        
         // Network stuff.
         public NetClient netClient = null;
         public Dictionary<uint, Player> playerList = new Dictionary<uint, Player>();
@@ -129,7 +129,6 @@ namespace Infiniminer
             playerEngine = new PlayerEngine(gameInstance);
             skyplaneEngine = new SkyplaneEngine(gameInstance);
             particleEngine = new ParticleEngine(gameInstance);
-
             // Create a camera.
             playerCamera = new Camera(gameInstance.GraphicsDevice);
 
@@ -533,7 +532,7 @@ namespace Infiniminer
                 PlayerTools.Detonator,
                 PlayerTools.SpawnItem };
 
-                playerBlocks = new BlockType[16] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[17] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
@@ -548,7 +547,7 @@ namespace Infiniminer
                                              //BlockType.Lava,
                                              //BlockType.Dirt, 
                                              //BlockType.Controller,
-                                             //BlockType.Generator,
+                                             BlockType.Lever,
                                              BlockType.Pump,
                                              BlockType.Compressor,
                                              BlockType.Pipe,
@@ -926,6 +925,10 @@ namespace Infiniminer
             else if (blockType == BlockType.Compressor)
             {
                 return "8: Compress/Decompress";
+            }
+            else if (blockType == BlockType.Lever)
+            {
+                return "8: Pull Lever 9: Link";
             }
             return "";
         }

@@ -649,24 +649,9 @@ namespace Infiniminer.States
                         _P.DepositOre();
                         _P.PlaySound(InfiniminerSound.ClickHigh);
                     }
-                    else if (targetd == BlockType.Pump)
+                    else
                     {
                         _P.PlayerInteract(1);
-                        _P.PlaySound(InfiniminerSound.ClickHigh);
-                    }
-                    else if (targetd == BlockType.Compressor)
-                    {
-                        _P.PlayerInteract(1);
-                        _P.PlaySound(InfiniminerSound.ClickHigh);
-                    }
-                    else if (targetd == BlockType.Generator)
-                    {
-                        _P.PlayerInteract(1);
-                        _P.PlaySound(InfiniminerSound.ClickHigh);
-                    }
-                    else if (targetd == BlockType.Pipe)
-                    {
-                        _P.PlayerInteract(1);//press button 1
                         _P.PlaySound(InfiniminerSound.ClickHigh);
                     }
                     break;
@@ -677,24 +662,9 @@ namespace Infiniminer.States
                         _P.WithdrawOre();
                         _P.PlaySound(InfiniminerSound.ClickHigh);
                     }
-                    else if (targetw == BlockType.Pump)
+                    else
                     {
                         _P.PlayerInteract(2);
-                        _P.PlaySound(InfiniminerSound.ClickHigh);
-                    }
-                    else if (targetw == BlockType.Compressor)
-                    {
-                        _P.PlayerInteract(2);
-                        _P.PlaySound(InfiniminerSound.ClickHigh);
-                    }
-                    else if (targetw == BlockType.Generator)
-                    {
-                        _P.PlayerInteract(2);
-                        _P.PlaySound(InfiniminerSound.ClickHigh);
-                    }
-                    else if (targetw == BlockType.Pipe)
-                    {
-                        _P.PlayerInteract(2);//press button 1
                         _P.PlaySound(InfiniminerSound.ClickHigh);
                     }
                     break;

@@ -48,9 +48,31 @@ namespace Infiniminer
             effect.End();
         }
 
-        public void DrawLine(Vector3 posStart, Vector3 posEnd, Color color)
+        public void DrawLine(Vector3 posStart, Vector3 posEnd, Color color, short points)
         {
             
+
+            //BasicEffect basicEffect;
+            //basicEffect.VertexColorEnabled = true;
+
+            VertexPositionColor[] pointList = new VertexPositionColor[2];
+            pointList[0] = new VertexPositionColor(posStart, Color.Red);
+            pointList[1] = new VertexPositionColor(posEnd, Color.Red);
+            int[] lineListIndices = new int[2];
+            lineListIndices = new int[2];
+            lineListIndices[0] = 0;
+            lineListIndices[1] = 1;
+
+            // Populate the array with references to indices in the vertex buffer
+            //for (int i = 0; i < points - 1; i++)
+            //{
+            //    lineListIndices[i * 2] = (short)(i);
+            //    lineListIndices[(i * 2) + 1] = (short)(i + 1);
+            //}
+
+            //lineListIndices = new short[14]{ 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7 };
+
+            graphicsDevice.DrawUserIndexedPrimitives<VertexPositionColor>(PrimitiveType.LineList, pointList, 0, 2, lineListIndices, 0, 2 );
         }
 
         public VertexPositionColor[] ConstructSphereVertices(Vector3 position, float radius, Color color)

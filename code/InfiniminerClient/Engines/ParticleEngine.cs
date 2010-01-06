@@ -13,6 +13,76 @@ using Microsoft.Xna.Framework.Storage;
 
 namespace Infiniminer
 {
+    class CylinderDrawingComponent
+    {
+        private static Model cylModel;
+        private static BasicEffect effect;
+        private static GraphicsDevice graphicsDevice;
+
+        public static void Load(ContentManager content, GraphicsDevice gDevice)
+        {
+            graphicsDevice = gDevice;
+            cylModel = content.Load<Model>("Content/basketball");
+            effect = new BasicEffect(gDevice, null);
+        }
+
+        private struct Cylinder
+        {
+            public Vector3 start;
+            public Vector3 end;
+
+            public Cylinder(Vector3 start, Vector3 end)
+            {
+                this.start = start;
+                this.end = end;
+            }
+        }
+
+        private static Queue<Cylinder> cylQueue = new Queue<Cylinder>();
+
+        public static void AddLine(Vector3 start, Vector3 end)
+        {
+            cylQueue.Enqueue(new Cylinder(start, end));
+        }
+
+        public static void Draw(Matrix View, Matrix Projection)
+        {
+            if (cylQueue.Count > 0)
+            {
+                for (int i = 0; i < cylQueue.Count; i++)
+                {
+                    Cylinder cyl = cylQueue.Dequeue();
+                    Matrix world = Matrix.Identity;
+                    float distScale = .2f * 2;
+                    float width = 1f;
+                    float height = 1f;
+                    float distance = Vector3.Distance(cyl.end, cyl.start);
+                    Vector3 direction = Vector3.Normalize(cyl.end - cyl.start);
+
+                    bool doFor = Math.Abs(Vector3.Dot(direction, Vector3.Up)) < .999f;
+
+                    Matrix connector_matrix = Matrix.CreateScale(width, height, distance * distScale) *
+                        Matrix.CreateWorld(Vector3.Zero, -direction, doFor ? Vector3.UnitX : Vector3.Up);
+                    connector_matrix.Translation = cyl.start;
+
+                    world = connector_matrix;
+                    foreach (ModelMesh mesh in cylModel.Meshes)
+                    {
+                        foreach (BasicEffect effect in mesh.Effects)
+                        {
+                            effect.World = world;
+                            //effect.EnableDefaultLighting(); 
+                            effect.View = View;
+                            effect.Projection = Projection;
+                        }
+                        mesh.Draw();
+                    }
+
+                }
+            }
+        }
+    } 
+
     public class Particle
     {
         public Vector3 Position;

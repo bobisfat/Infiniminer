@@ -1622,7 +1622,7 @@ namespace Infiniminer
             // Create our block world, translating the coordinates out of the cave generator (where Z points down)
             BlockType[, ,] worldData = CaveGenerator.GenerateCaveSystem(MAPSIZE, includeLava, oreFactor, includeWater);
             blockList = new BlockType[MAPSIZE, MAPSIZE, MAPSIZE];
-            blockListContent = new Int32[MAPSIZE, MAPSIZE, MAPSIZE, 20];
+            blockListContent = new Int32[MAPSIZE, MAPSIZE, MAPSIZE, 50];
             blockCreatorTeam = new PlayerTeam[MAPSIZE, MAPSIZE, MAPSIZE];
             for (ushort i = 0; i < MAPSIZE; i++)
                 for (ushort j = 0; j < MAPSIZE; j++)
@@ -2124,6 +2124,7 @@ namespace Infiniminer
                                                         break;
                                                 }
                                                 SendResourceUpdate(player);
+                                                SendContentUpdate(player);
                                             }
                                             break;
 
@@ -2236,7 +2237,7 @@ namespace Infiniminer
                                                         player.Health = 0;
                                                         player.Alive = false;
 
-                                                        SendResourceUpdate(player);
+                                                        SendHealthUpdate(player);
                                                         SendPlayerDead(player);
                                                     }
                                                 }
@@ -2256,13 +2257,13 @@ namespace Infiniminer
                                                 uint btny = msgBuffer.ReadUInt32();
                                                 uint btnz = msgBuffer.ReadUInt32();
 
-                                                if (blockList[btnx, btny, btnz] == BlockType.Pump || blockList[btnx, btny, btnz] == BlockType.Pipe || blockList[btnx, btny, btnz] == BlockType.Generator || blockList[btnx, btny, btnz] == BlockType.Compressor)
-                                                {
+                                                //if (blockList[btnx, btny, btnz] == BlockType.Pump || blockList[btnx, btny, btnz] == BlockType.Pipe || blockList[btnx, btny, btnz] == BlockType.Generator || blockList[btnx, btny, btnz] == BlockType.Compressor || blockList[btnx, btny, btnz] == BlockType.Switch)
+                                                //{
                                                     if (Get3DDistance((int)btnx, (int)btny, (int)btnz, (int)player.Position.X, (int)player.Position.Y, (int)player.Position.Z) < 4)
                                                     {
                                                         PlayerInteract(player,btn, btnx, btny, btnz);
                                                     }
-                                                }
+                                                //}
                                             }
                                             break;
                                         case InfiniminerMessage.DepositOre:
@@ -2352,7 +2353,7 @@ namespace Infiniminer
                             else
                             {
                                 p.Health = p.Health + 1;
-                                SendResourceUpdate(p);
+                                SendHealthUpdate(p);
                             }
                     }
 
@@ -2500,7 +2501,7 @@ namespace Infiniminer
                 for (ushort j = 0; j < MAPSIZE; j++)
                     for (ushort k = 0; k < MAPSIZE; k++)
                     {
-                        //gravity
+                        //gravity //needs to readd the block for processing, its missing on certain gravity changes
                         if (blockListContent[i, j, k, 10] > 0)
                         if (frameid != blockListContent[i, j, k, 10])
                         {// divide acceleration vector by 100 to create ghetto float vector
@@ -2805,7 +2806,7 @@ namespace Infiniminer
                                             blockListContent[i, j - 1, k, 0] = 480;//two minutes @ 250ms 
                                         }
                                     }
-                                }
+                                }//actual water/liquid calculations
                                 if (typeBelow != BlockType.None && typeBelow != liquid)//none//trying radius fill
                                 {
                                     for (ushort a = (ushort)(i - 1); a < i + 2; a++)
@@ -3684,7 +3685,7 @@ namespace Infiniminer
                     if (player.Weight < player.WeightMax)
                     {
                         player.Weight = Math.Min(player.Weight + giveWeight, player.WeightMax);
-                        SendResourceUpdate(player);
+                        SendWeightUpdate(player);
                     }
                     else
                     {
@@ -3721,7 +3722,7 @@ namespace Infiniminer
 
                     }
 
-                    SendResourceUpdate(player);
+                    SendContentSpecificUpdate(player,5);
                     SetBlock(x, y, z, BlockType.None, PlayerTeam.None);
                     PlaySound(sound, player.Position);
                 }
@@ -3739,7 +3740,8 @@ namespace Infiniminer
                         SetBlock(bx, by, bz, block, PlayerTeam.None);
                         player.Weight -= 1;
                         player.Content[5] = 0;
-                        SendResourceUpdate(player);
+                        SendWeightUpdate(player);
+                        SendContentSpecificUpdate(player, 5);
                         for (uint cc = 0; cc < 20; cc++)//copy the content values
                         {
                             blockListContent[bx, by, bz, cc] = player.Content[6 + cc];
@@ -3959,6 +3961,7 @@ namespace Infiniminer
                 blockType == BlockType.Pipe ||
                 blockType == BlockType.Pump ||
                 blockType == BlockType.Compressor ||
+                blockType == BlockType.Lever ||
                 blockType == BlockType.Controller ||
                 blockType == BlockType.Water ||
                 blockType == BlockType.StealthBlockB ||
@@ -4180,28 +4183,161 @@ namespace Infiniminer
                     DetonateAtPoint(x, y, z);
             }
         }
-
-        public void PlayerInteract(Player player, uint btn, uint x, uint y, uint z)
+        
+        public bool Trigger(int x, int y, int z, int ox, int oy, int oz, int btn, Player player)
         {
+            //if object can be manipulated by levers, it should always return true if the link should remain persistent
+            //if the Trigger function returns false, it will remove the link
+            if (player != null)
+            if (player.Content[2] > 0)//player is attempting to link something
+            {
+                if (x == player.Content[2] && y == player.Content[3] && z == player.Content[4])
+                {
+                    player.Content[2] = 0;
+                    player.Content[3] = 0;
+                    player.Content[4] = 0;
+                    SendContentSpecificUpdate(player, 2);
+                    SendContentSpecificUpdate(player, 3);
+                    SendContentSpecificUpdate(player, 4);
+                    SendServerMessageToPlayer("Cancelled link.", player.NetConn);
+                    return true;
+                }
+                int nb = 0;
+                for (nb = 2; nb < 7; nb++)
+                {
+                    if (blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6] == 0)
+                    {
+                        break;
+                    }
+                    else if (blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 1] == x && blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 2] == y && blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 3] == z)
+                    {
+
+
+                        blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6] = 0;
+                        blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 1] = 0;
+                        blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 2] = 0;
+                        blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 3] = 0;
+                        blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 4] = 0;//unlinked
+
+                        player.Content[2] = 0;
+                        player.Content[3] = 0;
+                        player.Content[4] = 0;
+                        SendContentSpecificUpdate(player, 2);
+                        SendContentSpecificUpdate(player, 3);
+                        SendContentSpecificUpdate(player, 4);
+
+                        SendServerMessageToPlayer(blockList[x, y, z] + " was unlinked.", player.NetConn);
+
+                        return true;
+                    }
+                }
+
+                if (nb != 7)//didnt hit end of switch-link limit
+                {//should check teams and connection to itself
+                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 1] = (int)(x);
+                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 2] = (int)(y);
+                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 3] = (int)(z);
+                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 4] = (int)(btn);
+                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6] = 100;
+                    SendServerMessageToPlayer(blockList[player.Content[2], player.Content[3], player.Content[4]] + " link action " + btn + " on " + blockList[x, y, z] + ".", player.NetConn);
+
+                    player.Content[2] = 0;
+                    player.Content[3] = 0;
+                    player.Content[4] = 0;
+                    SendContentSpecificUpdate(player, 2);
+                    SendContentSpecificUpdate(player, 3);
+                    SendContentSpecificUpdate(player, 4);
+                }
+                else
+                {
+                    SendServerMessageToPlayer("Lever is too overloaded to link more objects.", player.NetConn);
+                    player.Content[2] = 0;
+                    player.Content[3] = 0;
+                    player.Content[4] = 0;
+                    SendContentSpecificUpdate(player, 2);
+                    SendContentSpecificUpdate(player, 3);
+                    SendContentSpecificUpdate(player, 4);
+                }
+                return true;
+            }
+
+            //beginning of trigger actions
             if (blockList[x, y, z] == BlockType.Pipe)
             {
                 ConsoleWrite("Chain connected to src:" + blockListContent[x, y, z, 1] + " src: " + blockListContent[x, y, z, 2] + " dest: " + blockListContent[x, y, z, 4] + " Connections: " + blockListContent[x, y, z, 3]);
             }
-            else if (blockList[x, y, z] == BlockType.Compressor)
+            else if (blockList[x, y, z] == BlockType.Lever)
             {
                 if (btn == 1)
                 {
-                    if (blockListContent[x, y, z, 0] == 0)
+                    if (player != null)
+                    SendServerMessageToPlayer("You pull the lever!", player.NetConn);
+
+                    if (blockListContent[x, y, z, 0] == 0)//not falling
                     {
-                        ConsoleWrite("Compressing!");
-                        blockListContent[x, y, z, 0] = 1;
+                        for (int a = 2; a < 7; a++)
+                        {
+                            if (blockListContent[x, y, z, a * 6] > 0)
+                            {
+                                int bx = blockListContent[x, y, z, a * 6 + 1];
+                                int by = blockListContent[x, y, z, a * 6 + 2];
+                                int bz = blockListContent[x, y, z, a * 6 + 3];
+                                int bbtn = blockListContent[x, y, z, a * 6 + 4];
+
+                                if (Trigger(bx, by, bz, x, y, z, bbtn, null) == false)
+                                {
+                                    //trigger returned no result, delete the link
+                                    blockListContent[x, y, z, a * 6] = 0;
+                                    blockListContent[x, y, z, a * 6 + 1] = 0;
+                                    blockListContent[x, y, z, a * 6 + 2] = 0;
+                                    blockListContent[x, y, z, a * 6 + 3] = 0;
+                                    blockListContent[x, y, z, a * 6 + 4] = 0;
+                                }
+                            }
+                        }
                     }
-                    else
+
+                }
+                else if (btn == 2)
+                {
+                    if (player != null)//only a player can invoke this action
                     {
-                        ConsoleWrite("Decompressing!");
-                        blockListContent[x, y, z, 0] = 0;
+                        int nb = 0;
+                        for (nb = 2; nb < 7; nb++)
+                        {
+                            if (blockListContent[x, y, z, nb * 6] == 0)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (nb != 7)//didnt hit end of switch-link limit
+                        {
+
+                            SendServerMessageToPlayer("You are now linking objects.", player.NetConn);
+
+                            player.Content[2] = (int)(x);//player is creating a link to this switch
+                            player.Content[3] = (int)(y);
+                            player.Content[4] = (int)(z);
+                            SendContentSpecificUpdate(player, 2);
+                            SendContentSpecificUpdate(player, 3);
+                            SendContentSpecificUpdate(player, 4);
+                        }
+                        else
+                        {
+                            SendServerMessageToPlayer("This lever is overloaded, you are now unlinking objects.", player.NetConn);
+
+                            player.Content[2] = (int)(x);//player is creating a link to this switch
+                            player.Content[3] = (int)(y);
+                            player.Content[4] = (int)(z);
+                            SendContentSpecificUpdate(player, 2);
+                            SendContentSpecificUpdate(player, 3);
+                            SendContentSpecificUpdate(player, 4);
+
+                        }
                     }
                 }
+                return true;
             }
             else if (blockList[x, y, z] == BlockType.Pump)
             {
@@ -4209,12 +4345,17 @@ namespace Infiniminer
                 {
                     if (blockListContent[x, y, z, 0] == 0)
                     {
-                        ConsoleWrite("Pump on!");
+
+                        if (player != null)
+                            SendServerMessageToPlayer(blockList[x, y, z] + " activated.", player.NetConn);
+
                         blockListContent[x, y, z, 0] = 1;
                     }
                     else
                     {
-                        ConsoleWrite("Pump off!");
+                        if (player != null)
+                            SendServerMessageToPlayer(blockList[x, y, z] + " deactivated.", player.NetConn);
+
                         blockListContent[x, y, z, 0] = 0;
                     }
                 }
@@ -4224,7 +4365,8 @@ namespace Infiniminer
                     {
                         blockListContent[x, y, z, 1] += 1;
 
-                        ConsoleWrite("Rotated to:" + blockListContent[x, y, z, 1]);
+                        if (player != null)
+                            SendServerMessageToPlayer(blockList[x, y, z] + " rotated to " + blockListContent[x, y, z, 1], player.NetConn);
 
                         if (blockListContent[x, y, z, 1] == 1)
                         {
@@ -4270,7 +4412,9 @@ namespace Infiniminer
                     else
                     {
                         blockListContent[x, y, z, 1] = 0;//reset rotation
-                        ConsoleWrite("Rotated to:" + blockListContent[x, y, z, 1]);
+
+                        if (player != null)
+                            SendServerMessageToPlayer(blockList[x, y, z] + " rotated to " + blockListContent[x, y, z, 1], player.NetConn);
 
                         blockListContent[x, y, z, 2] = 0;//x input
                         blockListContent[x, y, z, 3] = -1;//y input
@@ -4281,12 +4425,67 @@ namespace Infiniminer
                         //pulls from below, pumps straight up
                     }
                 }
+                return true;
             }
-            else
+            else if (blockList[x, y, z] == BlockType.Compressor)
             {
-                ConsoleWrite("clicked " + btn + " on random block!");
+                if (btn == 1)
+                {
+                    if (blockListContent[x, y, z, 0] == 0)
+                    {
+                        if (player != null)
+                        SendServerMessageToPlayer("Compressing!", player.NetConn);
+
+                        blockListContent[x, y, z, 0] = 1;
+                    }
+                    else
+                    {
+                        if (player != null)
+                        SendServerMessageToPlayer("Decompressing!", player.NetConn);
+
+                        blockListContent[x, y, z, 0] = 0;
+                    }
+                }
+                return true;
             }
-           //do stuff 
+
+            if (blockList[x, y, z] != BlockType.None && blockList[x, y, z] != BlockType.Water && blockList[x, y, z] != BlockType.Lava && blockList[x, y, z] != BlockType.Lever && player == null)
+            {
+                //activated by a lever?
+                Vector3 originVector = new Vector3(x, y, z);
+                Vector3 destVector = new Vector3(ox, oy, oz);
+
+                Vector3 finalVector = destVector - originVector;
+                finalVector.Normalize();
+                blockListContent[x, y, z, 10] = 1;
+                blockListContent[x, y, z, 11] = (int)(finalVector.X * 100);
+                blockListContent[x, y, z, 12] = (int)(finalVector.Y * 100) + 50;
+                blockListContent[x, y, z, 13] = (int)(finalVector.Z * 100);
+                blockListContent[x, y, z, 14] = x * 100;
+                blockListContent[x, y, z, 15] = y * 100;
+                blockListContent[x, y, z, 16] = z * 100;
+
+                if (blockList[ox, oy, oz] == BlockType.Lever)
+                {
+                    for (int a = 1; a < 7; a++)
+                    {
+                        if (blockListContent[ox, oy, oz, a * 6] > 0)
+                        {
+                            if (blockListContent[ox, oy, oz, a * 6 + 1] == x && blockListContent[ox, oy, oz, a * 6 + 2] == y && blockListContent[ox, oy, oz, a * 6 + 3] == z)
+                            {
+                                return false;//this removes link from switch
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        public void PlayerInteract(Player player, uint btn, uint x, uint y, uint z)
+        {
+            Trigger((int)(x), (int)(y), (int)(z), 0, 0, 0, (int)(btn), player);
+            //we're not sending players origin or range checking currently
         }
 
         public void DepositOre(Player player)
@@ -4424,7 +4623,62 @@ namespace Infiniminer
             msgBuffer.Write((uint)teamCashBlue);
             msgBuffer.Write((uint)player.Health);
             msgBuffer.Write((uint)player.HealthMax);
-            msgBuffer.Write((int)player.Content[5]);
+           // msgBuffer.Write((int)player.Content[5]);
+            netServer.SendMessage(msgBuffer, player.NetConn, NetChannel.ReliableInOrder1);
+        }
+
+        public void SendContentUpdate(Player player)
+        {
+            if (player.NetConn.Status != NetConnectionStatus.Connected)
+                return;
+
+            // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash, all uint
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.ContentUpdate);
+
+            for(int a = 0;a < 50; a++)
+            msgBuffer.Write((int)(player.Content[a]));
+
+            netServer.SendMessage(msgBuffer, player.NetConn, NetChannel.ReliableInOrder1);
+        }
+
+        public void SendHealthUpdate(Player player)
+        {
+            if (player.NetConn.Status != NetConnectionStatus.Connected)
+                return;
+
+            // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash, all uint
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.HealthUpdate);
+            msgBuffer.Write(player.Health);
+
+
+            netServer.SendMessage(msgBuffer, player.NetConn, NetChannel.ReliableInOrder1);
+        }
+
+        public void SendWeightUpdate(Player player)
+        {
+            if (player.NetConn.Status != NetConnectionStatus.Connected)
+                return;
+
+            // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash, all uint
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.WeightUpdate);
+            msgBuffer.Write(player.Weight);
+
+            netServer.SendMessage(msgBuffer, player.NetConn, NetChannel.ReliableInOrder1);
+        }
+        public void SendContentSpecificUpdate(Player player, int s)
+        {
+            if (player.NetConn.Status != NetConnectionStatus.Connected)
+                return;
+
+            // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash, all uint
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.ContentSpecificUpdate);
+            msgBuffer.Write((int)(s));
+            msgBuffer.Write((int)(player.Content[s]));
+
             netServer.SendMessage(msgBuffer, player.NetConn, NetChannel.ReliableInOrder1);
         }
 

@@ -314,14 +314,39 @@ namespace Infiniminer
                                             propertyBag.teamBlueCash = msgBuffer.ReadUInt32();
                                             propertyBag.playerHealth = msgBuffer.ReadUInt32();
                                             propertyBag.playerHealthMax = msgBuffer.ReadUInt32();
-                                            propertyBag.Content[5] = msgBuffer.ReadInt32();
+                                        }
+                                        break;
+
+                                    case InfiniminerMessage.HealthUpdate:
+                                        {
+                                            propertyBag.playerHealth = msgBuffer.ReadUInt32();
+                                        }
+                                        break;
+                                    case InfiniminerMessage.WeightUpdate:
+                                        {
+                                            propertyBag.playerWeight = msgBuffer.ReadUInt32();                                           
+                                        }
+                                        break;
+                                    case InfiniminerMessage.ContentUpdate:
+                                        {
+                                            //update all player content values
+                                            for (int a = 0; a < 50; a++)
+                                            {
+                                                propertyBag.Content[a] = msgBuffer.ReadInt32();
+                                            }
+                                        }
+                                        break;
+                                    case InfiniminerMessage.ContentSpecificUpdate:
+                                        {
+                                            // update specific value
+                                            int val = msgBuffer.ReadInt32();
+                                            propertyBag.Content[val] = msgBuffer.ReadInt32();
                                         }
                                         break;
                                     case InfiniminerMessage.PlayerPosition:
                                         {
                                             // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash, all uint
                                             propertyBag.playerPosition = msgBuffer.ReadVector3();
-                                           
                                         }
                                         break;
                                     case InfiniminerMessage.BlockSet:

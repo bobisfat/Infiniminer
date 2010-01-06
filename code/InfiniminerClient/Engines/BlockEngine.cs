@@ -204,7 +204,7 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.TrapR] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_dirt"));
             blockTextures[(byte)BlockTexture.TrapVis] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_trapVis"));
             blockTextures[(byte)BlockTexture.Magma] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_magma"));
-
+            blockTextures[(byte)BlockTexture.Lever] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism"));
             // Load our effects.
             basicEffect = gameInstance.Content.Load<Effect>("effect_basic");
 
@@ -330,13 +330,39 @@ namespace Infiniminer
                     if (vertexListDirty[(byte)blockTexture, r])
                         continue;
 
-                    // Actually render.
+                     // Actually render.
                     RenderVertexList(graphicsDevice, regionBuffer, blockTextures[(byte)blockTexture].Texture, blockTextures[(byte)blockTexture].LODColor, renderTranslucent, blockTexture, (float)gameTime.TotalRealTime.TotalSeconds);
                 }
 
             // Apply posteffects.
             if (bloomPosteffect != null)
                 bloomPosteffect.Draw(graphicsDevice);
+        }
+
+        public void DrawLine(GraphicsDevice graphicsDevice, Vector3 posStart, Vector3 posEnd, Color color, short points)
+        {
+
+            //BasicEffect basicEffect;
+            //basicEffect.VertexColorEnabled = true;
+
+            VertexPositionColor[] pointList = new VertexPositionColor[2];
+            pointList[0] = new VertexPositionColor(posStart, Color.Red);
+            pointList[1] = new VertexPositionColor(posEnd, Color.Red);
+            int[] lineListIndices = new int[2];
+            lineListIndices = new int[2];
+            lineListIndices[0] = 0;
+            lineListIndices[1] = 1;
+
+            // Populate the array with references to indices in the vertex buffer
+            //for (int i = 0; i < points - 1; i++)
+            //{
+            //    lineListIndices[i * 2] = (short)(i);
+            //    lineListIndices[(i * 2) + 1] = (short)(i + 1);
+            //}
+
+            //lineListIndices = new short[14]{ 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7 };
+
+            graphicsDevice.DrawUserIndexedPrimitives<VertexPositionColor>(PrimitiveType.LineList, pointList, 0, 2, lineListIndices, 0, 1);
         }
 
         private void RenderVertexList(GraphicsDevice graphicsDevice, DynamicVertexBuffer vertexBuffer, Texture2D blockTexture, Color lodColor, bool renderTranslucent, BlockTexture blocktex, float elapsedTime)
@@ -357,6 +383,8 @@ namespace Infiniminer
             basicEffect.Parameters["xProjection"].SetValue(gameInstance.propertyBag.playerCamera.ProjectionMatrix);
             basicEffect.Parameters["xTexture"].SetValue(blockTexture);
             basicEffect.Parameters["xLODColor"].SetValue(lodColor.ToVector3());
+
+
             basicEffect.Begin();
             
             foreach (EffectPass pass in basicEffect.CurrentTechnique.Passes)
@@ -385,11 +413,10 @@ namespace Infiniminer
                     graphicsDevice.RenderState.DepthBufferWriteEnable = true;
                     graphicsDevice.RenderState.AlphaBlendEnable = false;
                 }
-
                 pass.End();
             }
-            
             basicEffect.End();
+       
         }
 
         private void RegenerateDirtyVertexLists()
