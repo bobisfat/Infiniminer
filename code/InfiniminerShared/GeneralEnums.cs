@@ -95,6 +95,7 @@ namespace Infiniminer
         WeightUpdate,
         ContentUpdate,          // sends all player.content to player
         ContentSpecificUpdate,   //sends a single content update to a player
+        PlayerContentUpdate,    //update a single players content(specific) for all players
         DepositOre,
         DepositCash,
         WithdrawOre,

@@ -49,6 +49,8 @@ namespace Infiniminer
         StealthBlockB,
         Magma,
         Lever,
+        RadarRed,
+        RadarBlue,
         MAXIMUM
     }
 
@@ -123,6 +125,8 @@ namespace Infiniminer
         Lever,
         TransRed,   // THESE MUST BE THE LAST TWO TEXTURES
         TransBlue,
+        RadarRed,
+        RadarBlue,
         MAXIMUM
     }
 
@@ -147,6 +151,8 @@ namespace Infiniminer
                 case BlockType.BankBlue:
                 case BlockType.BeaconRed:
                 case BlockType.BeaconBlue:
+                case BlockType.RadarRed:
+                case BlockType.RadarBlue:
                 case BlockType.Lever:
                     return 50;
 
@@ -340,7 +346,10 @@ namespace Infiniminer
                             return BlockTexture.Jump;
                     }
                     break;
-
+                case BlockType.RadarRed://fixme
+                    return BlockTexture.SolidRed;
+                case BlockType.RadarBlue://fixme
+                    return BlockTexture.SolidBlue;
                 case BlockType.SolidRed:
                     return BlockTexture.SolidRed;
                 case BlockType.SolidBlue:

@@ -88,7 +88,7 @@ namespace Infiniminer.States
             if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.Pickaxe)
             {
                 _P.FirePickaxe();
-                _P.playerToolCooldown = _P.GetToolCooldown(PlayerTools.Pickaxe) * (_P.playerClass == PlayerClass.Miner ? 0.4f : 1.0f);
+                _P.playerToolCooldown = _P.GetToolCooldown(PlayerTools.Pickaxe) * 0.4f;//(_P.playerClass == PlayerClass.Miner ? 0.4f : 1.0f);
             }
 
             // Prospector radar stuff.
@@ -118,6 +118,7 @@ namespace Infiniminer.States
         private void UpdatePlayerPosition(GameTime gameTime, KeyboardState keyState)
         {
             // Double-speed move flag, set if we're on road.
+            _P.moveVector = Vector3.Zero;
             bool movingOnRoad = false;
             bool movingOnMud = false;
             bool sprinting = false;
@@ -207,7 +208,24 @@ namespace Infiniminer.States
                         }
 
                 if (allow == true)
-                _P.playerVelocity.Y += GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                {
+                    if (_P.Content[5] > 0 && _P.playerClass == PlayerClass.Sapper)
+                    {//half gravity during smash
+                        if (_P.Content[5] > 250)
+                        {
+                            //_P.playerVelocity.Y += (GRAVITY * 0.1f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        }
+                        else//leaving smash but we're still in charge
+                        {
+                            _P.playerVelocity.Y += GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        }
+
+                    }
+                    else
+                    {
+                        _P.playerVelocity.Y += GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    }
+                }
             }
 
             if (_P.blockEngine.SolidAtPointForPlayer(footPosition) || _P.blockEngine.SolidAtPointForPlayer(headPosition))
@@ -274,6 +292,14 @@ namespace Infiniminer.States
                 {
                     int blockIn = (int)(headPosition.Y);
                     _P.playerPosition.Y = (float)(blockIn - 0.15f);
+
+                    if (_P.Content[5] > 0 && _P.playerClass == PlayerClass.Sapper)
+                    {
+                        if (_P.Content[5] < 250)//leave smash
+                        {
+                            _P.Content[5] = 0;
+                        }
+                    }
                 }
                 
                 // If the player is stuck in the ground, bring them out.
@@ -282,6 +308,14 @@ namespace Infiniminer.States
                 {
                     int blockOn = (int)(footPosition.Y);
                     _P.playerPosition.Y = (float)(blockOn + 1 + 1.45);
+
+                    if (_P.Content[5] > 0 && _P.playerClass == PlayerClass.Sapper)
+                    {
+                        if (_P.Content[5] < 250)//leave smash
+                        {
+                            _P.Content[5] = 0;
+                        }
+                    }
                 }
 
                 _P.playerVelocity.Y = 0;
@@ -334,27 +368,57 @@ namespace Infiniminer.States
             }
 
             // Pressing forward moves us in the direction we"re looking.
-            Vector3 moveVector = Vector3.Zero;
+            //Vector3 moveVector = Vector3.Zero;
+            if (_P.Content[5] > 250)
+            {
+                Vector3 smashVector = new Vector3((float)(_P.Content[6]) / 1000, (float)(_P.Content[7]) / 1000, (float)(_P.Content[8]) / 1000);
+                _P.playerVelocity = smashVector*3;
+                _P.Content[5] = (int)((float)(_P.Content[5] / 100) - (float)gameTime.ElapsedGameTime.TotalSeconds) * 100;
+            }
 
             if (_P.chatMode == ChatMessageType.None)
             {
-                if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Forward))//keyState.IsKeyDown(Keys.W))
-                    moveVector += _P.playerCamera.GetLookVector();
-                if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Backward))//keyState.IsKeyDown(Keys.S))
-                    moveVector -= _P.playerCamera.GetLookVector();
-                if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Right))//keyState.IsKeyDown(Keys.D))
-                    moveVector += _P.playerCamera.GetRightVector();
-                if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Left))//keyState.IsKeyDown(Keys.A))
-                    moveVector -= _P.playerCamera.GetRightVector();
-                //Sprinting
-                if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Sprint))//keyState.IsKeyDown(Keys.LeftShift) || keyState.IsKeyDown(Keys.RightShift))
-                    sprinting = true;
-                //Crouching
-                if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Crouch))
-                    crouching = true;
+                //if (_P.Content[5] > 0 && _P.playerClass == PlayerClass.Sapper)
+                //{//smash timer
+                //    Vector3 smashVector = new Vector3((float)(_P.Content[6]) / 1000, (float)(_P.Content[7]) / 1000, (float)(_P.Content[8]) / 1000);
+                //    _P.moveVector += smashVector;
+                //    sprinting = true;
+                //    crouching = false;
+                //    if (_P.Content[5] > 250)
+                //    {
+                //        _P.moveVector += smashVector;
+                //        _P.Content[5] = (int)((float)(_P.Content[5] / 100) - (float)gameTime.ElapsedGameTime.TotalSeconds) * 100;
+                //    }
+                //    else if (_P.Content[5] < 0)//leaving smash
+                //    {
+
+                //    }
+                //    //_P.SmashDig();
+                //}
+                //else
+                //{
+
+                //BlockType lowerBlock = _P.blockEngine.BlockAtPoint(_P.playerPosition + new Vector3(0, -1.7f, 0));
+
+                
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Forward))//keyState.IsKeyDown(Keys.W))
+                        _P.moveVector += _P.playerCamera.GetLookVector();
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Backward))//keyState.IsKeyDown(Keys.S))
+                        _P.moveVector -= _P.playerCamera.GetLookVector();
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Right))//keyState.IsKeyDown(Keys.D))
+                        _P.moveVector += _P.playerCamera.GetRightVector();
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Left))//keyState.IsKeyDown(Keys.A))
+                        _P.moveVector -= _P.playerCamera.GetRightVector();
+                    //Sprinting
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Sprint))//keyState.IsKeyDown(Keys.LeftShift) || keyState.IsKeyDown(Keys.RightShift))
+                        sprinting = true;
+                    //Crouching
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Crouch))
+                        crouching = true;
+                //}
             }
 
-            if (moveVector.X != 0 || moveVector.Z != 0)
+            if (_P.moveVector.X != 0 || _P.moveVector.Z != 0)
             {
                 //grab item
                 foreach (KeyValuePair<string, Item> bPair in _P.itemList)
@@ -381,27 +445,35 @@ namespace Infiniminer.States
                     }
                 }
                 // "Flatten" the movement vector so that we don"t move up/down.
-                moveVector.Y = 0;
-                moveVector.Normalize();
-                moveVector *= MOVESPEED * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (movingOnRoad)
-                    moveVector *= 2;
-                if (movingOnMud)
-                    moveVector *= 0.5f;
-                if (swimming)
-                    moveVector *= 0.5f;
-                // Sprinting doubles speed, even if already on road
-                if (sprinting)
-                    moveVector *= 1.5f;
-                if (crouching)
-                    moveVector.Y = -1;
-
-                // Attempt to move, doing collision stuff.
-                if (TryToMoveTo(moveVector, gameTime)) { }
+                if (_P.Content[5] > 0 && _P.playerClass == PlayerClass.Sapper)
+                {
+                    //smash allows upward
+                }
                 else
                 {
-                    if (!TryToMoveTo(new Vector3(0, 0, moveVector.Z), gameTime)) { }
-                    if (!TryToMoveTo(new Vector3(moveVector.X, 0, 0), gameTime)) { }
+                    _P.moveVector.Y = 0;
+                }
+                
+                _P.moveVector.Normalize();
+                _P.moveVector *= MOVESPEED * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (movingOnRoad)
+                    _P.moveVector *= 2;
+                if (movingOnMud)
+                    _P.moveVector *= 0.5f;
+                if (swimming)
+                    _P.moveVector *= 0.5f;
+                // Sprinting doubles speed, even if already on road
+                if (sprinting)
+                    _P.moveVector *= 1.5f;
+                if (crouching)
+                    _P.moveVector.Y = -1;
+
+                // Attempt to move, doing collision stuff.
+                if (TryToMoveTo(_P.moveVector, gameTime)) { }
+                else
+                {
+                    if (!TryToMoveTo(new Vector3(0, 0, _P.moveVector.Z), gameTime)) { }
+                    if (!TryToMoveTo(new Vector3(_P.moveVector.X, 0, 0), gameTime)) { }
                 }
             }
         }
@@ -419,6 +491,9 @@ namespace Infiniminer.States
             Vector3 midBodyPoint = movePosition + new Vector3(0, -0.7f, 0);
             Vector3 lowerBodyPoint = movePosition + new Vector3(0, -1.4f, 0);
 
+            BlockType midBlock = BlockType.None;
+            BlockType upperBlock = BlockType.None;
+
             float size = 0.1f;
             bool allow = true;
             for (int x = -1; x < 2; x++)
@@ -428,6 +503,8 @@ namespace Infiniminer.States
                         Vector3 box = new Vector3(size * x, size * y, size * z);
                         if (_P.blockEngine.SolidAtPointForPlayer(movePosition + box))
                         {
+                            midBlock = _P.blockEngine.BlockAtPoint(movePosition + box);
+                            upperBlock = _P.blockEngine.BlockAtPoint(movePosition + box);
                             allow = false;
                         }
                     }
@@ -450,9 +527,9 @@ namespace Infiniminer.States
             }
 
             // It's solid there, so while we can't move we have officially collided with it.
-            BlockType lowerBlock = _P.blockEngine.BlockAtPoint(lowerBodyPoint);
-            BlockType midBlock = _P.blockEngine.BlockAtPoint(midBodyPoint);
-            BlockType upperBlock = _P.blockEngine.BlockAtPoint(movePosition);
+            BlockType lowerBlock = _P.blockEngine.BlockAtPoint(lowerBodyPoint);// + new Vector3(0, -0.2f, 0));
+            //BlockType midBlock = _P.blockEngine.BlockAtPoint(midBodyPoint);
+            //BlockType upperBlock = _P.blockEngine.BlockAtPoint(movePosition);
 
             // It's solid there, so see if it's a lava block. If so, touching it will kill us!
             if (upperBlock == BlockType.Lava || lowerBlock == BlockType.Lava || midBlock == BlockType.Lava)
@@ -553,6 +630,16 @@ namespace Infiniminer.States
                         {
                             case PlayerClass.Miner:
                                 _P.StrongArm();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
+                                break;
+                            case PlayerClass.Sapper:
+                                _P.Smash();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
+                                Vector3 smashVector = _P.playerCamera.GetLookVector();// +_P.playerVelocity;
+                                _P.Content[6] = (int)(smashVector.X * 1000);
+                                _P.Content[7] = (int)(smashVector.Y * 1000);
+                                _P.Content[8] = (int)(smashVector.Z * 1000);
+                                _P.Content[5] = 5*1000;//5 second smash
+
+                                _P.addChatMessage(_P.Content[6] + "/" + _P.Content[7] + "/" +_P.Content[8], ChatMessageType.SayAll, 10);
                                 break;
                         }
                     }

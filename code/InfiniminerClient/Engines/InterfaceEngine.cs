@@ -98,6 +98,8 @@ namespace Infiniminer
             blockIcons[BlockType.Pump] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pump");
             blockIcons[BlockType.Compressor] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_compressor");
             blockIcons[BlockType.Lever] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
+            blockIcons[BlockType.RadarRed] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
+            blockIcons[BlockType.RadarBlue] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
             //held icons
             blockIcons[BlockType.Diamond] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_diamond");
             blockIcons[BlockType.MagmaVent] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
@@ -457,11 +459,15 @@ namespace Infiniminer
             // Draw the player radar.
             spriteBatch.Draw(texRadarBackground, new Vector2(10, 30), Color.White);
             foreach (Player p in _P.playerList.Values)
-                if (p.Team == _P.playerTeam && p.Alive)
+            {
+                if (p.Team == _P.playerTeam && p.Alive || p.Content[1] == 1)//within radar
                     RenderRadarBlip(spriteBatch, p.ID == _P.playerMyId ? _P.playerPosition : p.Position, p.Team == PlayerTeam.Red ? _P.red : _P.blue, p.Ping > 0, ""); //Defines.IM_RED : Defines.IM_BLUE, p.Ping > 0, "");
+            }
+
             foreach (KeyValuePair<Vector3, Beacon> bPair in _P.beaconList)
                 if (bPair.Value.Team == _P.playerTeam)
                     RenderRadarBlip(spriteBatch, bPair.Key, Color.White, false, bPair.Value.ID);
+
             RenderRadarBlip(spriteBatch, new Vector3(100000, 0, 32), Color.White, false, "NORTH");
 
            // foreach (KeyValuePair<string, Item> bPair in _P.itemList)//  if (bPair.Value.Team == _P.playerTeam)//doesnt care which team

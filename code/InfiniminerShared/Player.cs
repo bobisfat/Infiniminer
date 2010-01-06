@@ -27,7 +27,8 @@ namespace Infiniminer
     public enum PlayerTools
     {
         Pickaxe,
-        StrongArm,
+        StrongArm,//strong arms pick up and throw ability
+        Smash,//defenders charge
         ConstructionGun,
         DeconstructionGun,
         ProspectingRadar,

@@ -38,6 +38,7 @@ namespace Infiniminer
         public Camera playerCamera = null;
         public Vector3 playerPosition = Vector3.Zero;
         public Vector3 playerVelocity = Vector3.Zero;
+        public Vector3 moveVector = Vector3.Zero;
         public Vector3 lastPosition = Vector3.Zero;
         public Vector3 lastHeading = Vector3.Zero;
         public PlayerClass playerClass = PlayerClass.None;
@@ -167,6 +168,7 @@ namespace Infiniminer
                 case BlockType.BaseBlue:
                 case BlockType.StealthBlockB:
                 case BlockType.TrapB:
+                case BlockType.RadarBlue:
                     return PlayerTeam.Blue;
                 case BlockType.TransRed:
                 case BlockType.SolidRed:
@@ -175,6 +177,7 @@ namespace Infiniminer
                 case BlockType.BankRed:
                 case BlockType.StealthBlockR:
                 case BlockType.TrapR:
+                case BlockType.RadarRed:
                     return PlayerTeam.Red;
                 default:
                     return PlayerTeam.None;
@@ -550,7 +553,7 @@ namespace Infiniminer
                                              BlockType.Lever,
                                              BlockType.Pump,
                                              BlockType.Compressor,
-                                             BlockType.Pipe,
+                                             playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
                                              BlockType.Water };
             }
             else
@@ -802,6 +805,70 @@ namespace Infiniminer
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
+        public void Smash()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+            playerToolCooldown = GetToolCooldown(PlayerTools.ConstructionGun);//should have its own
+            constructionGunAnimation = -5;
+
+            // Send the message.
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+            msgBuffer.Write(playerPosition);
+            msgBuffer.Write(playerCamera.GetLookVector());
+            msgBuffer.Write((byte)PlayerTools.Smash);
+            msgBuffer.Write(true);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
+        public void SmashDig()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+            //play sound locally
+            Vector3 hitPoint = Vector3.Zero;
+            Vector3 buildPoint = Vector3.Zero;
+            Vector3 smashVector = new Vector3((float)(Content[6]) / 1000, (float)(Content[7]) / 1000, (float)(Content[8]) / 1000);
+            if (!blockEngine.RayCollision(playerPosition, smashVector, 2, 10, ref hitPoint, ref buildPoint, BlockType.Water))
+                return;
+
+            ushort x = (ushort)hitPoint.X;
+            ushort y = (ushort)hitPoint.Y;
+            ushort z = (ushort)hitPoint.Z;
+
+            // Figure out what the result is.
+            bool removeBlock = true;
+
+            InfiniminerSound sound = InfiniminerSound.DigDirt;
+
+            if (removeBlock == true)
+            {
+                playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+
+                NetBuffer msgBuffer = netClient.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+                msgBuffer.Write(playerPosition);
+                msgBuffer.Write(smashVector);
+                msgBuffer.Write((byte)PlayerTools.Pickaxe);
+                msgBuffer.Write((byte)BlockType.None);
+                netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+                blockEngine.RemoveBlock(x, y, z);//local block removal//needs a sync check
+                PlaySound(sound);//local sound effect
+            }
+            else//it doesnt play the sound effect, but will still try send server ray for lag compensation
+            {
+                //playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+                //NetBuffer msgBuffer = netClient.CreateBuffer();
+                //msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+                //msgBuffer.Write(playerPosition);
+                //msgBuffer.Write(playerCamera.GetLookVector());
+                //msgBuffer.Write((byte)PlayerTools.Pickaxe);
+                //msgBuffer.Write((byte)BlockType.None);
+                //netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+            }
+        }
         public void FireSpawnItem()
         {
             if (netClient.Status != NetConnectionStatus.Connected)

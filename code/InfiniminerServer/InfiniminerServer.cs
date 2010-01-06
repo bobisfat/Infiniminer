@@ -2056,6 +2056,9 @@ namespace Infiniminer
                                                     case PlayerTools.StrongArm:
                                                         UseStrongArm(player, playerPosition, playerHeading);
                                                         break;
+                                                    case PlayerTools.Smash:
+                                                        UseSmash(player, playerPosition, playerHeading);
+                                                        break;
                                                     case PlayerTools.ConstructionGun:
                                                         UseConstructionGun(player, playerPosition, playerHeading, blockType);
                                                         break;
@@ -2148,6 +2151,9 @@ namespace Infiniminer
                                                 player.Weight = 0;
                                                 player.Health = 0;
                                                 player.Alive = false;
+                                                player.Content[2] = 0;
+                                                player.Content[3] = 0;
+                                                player.Content[4] = 0;
                                                 player.Content[5] = 0;
                                                 SendResourceUpdate(player);
                                                 SendPlayerDead(player);
@@ -2468,7 +2474,6 @@ namespace Infiniminer
         }
         public void DoStuff()
         {
-
             frameid += 1;//make unique id to prevent reprocessing gravity
 
             //volcano frequency
@@ -2533,21 +2538,44 @@ namespace Infiniminer
                                     }
 
                                     blockListContent[nx, ny, nz, 14] = (int)(newpoint.X * 100);
-                                    blockListContent[nx, ny, nz, 15] = (int)(newpoint.Y * 100);//120 for curve
+                                    blockListContent[nx, ny, nz, 15] = (int)(newpoint.Y * 100);
                                     blockListContent[nx, ny, nz, 16] = (int)(newpoint.Z * 100);
 
-                                    if (blockListContent[i, j, k, 17] > 0 && blockList[i, j, k] == BlockType.Explosive)//explosive list for tnt update
+                                    if (blockList[i, j, k] == BlockType.Explosive)//explosive list for tnt update
                                     {
-                                        foreach (Player p in playerList.Values)
+                                        if (blockListContent[i, j, k, 17] == 0)//create owner
                                         {
-                                            if (p.ID == (uint)(blockListContent[i, j, k, 17]))
+                                            foreach (Player p in playerList.Values)
                                             {
-                                                //found explosive this belongs to
-                                                p.ExplosiveList.Add(new Vector3(nx, ny, nz));
-                                                blockListContent[nx, ny, nz, 17] = blockListContent[i, j, k, 17];
-                                                p.ExplosiveList.Remove(new Vector3(i, j, k));
-                                                blockListContent[i, j, k, 17] = 0;
+                                                int cc = p.ExplosiveList.Count;
 
+                                                int ca = 0;
+                                                while (ca < cc + 1)
+                                                {
+                                                    if (p.ExplosiveList[ca].X == i && p.ExplosiveList[ca].Y == j && p.ExplosiveList[ca].Z == k)
+                                                    {
+                                                        p.ExplosiveList.RemoveAt(ca);
+                                                        blockListContent[i, j, k, 17] = (int)(p.ID);
+                                                        break;
+                                                    }
+                                                    ca += 1;
+                                                }
+                                            }
+                                        }
+
+                                        if (blockListContent[i, j, k, 17] > 0)
+                                        {
+                                            foreach (Player p in playerList.Values)
+                                            {
+                                                if (p.ID == (uint)(blockListContent[i, j, k, 17]))
+                                                {
+                                                    //found explosive this belongs to
+                                                    p.ExplosiveList.Add(new Vector3(nx, ny, nz));
+                                                    blockListContent[nx, ny, nz, 17] = blockListContent[i, j, k, 17];
+                                                    p.ExplosiveList.Remove(new Vector3(i, j, k));
+                                                    blockListContent[i, j, k, 17] = 0;
+
+                                                }
                                             }
                                         }
                                     }
@@ -2577,16 +2605,39 @@ namespace Infiniminer
 
                                             if (blockListContent[i, j, k, 17] > 0 && blockList[i, j, k] == BlockType.Explosive)//explosive list for tnt update
                                             {
-                                                foreach (Player p in playerList.Values)
+                                                if (blockListContent[i, j, k, 17] == 0)//create owner if we dont have it
                                                 {
-                                                    if (p.ID == (uint)(blockListContent[i, j, k, 17]))
+                                                    foreach (Player p in playerList.Values)
                                                     {
-                                                        //found explosive this belongs to
-                                                        p.ExplosiveList.Add(new Vector3(i, j - 1, k));
-                                                        blockListContent[i, j - 1, k, 17] = blockListContent[i, j, k, 17];
-                                                        p.ExplosiveList.Remove(new Vector3(i, j, k));
-                                                        blockListContent[i, j, k, 17] = 0;
+                                                        int cc = p.ExplosiveList.Count;
 
+                                                        int ca = 0;
+                                                        while (ca < cc + 1)
+                                                        {
+                                                            if (p.ExplosiveList[ca].X == i && p.ExplosiveList[ca].Y == j && p.ExplosiveList[ca].Z == k)
+                                                            {
+                                                                p.ExplosiveList.RemoveAt(ca);
+                                                                blockListContent[i, j, k, 17] = (int)(p.ID);
+                                                                break;
+                                                            }
+                                                            ca += 1;
+                                                        }
+                                                    }
+                                                }
+
+                                                if (blockListContent[i, j, k, 17] > 0)
+                                                {
+                                                    foreach (Player p in playerList.Values)
+                                                    {
+                                                        if (p.ID == (uint)(blockListContent[i, j, k, 17]))
+                                                        {
+                                                            //found explosive this belongs to
+                                                            p.ExplosiveList.Add(new Vector3(nx, ny, nz));
+                                                            blockListContent[nx, ny, nz, 17] = blockListContent[i, j, k, 17];
+                                                            p.ExplosiveList.Remove(new Vector3(i, j, k));
+                                                            blockListContent[i, j, k, 17] = 0;
+
+                                                        }
                                                     }
                                                 }
                                             }
@@ -3327,6 +3378,68 @@ namespace Infiniminer
                                             continue;
                                         }
                             }
+                            else if (blockList[i, j, k] == BlockType.RadarRed)
+                            {
+                                blockListContent[i, j, k, 0] += 1;
+
+                                if (blockListContent[i, j, k, 0] == 2)//limit scans
+                                {
+                                    blockListContent[i, j, k, 0] = 0;
+                                    foreach (Player p in playerList.Values)
+                                    {
+                                        if (p.Alive && p.Team == PlayerTeam.Blue)
+                                            if (Get3DDistance((int)(p.Position.X), (int)(p.Position.Y), (int)(p.Position.Z), i, j, k) < 20)
+                                            {
+                                                //this player has been detected by the radar
+                                                //should check if stealthed
+                                                if (p.Content[1] == 0)
+                                                {
+                                                    p.Content[1] = 1;//goes on radar
+                                                    SendPlayerContentUpdate(p, 1);
+                                                }
+                                            }
+                                            else//player is out of range
+                                            {
+                                                if (p.Content[1] == 1)
+                                                {
+                                                    p.Content[1] = 0;//goes off radar again
+                                                    SendPlayerContentUpdate(p, 1);
+                                                }
+                                            }
+                                    }
+                                }
+                            }
+                            else if (blockList[i, j, k] == BlockType.RadarBlue)
+                            {
+                                blockListContent[i, j, k, 0] += 1;
+
+                                if (blockListContent[i, j, k, 0] == 2)//limit scans
+                                {
+                                    blockListContent[i, j, k, 0] = 0;
+                                    foreach (Player p in playerList.Values)
+                                    {
+                                        if (p.Alive && p.Team == PlayerTeam.Red)
+                                            if (Get3DDistance((int)(p.Position.X), (int)(p.Position.Y), (int)(p.Position.Z), i, j, k) < 20)
+                                            {
+                                                //this player has been detected by the radar
+                                                //should check if stealthed
+                                                if (p.Content[1] == 0)
+                                                {
+                                                    p.Content[1] = 1;//goes on radar
+                                                    SendPlayerContentUpdate(p, 1);
+                                                }
+                                            }
+                                            else//player is out of range
+                                            {
+                                                if (p.Content[1] == 1)
+                                                {
+                                                    p.Content[1] = 0;//goes off radar again
+                                                    SendPlayerContentUpdate(p, 1);
+                                                }
+                                            }
+                                    }
+                                }
+                            }
                     }
         }
         public void Disturb(ushort i, ushort j, ushort k)
@@ -3406,6 +3519,20 @@ namespace Infiniminer
                 buildPos = testPos;
             }
             return false;
+        }
+        public bool RayCollision(Vector3 startPosition, Vector3 rayDirection, float distance, int searchGranularity, BlockType allow)
+        {
+            Vector3 testPos = startPosition;
+            for (int i = 0; i < searchGranularity; i++)
+            {
+                testPos += rayDirection * distance / searchGranularity;
+                BlockType testBlock = BlockAtPoint(testPos);
+                if (testBlock != BlockType.None || testBlock != allow)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public bool RayCollision(Vector3 startPosition, Vector3 rayDirection, float distance, int searchGranularity, ref Vector3 hitPoint, ref Vector3 buildPoint, BlockType ignore)
@@ -3585,6 +3712,11 @@ namespace Infiniminer
                 //ConsoleWrite("fixed " + player.Handle + " synchronization");
                 SetBlockForPlayer(x, y, z, blockList[x, y, z], blockCreatorTeam[x, y, z], player);
             }
+        }
+
+        public void UseSmash(Player player, Vector3 playerPosition, Vector3 playerHeading)
+        {
+
         }
 
         public void UseStrongArm(Player player, Vector3 playerPosition, Vector3 playerHeading)
@@ -3960,6 +4092,8 @@ namespace Infiniminer
                 blockType == BlockType.Generator ||
                 blockType == BlockType.Pipe ||
                 blockType == BlockType.Pump ||
+                blockType == BlockType.RadarBlue ||
+                blockType == BlockType.RadarRed ||
                 blockType == BlockType.Compressor ||
                 blockType == BlockType.Lever ||
                 blockType == BlockType.Controller ||
@@ -3981,6 +4115,34 @@ namespace Infiniminer
                 // Fire the player's gun.
                 TriggerConstructionGunAnimation(player, 0.5f);
 
+                if (blockType == BlockType.RadarRed)//requires special remove
+                {
+                    foreach (Player p in playerList.Values)
+                    {
+                        if (p.Alive && p.Team == PlayerTeam.Blue) 
+                            {
+                                if (p.Content[1] == 1)
+                                {
+                                    p.Content[1] = 0;//goes off radar again
+                                    SendPlayerContentUpdate(p, 1);
+                                }
+                            }
+                    }
+                }
+                else if (blockType == BlockType.RadarBlue)//requires special remove
+                {
+                    foreach (Player p in playerList.Values)
+                    {
+                        if (p.Alive && p.Team == PlayerTeam.Red)
+                        {
+                            if (p.Content[1] == 1)
+                            {
+                                p.Content[1] = 0;//goes off radar again
+                                SendPlayerContentUpdate(p, 1);
+                            }
+                        }
+                    }
+                }
                 // Remove the block.
                 SetBlock(x, y, z, BlockType.None, PlayerTeam.None);
                 PlaySound(InfiniminerSound.ConstructionGun, player.Position);
@@ -4085,6 +4247,8 @@ namespace Infiniminer
                                 case BlockType.Ore:
                                 case BlockType.SolidRed:
                                 case BlockType.SolidBlue:
+                                case BlockType.RadarRed:
+                                case BlockType.RadarBlue:
                                 case BlockType.TransRed:
                                 case BlockType.TransBlue:
                                 case BlockType.Water:
@@ -4137,6 +4301,8 @@ namespace Infiniminer
                                     case BlockType.Ore:
                                     case BlockType.SolidRed:
                                     case BlockType.SolidBlue:
+                                    case BlockType.RadarRed:
+                                    case BlockType.RadarBlue:
                                     case BlockType.TransRed:
                                     case BlockType.TransBlue:
                                     case BlockType.Water:
@@ -4234,13 +4400,31 @@ namespace Infiniminer
 
                 if (nb != 7)//didnt hit end of switch-link limit
                 {//should check teams and connection to itself
-                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 1] = (int)(x);
-                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 2] = (int)(y);
-                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 3] = (int)(z);
-                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 4] = (int)(btn);
-                    blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6] = 100;
-                    SendServerMessageToPlayer(blockList[player.Content[2], player.Content[3], player.Content[4]] + " link action " + btn + " on " + blockList[x, y, z] + ".", player.NetConn);
+                    //range check
 
+                    if (Distf(new Vector3(x, y, z), new Vector3(player.Content[2], player.Content[3], player.Content[4])) < 10)
+                    {
+                        //Vector3 heading = new Vector3(player.Content[2], player.Content[3], player.Content[4]);
+                        //heading -= new Vector3(x, y, z);
+                        //heading.Normalize();
+                        //if (RayCollision(new Vector3(x, y, z) + heading * 0.4f, heading, (float)(Distf(new Vector3(x, y, z), new Vector3(player.Content[2], player.Content[3], player.Content[4]))), 10, blockList[x, y, z]))
+                        //{
+                            blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 1] = (int)(x);
+                            blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 2] = (int)(y);
+                            blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 3] = (int)(z);
+                            blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 4] = (int)(btn);
+                            blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6] = 100;
+                            SendServerMessageToPlayer(blockList[player.Content[2], player.Content[3], player.Content[4]] + " linked action " + btn + " on " + blockList[x, y, z] + ".", player.NetConn);
+                        //}
+                        //else
+                        //{
+                        //    SendServerMessageToPlayer(blockList[player.Content[2], player.Content[3], player.Content[4]] + " was not in line of sight of " + blockList[x, y, z] + " to link!", player.NetConn);
+                        //}
+                    }
+                    else
+                    {
+                        SendServerMessageToPlayer(blockList[player.Content[2], player.Content[3], player.Content[4]] + " was too far away from the " + blockList[x, y, z] + " to link!", player.NetConn);
+                    }
                     player.Content[2] = 0;
                     player.Content[3] = 0;
                     player.Content[4] = 0;
@@ -4783,6 +4967,20 @@ namespace Infiniminer
             foreach (NetConnection netConn in playerList.Keys)
                 if (netConn.Status == NetConnectionStatus.Connected)
                     netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableInOrder2);
+        }
+
+        public void SendPlayerContentUpdate(Player p, int cc)
+        {
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.PlayerContentUpdate);
+            msgBuffer.Write(p.ID);
+            msgBuffer.Write(cc);
+            msgBuffer.Write(p.Content[cc]);
+
+            foreach (NetConnection netConn in playerList.Keys)
+                if (netConn.Status == NetConnectionStatus.Connected)
+                    if (playerList[netConn] != p)
+                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableInOrder2);
         }
 
         public void SendSetItem(string text, Vector3 position, PlayerTeam team, Vector3 heading)

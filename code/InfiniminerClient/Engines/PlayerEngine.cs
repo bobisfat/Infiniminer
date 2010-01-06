@@ -97,7 +97,7 @@ namespace Infiniminer
                         Vector3 diff = (p.Position -_P.playerPosition);
                         float len = diff.Length();
                         diff.Normalize();
-                        if (len<=15){
+                        if (len<=8){//distance you can see players name
                             Vector3 hit = Vector3.Zero;
                             Vector3 build = Vector3.Zero;
                             gameInstance.propertyBag.blockEngine.RayCollision(_P.playerPosition + new Vector3(0f, 0.1f, 0f), diff, len, 25, ref hit, ref build);

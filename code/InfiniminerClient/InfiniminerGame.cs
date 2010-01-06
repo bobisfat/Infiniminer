@@ -449,6 +449,16 @@ namespace Infiniminer
                                         }
                                         break;
 
+                                    case InfiniminerMessage.PlayerContentUpdate:
+                                        {
+                                            uint playerId = msgBuffer.ReadUInt32();
+                                            uint cc = msgBuffer.ReadUInt32();
+                                            int val = msgBuffer.ReadInt32();
+
+                                            propertyBag.playerList[playerId].Content[cc] = val;
+                                        }
+                                        break;
+
                                     case InfiniminerMessage.PlayerLeft:
                                         {
                                             uint playerId = msgBuffer.ReadUInt32();
