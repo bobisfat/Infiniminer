@@ -364,12 +364,36 @@ namespace Infiniminer
                                             else
                                             {
                                                 if (propertyBag.blockEngine.BlockAtPoint(new Vector3(x, y, z)) != BlockType.None)
+                                                {
                                                     propertyBag.blockEngine.RemoveBlock(x, y, z);
+                                                    //propertyBag.particleEngine.CreateExplosionDebris(new Vector3(x, y, z));
+                                                }
                                                 propertyBag.blockEngine.AddBlock(x, y, z, blockType);
 
                                                 //if(!propertyBag.playerDead)
                                                 //CheckForStandingInLava();
                                             }
+                                        }
+                                        break;
+                                    case InfiniminerMessage.BlockSetDebris:
+                                        {
+                                            // x, y, z, type, all bytes
+                                            byte x = msgBuffer.ReadByte();
+                                            byte y = msgBuffer.ReadByte();
+                                            byte z = msgBuffer.ReadByte();
+                                            BlockType blockType = (BlockType)msgBuffer.ReadByte();
+                                            Vector3 tv = new Vector3(x, y, z);
+
+                                            float distFromDebris = (tv + 0.5f * Vector3.One - propertyBag.playerPosition).Length();
+
+                                            propertyBag.particleEngine.CreateBlockDebris(tv + 0.5f * Vector3.One, propertyBag.blockEngine.blockList[x, y, z], Math.Min(14.0f-distFromDebris,10.0f));
+
+                                            if (blockType == BlockType.None)
+                                            {
+                                                if (propertyBag.blockEngine.BlockAtPoint(tv) != BlockType.None)
+                                                    propertyBag.blockEngine.RemoveBlock(x, y, z);
+                                            }
+
                                         }
                                         break;
                                     case InfiniminerMessage.TriggerEarthquake:
@@ -419,7 +443,30 @@ namespace Infiniminer
 
                                         }
                                         break;
+                                  case InfiniminerMessage.TriggerDebris:
+                                        {
+                                            Vector3 blockPos = msgBuffer.ReadVector3();
+                                            BlockType blockType = (BlockType)msgBuffer.ReadByte();
+                                            uint debrisType = msgBuffer.ReadUInt32();
+                                            // Play the debris sound.
+                                            //propertyBag.PlaySound(InfiniminerSound.Explosion, blockPos);
 
+                                            // Create some particles.
+
+                                            float distFromDebris = (blockPos + 0.5f * Vector3.One - propertyBag.playerPosition).Length();
+
+                                            if (debrisType == 1)
+                                            {
+                                                    propertyBag.particleEngine.CreateBlockDebris(blockPos, blockType, Math.Min(20.0f - distFromDebris, 10.0f)); 
+                                            }
+                                            else
+                                            {
+                                                if (distFromDebris < 24)
+                                                    propertyBag.particleEngine.CreateDiggingDebris(blockPos);
+                                            }
+
+                                        }
+                                        break;
                                     case InfiniminerMessage.PlayerSetTeam:
                                         {
                                             uint playerId = msgBuffer.ReadUInt32();

@@ -678,7 +678,8 @@ namespace Infiniminer
 
             InfiniminerSound sound = InfiniminerSound.DigDirt;
 
-            switch (blockEngine.BlockAtPoint(hitPoint))
+            BlockType block = blockEngine.BlockAtPoint(hitPoint);
+            switch (block)
             {
                 case BlockType.Dirt:
                 case BlockType.Mud:
@@ -731,6 +732,8 @@ namespace Infiniminer
                 msgBuffer.Write((byte)BlockType.None);
                 netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
                 blockEngine.RemoveBlock(x,y,z);//local block removal//needs a sync check
+                particleEngine.CreateDiggingDebris(hitPoint);
+                particleEngine.CreateBlockDebris(new Vector3(x+0.5f,y+0.5f,z+0.5f), block, 10.0f);
                 PlaySound(sound);//local sound effect
             }
             else//it doesnt play the sound effect, but will still try send server ray for lag compensation

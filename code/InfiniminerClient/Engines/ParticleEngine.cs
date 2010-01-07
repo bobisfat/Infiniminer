@@ -88,8 +88,12 @@ namespace Infiniminer
         public Vector3 Position;
         public Vector3 Velocity;
         public float Size;
-        public Color Color;
+        public Vector4 Color;
         public bool FlaggedForDeletion = false;
+        public float Bounce = 0.0f;
+        public DateTime Lifetime = DateTime.Now;
+        public float SizeChange = 1.0f;//when deleting 
+        public float Gravity = 8.0f;
     }
 
     public class ParticleEngine
@@ -182,10 +186,51 @@ namespace Infiniminer
 
             foreach (Particle p in particleList)
             {
-                p.Position += (float)gameTime.ElapsedGameTime.TotalSeconds * p.Velocity;
-                p.Velocity.Y -= 8 * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (_P.blockEngine.SolidAtPoint(p.Position))
-                    p.FlaggedForDeletion = true;
+
+
+                if (p.Bounce != 0.0f)
+                {
+                    if (gameInstance.propertyBag.blockEngine.BlockAtPoint(p.Position + ((float)(gameTime.ElapsedGameTime.TotalSeconds) * p.Velocity)) == BlockType.None)
+                    {
+                        p.Position += (float)gameTime.ElapsedGameTime.TotalSeconds * p.Velocity;
+                        p.Velocity.Y -= p.Gravity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    }
+                    else
+                    {
+                        if (Math.Abs(p.Velocity.Y) > 2.0f)
+                        {
+                            p.Position -= (float)gameTime.ElapsedGameTime.TotalSeconds * p.Velocity / 2;
+                            p.Velocity.Y = -p.Velocity.Y * p.Bounce;
+                        }
+                        //p.Velocity.Y -= (p.Velocity.Y * (float)gameTime.ElapsedGameTime.TotalSeconds) / 2;
+                    }
+                }
+                else
+                {
+                    p.Position += (float)gameTime.ElapsedGameTime.TotalSeconds * p.Velocity;
+                    p.Velocity.Y -= 8 * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                }
+
+                if (p.Bounce != 0.0f)
+                {
+                    if (p.Lifetime < DateTime.Now)
+                    {
+                        if (p.Size - ((float)gameTime.ElapsedGameTime.TotalSeconds * p.SizeChange) > 0.0)
+                        p.Size = p.Size - ((float)gameTime.ElapsedGameTime.TotalSeconds*p.SizeChange);
+         
+                        if (p.Lifetime < DateTime.Now - TimeSpan.FromSeconds(1.0))
+                        {
+                            p.FlaggedForDeletion = true;
+                        }
+                    }
+                }
+                else
+                {
+                    if (gameInstance.propertyBag.blockEngine.SolidAtPointForPlayer(p.Position))
+                    {
+                        p.FlaggedForDeletion = true;
+                    }
+                }
             }
             particleList.RemoveAll(ParticleExpired);
         }
@@ -195,11 +240,114 @@ namespace Infiniminer
             for (int i = 0; i < 50; i++)
             {
                 Particle p = new Particle();
-                p.Color = new Color(90,60,40);
+                p.Color = new Vector4(0.35f,0.235f,0.156f,1.0f);
                 p.Size = (float)(randGen.NextDouble() * 0.4 + 0.05);
                 p.Position = explosionPosition;
                 p.Position.Y += (float)randGen.NextDouble() - 0.5f;
                 p.Velocity = new Vector3((float)randGen.NextDouble() * 8 - 4, (float)randGen.NextDouble() * 8, (float)randGen.NextDouble() * 8 - 4);
+                p.Lifetime = DateTime.Now + TimeSpan.FromSeconds(5.0);
+                particleList.Add(p);
+            }
+        }
+
+        public void CreateDiggingDebris(Vector3 explosionPosition)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                Particle p = new Particle();
+                p.Color = new Vector4(0.3f,0.3f,0.3f,1.0f);//0.35f,0.235f,0.156f,1.0f);//new Color(90, 60, 40);
+                p.Size = (float)(randGen.NextDouble() * 0.05 + 0.01);
+                p.Position = explosionPosition;
+                p.Position.Y += (float)randGen.NextDouble() - 0.5f;
+                p.Velocity = new Vector3((float)randGen.NextDouble() * 2 - 1, (float)randGen.NextDouble() * 3, (float)randGen.NextDouble() * 2 - 1);
+                p.Lifetime = DateTime.Now+TimeSpan.FromSeconds(2.0);
+                p.Bounce = 0.2f;
+                particleList.Add(p);
+            }
+        }
+
+        public void CreateBlockDebris(Vector3 explosionPosition, BlockType block, float mag)
+        {
+            if (mag < 0.1f)
+                return;
+
+            if (block == BlockType.Water)
+            {
+                mag = mag / 6;
+            }
+            else if (block == BlockType.Lava)
+            {
+                mag = mag / 5;
+                if (_P.blockEngine.BlockAtPoint(explosionPosition + new Vector3(0.0f,0.5f,0.0f)) == BlockType.Lava)
+                {//would not be visible
+                    return;
+                }
+            }
+
+            for (int i = 0; i < (int)(5*mag); i++)
+            {
+                Particle p = new Particle();
+               
+                p.Size = (float)(randGen.NextDouble() * 0.1 + 0.02);
+                p.Position = explosionPosition;
+                p.Position.X += (float)randGen.NextDouble() - 0.5f;
+                p.Position.Z += (float)randGen.NextDouble() - 0.5f;
+                p.Position.Y += (float)randGen.NextDouble() - 0.5f;
+                p.Velocity = new Vector3(0.0f, (float)randGen.NextDouble() * 2 - 1, 0.0f);
+                p.Bounce = 0.2f;
+                p.Lifetime = DateTime.Now + TimeSpan.FromSeconds(2.0 + randGen.NextDouble());//2
+                p.SizeChange = 0.1f;
+
+                if (block == BlockType.Gold)
+                {
+                    p.Color = new Vector4(0.65f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 1.0f);
+                }
+                else if (block == BlockType.Sand)
+                {
+                    p.Color = new Vector4(0.45f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                }
+                else if (block == BlockType.Water)
+                {
+                    p.Lifetime = DateTime.Now + TimeSpan.FromSeconds(0.0 - randGen.NextDouble());
+                    p.Color = new Vector4(0.1f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.4f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.70f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                    p.SizeChange = 0.2f;
+                    p.Bounce = 0.0f;
+                    p.Position.Y += ((float)randGen.NextDouble()*0.5f) + 0.75f ;
+                    p.Velocity = new Vector3(0.0f, -0.25f + (float)randGen.NextDouble(), 0.0f);
+                    p.Gravity = 6.0f;
+                }
+                else if (block == BlockType.Lava)
+                {
+                    p.Lifetime = DateTime.Now + TimeSpan.FromSeconds(0.0 - randGen.NextDouble());
+                    int ll = randGen.Next(0, 2);
+                    if (ll == 0)
+                    {
+                        p.Color = new Vector4(0.95f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.7f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.05f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                        p.Gravity = 6.0f;
+                        p.Velocity = new Vector3(((float)randGen.NextDouble() - 0.5f) * 2.0f, 1.0f + (float)randGen.NextDouble() * 2.0f - 0.25f, ((float)randGen.NextDouble() - 0.5f) * 2.0f);
+                    }
+                    else if(ll == 1)
+                    {
+                        p.Color = new Vector4(0.3f + (float)((randGen.NextDouble() - 0.5f) * 0.01f), 0.01f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.0f, 1.0f);
+                        p.Gravity = 2.0f + (float)randGen.NextDouble() - 0.5f;
+                        p.Velocity = new Vector3(((float)randGen.NextDouble() - 0.5f) * 2.0f, 1.0f + (float)randGen.NextDouble() * 2.0f - 0.25f, ((float)randGen.NextDouble() - 0.5f) * 2.0f);
+                    }
+                    else if (ll == 2)
+                    {
+                        p.Gravity = 4.0f + (float)randGen.NextDouble() - 0.5f;
+                        p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.02f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 0.01f, 1.0f);
+                        p.Velocity = new Vector3(((float)randGen.NextDouble() - 0.5f) * 2.0f, (float)randGen.NextDouble() * 1.0f - 0.25f, ((float)randGen.NextDouble() - 0.5f) * 2.0f);
+                    }
+                    p.SizeChange = 0.2f;
+                    p.Bounce = 0.0f;
+                    p.Position.Y += 1.0f + (float)randGen.NextDouble() - 0.5f;
+                    
+                }
+                else
+                {
+                    p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
+                }
+
                 particleList.Add(p);
             }
         }
@@ -209,7 +357,7 @@ namespace Infiniminer
             for (int i = 0; i < 30; i++)
             {
                 Particle p = new Particle();
-                p.Color = color;
+                p.Color = color.ToVector4();
                 p.Size = (float)(randGen.NextDouble()*0.2 + 0.05);
                 p.Position = playerPosition;
                 p.Position.Y -= (float)randGen.NextDouble();
@@ -231,7 +379,7 @@ namespace Infiniminer
                 particleEffect.Parameters["xWorld"].SetValue(worldMatrix);
                 particleEffect.Parameters["xView"].SetValue(_P.playerCamera.ViewMatrix);
                 particleEffect.Parameters["xProjection"].SetValue(_P.playerCamera.ProjectionMatrix);
-                particleEffect.Parameters["xColor"].SetValue(p.Color.ToVector4());
+                particleEffect.Parameters["xColor"].SetValue(p.Color);
                 particleEffect.Begin();
                 particleEffect.Techniques[0].Passes[0].Begin();
 

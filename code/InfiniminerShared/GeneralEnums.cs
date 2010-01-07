@@ -88,6 +88,8 @@ namespace Infiniminer
     {
         BlockBulkTransfer,      // x-value, y-value, followed by 64 bytes of blocktype ; 
         BlockSet,               // x, y, z, type
+        BlockSetDebris,         // x, y, z, type + particle debris distance check
+        TriggerDebris,          // position, spawns a bunch of particles
         UseTool,                // position, heading, tool, blocktype 
         SelectClass,            // class
         ResourceUpdate,         // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash: ReliableInOrder1

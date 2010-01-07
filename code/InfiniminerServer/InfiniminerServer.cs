@@ -1501,13 +1501,14 @@ namespace Infiniminer
                 }
         }
 
-        public void SetBlock(ushort x, ushort y, ushort z, BlockType blockType, PlayerTeam team)
+        public void SetBlock(ushort x, ushort y, ushort z, BlockType blockType, PlayerTeam team)//dont forget duplicate function SetBlock
         {
             if (x <= 0 || y <= 0 || z <= 0 || (int)x > MAPSIZE - 1 || (int)y > MAPSIZE - 1 || (int)z > MAPSIZE - 1)
                 return;
 
             if (blockType == BlockType.None)//block removed, we must unsleep liquids nearby
             {
+
                 Disturb(x, y, z);
             }
 
@@ -1564,6 +1565,7 @@ namespace Infiniminer
             }
             else
             {
+             
                 blockList[x, y, z] = blockType;
                 blockCreatorTeam[x, y, z] = team;
                 flowSleep[x, y, z] = false;
@@ -1585,9 +1587,101 @@ namespace Infiniminer
                 foreach (NetConnection netConn in playerList.Keys)
                     if (netConn.Status == NetConnectionStatus.Connected)
                         netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+
             }
             //ConsoleWrite("BLOCKSET: " + x + " " + y + " " + z + " " + blockType.ToString());
         }
+
+        public void SetBlockDebris(ushort x, ushort y, ushort z, BlockType blockType, PlayerTeam team)//dont forget duplicate function SetBlock
+        {
+            if (x <= 0 || y <= 0 || z <= 0 || (int)x > MAPSIZE - 1 || (int)y > MAPSIZE - 1 || (int)z > MAPSIZE - 1)
+                return;
+
+            if (blockType == BlockType.None)//block removed, we must unsleep liquids nearby
+            {
+                Disturb(x, y, z);
+            }
+
+            blockListContent[x, y, z, 0] = 0;//dangerous stuff can happen if we dont set this
+
+            if (blockType == BlockType.BeaconRed || blockType == BlockType.BeaconBlue)
+            {
+                Beacon newBeacon = new Beacon();
+                newBeacon.ID = GenerateBeaconID();
+                newBeacon.Team = blockType == BlockType.BeaconRed ? PlayerTeam.Red : PlayerTeam.Blue;
+                beaconList[new Vector3(x, y, z)] = newBeacon;
+                SendSetBeacon(new Vector3(x, y + 1, z), newBeacon.ID, newBeacon.Team);
+            }
+            else if (blockType == BlockType.Pipe)
+            {
+                blockListContent[x, y, z, 1] = 0;//Is pipe connected? [0-1]
+                blockListContent[x, y, z, 2] = 0;//Is pipe a source? [0-1]
+                blockListContent[x, y, z, 3] = 0;//Pipes connected
+                blockListContent[x, y, z, 4] = 0;//Is pipe destination?
+                blockListContent[x, y, z, 5] = 0;//src x
+                blockListContent[x, y, z, 6] = 0;//src y
+                blockListContent[x, y, z, 7] = 0;//src z
+                blockListContent[x, y, z, 8] = 0;//pipe must not contain liquid
+            }
+            else if (blockType == BlockType.Compressor)
+            {
+                blockListContent[x, y, z, 1] = 0;//containtype
+                blockListContent[x, y, z, 2] = 0;//amount
+                blockListContent[x, y, z, 3] = 0;
+            }
+            else if (blockType == BlockType.Pump)
+            {
+                blockListContent[x, y, z, 1] = 0;//direction
+                blockListContent[x, y, z, 2] = 0;//x input
+                blockListContent[x, y, z, 3] = -1;//y input
+                blockListContent[x, y, z, 4] = 0;//z input
+                blockListContent[x, y, z, 5] = 0;//x output
+                blockListContent[x, y, z, 6] = 1;//y output
+                blockListContent[x, y, z, 7] = 0;//z output
+            }
+
+            if (blockType == BlockType.None && (blockList[x, y, z] == BlockType.BeaconRed || blockList[x, y, z] == BlockType.BeaconBlue))
+            {
+                if (beaconList.ContainsKey(new Vector3(x, y, z)))
+                    beaconList.Remove(new Vector3(x, y, z));
+                SendSetBeacon(new Vector3(x, y + 1, z), "", PlayerTeam.None);
+            }
+
+            if (blockType == blockList[x, y, z])//duplicate block, no need to send players data
+            {
+                blockList[x, y, z] = blockType;
+                blockCreatorTeam[x, y, z] = team;
+                flowSleep[x, y, z] = false;
+            }
+            else
+            {
+                
+                blockList[x, y, z] = blockType;
+                blockCreatorTeam[x, y, z] = team;
+                flowSleep[x, y, z] = false;
+
+                // x, y, z, type, all bytes
+                NetBuffer msgBuffer = netServer.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.BlockSetDebris);
+                msgBuffer.Write((byte)x);
+                msgBuffer.Write((byte)y);
+                msgBuffer.Write((byte)z);
+                if (blockType == BlockType.Vacuum)
+                {
+                    msgBuffer.Write((byte)BlockType.None);
+                }
+                else
+                {
+                    msgBuffer.Write((byte)blockType);
+                }
+                foreach (NetConnection netConn in playerList.Keys)
+                    if (netConn.Status == NetConnectionStatus.Connected)
+                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+
+            }
+            //ConsoleWrite("BLOCKSET: " + x + " " + y + " " + z + " " + blockType.ToString());
+        }
+
         public void createBase(PlayerTeam team)
         {
             int pos = randGen.Next(10, 50);
@@ -2826,6 +2920,7 @@ namespace Infiniminer
                                     if (i > 0 && blockList[i - 1, j, k] == opposing)
                                     {
                                         SetBlock((ushort)(i - 1), j, k, transform, PlayerTeam.None);
+                                        //steam
                                     }
                                     if ((int)i < MAPSIZE - 1 && blockList[i + 1, j, k] == opposing)
                                     {
@@ -2889,7 +2984,7 @@ namespace Infiniminer
                                                     {
                                                         SetBlock(a, (ushort)(j - 1), b, liquid, PlayerTeam.None);
                                                         blockListContent[a, j - 1, b, 1] = blockListContent[i, j, k, 1];
-                                                        SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
+                                                        SetBlockDebris(i, j, k, BlockType.None, PlayerTeam.None);
                                                         a = 3;
                                                         break;
                                                     }
@@ -2913,7 +3008,7 @@ namespace Infiniminer
                                                         if (blockTrace(a, (ushort)(j - 1), b, i, (ushort)(j - 1), k, liquid))//needs to be a pathfind
                                                         {
 
-                                                            if (blockListContent[i, j, k, 0] > 0 && liquid == BlockType.Lava)
+                                                            if (blockListContent[i, j, k, 0] > 0 && liquid == BlockType.Lava)//volcano
                                                             {
                                                                 SetBlock(a, (ushort)(j - 1), b, liquid, PlayerTeam.None);
                                                                 blockListContent[a, j - 1, b, 1] = 240 + blockListContent[i, j, k, 0] * 4 + randGen.Next(1, 20);//core stream
@@ -2922,12 +3017,12 @@ namespace Infiniminer
                                                             {
                                                                 SetBlock(a, (ushort)(j - 1), b, liquid, PlayerTeam.None);
                                                                 blockListContent[a, j - 1, b, 1] = 240 + randGen.Next(1, 20);// blockListContent[i, j, k, 0] * 20;
-                                                                SetBlock(i, j, k, BlockType.None, PlayerTeam.None);//using vacuum blocks temporary refill
+                                                                SetBlockDebris(i, j, k, BlockType.None, PlayerTeam.None);//using vacuum blocks temporary refill
                                                             }
                                                             else
                                                             {
                                                                 SetBlock(a, (ushort)(j - 1), b, liquid, PlayerTeam.None);
-                                                                SetBlock(i, j, k, BlockType.None, PlayerTeam.None);//using vacuum blocks temporary refill
+                                                                SetBlockDebris(i, j, k, BlockType.None, PlayerTeam.None);//using vacuum blocks temporary refill
                                                             }
                                                             maxradius = 30;
                                                             a = 65;
@@ -3704,7 +3799,8 @@ namespace Infiniminer
 
             if (removeBlock)
             {
-                SetBlock(x, y, z, BlockType.None, PlayerTeam.None);
+                //SetBlock(x, y, z, BlockType.None, PlayerTeam.None);
+                SetBlockDebris(x, y, z, BlockType.None, PlayerTeam.None);//blockset + adds debris for all players
                 PlaySoundForEveryoneElse(sound, player.Position, player);
             }
             else
@@ -4200,6 +4296,29 @@ namespace Infiniminer
             //Or not, there's no dedicated function for this effect >:(
         }
 
+        public void DebrisEffectAtPoint(int x, int y, int z, BlockType block, int efftype)
+        {
+            //0 = hit
+            //1 = block specific effect
+            
+            /*
+             Vector3 blockPos = msgBuffer.ReadVector3();
+             BlockType blockType = (BlockType)msgBuffer.ReadByte();
+             uint debrisType = msgBuffer.ReadUInt32();
+             */
+            // Send off the explosion to clients.
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.TriggerDebris);
+            msgBuffer.Write(new Vector3(x, y, z));
+            msgBuffer.Write((byte)(block));
+            msgBuffer.Write(efftype);
+
+            foreach (NetConnection netConn in playerList.Keys)
+                if (netConn.Status == NetConnectionStatus.Connected)
+                    netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+            //Or not, there's no dedicated function for this effect >:(
+        }
+        
         public void EarthquakeEffectAtPoint(int x, int y, int z, int strength)
         {
             // Send off the explosion to clients.
