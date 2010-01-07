@@ -94,6 +94,7 @@ namespace Infiniminer
         public DateTime Lifetime = DateTime.Now;
         public float SizeChange = 1.0f;//when deleting 
         public float Gravity = 8.0f;
+        public TimeSpan Expirytime = TimeSpan.FromSeconds(20.0);
     }
 
     public class ParticleEngine
@@ -215,10 +216,12 @@ namespace Infiniminer
                 {
                     if (p.Lifetime < DateTime.Now)
                     {
-                        if (p.Size - ((float)gameTime.ElapsedGameTime.TotalSeconds * p.SizeChange) > 0.0)
-                        p.Size = p.Size - ((float)gameTime.ElapsedGameTime.TotalSeconds*p.SizeChange);
+                        if (p.Size - ((float)gameTime.ElapsedGameTime.TotalSeconds * p.SizeChange) > 0.005)
+                            p.Size = p.Size - ((float)gameTime.ElapsedGameTime.TotalSeconds * p.SizeChange);
+                        else
+                            p.FlaggedForDeletion = true;//hit minimum size, removing
          
-                        if (p.Lifetime < DateTime.Now - TimeSpan.FromSeconds(1.0))
+                        if (p.Lifetime < DateTime.Now - p.Expirytime)
                         {
                             p.FlaggedForDeletion = true;
                         }
@@ -246,6 +249,7 @@ namespace Infiniminer
                 p.Position.Y += (float)randGen.NextDouble() - 0.5f;
                 p.Velocity = new Vector3((float)randGen.NextDouble() * 8 - 4, (float)randGen.NextDouble() * 8, (float)randGen.NextDouble() * 8 - 4);
                 p.Lifetime = DateTime.Now + TimeSpan.FromSeconds(5.0);
+                p.Expirytime = TimeSpan.FromSeconds(0.0);
                 particleList.Add(p);
             }
         }
@@ -300,11 +304,36 @@ namespace Infiniminer
 
                 if (block == BlockType.Gold)
                 {
-                    p.Color = new Vector4(0.65f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 1.0f);
+                    int ll = randGen.Next(0, 3);
+                    if (ll == 2)
+                    {
+                        p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
+                    }
+                    else
+                    {
+                        p.Color = new Vector4(0.65f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 1.0f);
+                        p.Gravity = 20.0f + (float)randGen.NextDouble() - 0.5f;
+                        p.Bounce = 0.1f;
+                    }                    
+                    
                 }
                 else if (block == BlockType.Sand)
                 {
                     p.Color = new Vector4(0.45f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                }
+                else if (block == BlockType.Ore)
+                {
+                    int ll = randGen.Next(0, 3);
+                    if (ll == 2)
+                    {
+                        p.Color = new Vector4(0.45f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.255f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.186f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
+                    }
+                    else
+                    {
+                        p.Color = Vector4.One * (0.2f + (float)(randGen.NextDouble() * 0.7f));
+                        p.Gravity = 20.0f + (float)randGen.NextDouble() - 0.5f;
+                        p.Bounce = 0.4f;
+                    }
                 }
                 else if (block == BlockType.Water)
                 {
@@ -352,16 +381,30 @@ namespace Infiniminer
             }
         }
 
-        public void CreateBloodSplatter(Vector3 playerPosition, Color color)
+        public void CreateBloodSplatter(Vector3 playerPosition, Color color, float strength)
         {
             for (int i = 0; i < 30; i++)
             {
                 Particle p = new Particle();
                 p.Color = color.ToVector4();
-                p.Size = (float)(randGen.NextDouble()*0.2 + 0.05);
+                if (color == Color.Red)
+                {
+                    p.Color.X += (float)(randGen.NextDouble() * 0.5 - 0.3);
+                }
+                else
+                {
+                    p.Color.X += (float)(randGen.NextDouble() * 0.5 - 0.3);
+                    p.Color.Z -= (float)(randGen.NextDouble() * 0.8 - 0.4);
+                }
+                p.Size = (float)(0.05 + (strength*0.15));
                 p.Position = playerPosition;
                 p.Position.Y -= (float)randGen.NextDouble();
-                p.Velocity = new Vector3((float)randGen.NextDouble() * 5 - 2.5f, (float)randGen.NextDouble() * 4f, (float)randGen.NextDouble() * 5 - 2.5f);
+                p.Velocity = new Vector3((float)randGen.NextDouble() * 4 - 2.0f, (float)randGen.NextDouble() * 2f, (float)randGen.NextDouble() * 4 - 2.0f);
+                p.Lifetime = DateTime.Now + TimeSpan.FromSeconds(0.4 + (strength*1.25));
+                p.Bounce = 0.01f;
+                p.SizeChange = 0.2f - (strength*0.2f);
+                if (p.SizeChange < 0.0f)
+                    p.SizeChange = 0.015f;
                 particleList.Add(p);
             }
         }

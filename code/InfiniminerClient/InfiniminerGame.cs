@@ -384,14 +384,18 @@ namespace Infiniminer
                                             BlockType blockType = (BlockType)msgBuffer.ReadByte();
                                             Vector3 tv = new Vector3(x, y, z);
 
-                                            float distFromDebris = (tv + 0.5f * Vector3.One - propertyBag.playerPosition).Length();
-
-                                            propertyBag.particleEngine.CreateBlockDebris(tv + 0.5f * Vector3.One, propertyBag.blockEngine.blockList[x, y, z], Math.Min(14.0f-distFromDebris,10.0f));
-
+                                            
                                             if (blockType == BlockType.None)
                                             {
                                                 if (propertyBag.blockEngine.BlockAtPoint(tv) != BlockType.None)
+                                                {
+                                                    float distFromDebris = (tv + 0.5f * Vector3.One - propertyBag.playerPosition).Length();
+
+                                                    propertyBag.particleEngine.CreateBlockDebris(tv + 0.5f * Vector3.One, propertyBag.blockEngine.blockList[x, y, z], Math.Min(14.0f - distFromDebris, 10.0f));
                                                     propertyBag.blockEngine.RemoveBlock(x, y, z);
+
+                                                }
+
                                             }
 
                                         }
@@ -459,10 +463,20 @@ namespace Infiniminer
                                             {
                                                     propertyBag.particleEngine.CreateBlockDebris(blockPos, blockType, Math.Min(20.0f - distFromDebris, 10.0f)); 
                                             }
-                                            else
+                                            else if(debrisType == 0)
                                             {
                                                 if (distFromDebris < 24)
                                                     propertyBag.particleEngine.CreateDiggingDebris(blockPos);
+                                            }
+                                            else if (debrisType > 10)//anything over this determines damage intensity for hurt effect
+                                            {
+                                                if (distFromDebris < 15)
+                                                {
+                                                    if (blockType == BlockType.SolidRed)
+                                                        propertyBag.particleEngine.CreateBloodSplatter(blockPos, Color.Red, (float)(debrisType)/100);
+                                                    else
+                                                        propertyBag.particleEngine.CreateBloodSplatter(blockPos, Color.Blue, (float)(debrisType)/100);
+                                                }
                                             }
 
                                         }
@@ -521,9 +535,19 @@ namespace Infiniminer
                                             {
                                                 Player player = propertyBag.playerList[playerId];
                                                 player.Alive = false;
-                                                propertyBag.particleEngine.CreateBloodSplatter(player.Position, player.Team == PlayerTeam.Red ? Color.Red : Color.Blue);
+                                                propertyBag.particleEngine.CreateBloodSplatter(player.Position, player.Team == PlayerTeam.Red ? Color.Red : Color.Blue, 2.0f);
                                                 if (playerId != propertyBag.playerMyId)
                                                     propertyBag.PlaySound(InfiniminerSound.Death, player.Position);
+                                                else if(propertyBag.playerDead == false)
+                                                {
+                                                    propertyBag.PlaySound(InfiniminerSound.Death, player.Position);
+                                                    propertyBag.playerVelocity = Vector3.Zero;
+                                                    propertyBag.playerDead = true;
+                                                    propertyBag.allowRespawn = false;
+                                                    propertyBag.screenEffect = ScreenEffect.Death;
+                                                    propertyBag.screenEffectCounter = 0;
+                                                    propertyBag.Content[5] = 0;
+                                                }
                                             }
                                         }
                                         break;

@@ -111,6 +111,8 @@ namespace Infiniminer
                         if (p.Ping > 0)
                             playerText = "*** " + playerText + " ***";
 
+                        playerText = playerText + " " + p.Health;//use content updates
+
                         p.SpriteModel.DrawText(_P.playerCamera.ViewMatrix,
                                                _P.playerCamera.ProjectionMatrix,
                                                p.Position - Vector3.UnitY * 1.5f,

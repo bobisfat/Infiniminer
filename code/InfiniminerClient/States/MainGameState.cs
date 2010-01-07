@@ -190,8 +190,6 @@ namespace Infiniminer.States
                     {
                         _P.KillPlayer(Defines.deathByFall);
                     }
-
-                    _P.SendPlayerUpdate();
             }
             else
             {

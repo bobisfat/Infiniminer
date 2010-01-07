@@ -113,10 +113,10 @@ namespace Infiniminer
             netClient = new NetClient(netConfig);
             netClient.SetMessageTypeEnabled(NetMessageType.ConnectionRejected, true);
 
-            //netClient.SimulatedMinimumLatency = 1.0f;
-            //netClient.SimulatedLatencyVariance = 0.05f;
-            //netClient.SimulatedLoss = 0.1f;
-            //netClient.SimulatedDuplicates = 0.05f;
+            //netClient.SimulatedMinimumLatency = 0.5f;
+            //netClient.SimulatedLatencyVariance = 0.5f;
+            //netClient.SimulatedLoss = 0.2f;
+            //netClient.SimulatedDuplicates = 0.1f;
             for (int a = 0; a < 50; a++)
             {
                 Content[a] = 0;
@@ -253,7 +253,7 @@ namespace Infiniminer
             screenEffect = ScreenEffect.None;
             screenEffectCounter = 0;
             UpdateCamera();
-
+            allowRespawn = false;
             // Tell the server we have respawned.
             NetBuffer msgBufferb = netClient.CreateBuffer();
             msgBufferb.Write((byte)InfiniminerMessage.PlayerAlive);
@@ -624,6 +624,11 @@ namespace Infiniminer
                 }
 
                 this.playerClass = playerClass;
+
+                for (int a = 0; a < 50; a++)
+                {
+                    Content[a] = 0;//empty the baggage
+                }
 
                 NetBuffer msgBuffer = netClient.CreateBuffer();
                 msgBuffer.Write((byte)InfiniminerMessage.SelectClass);

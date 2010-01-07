@@ -71,6 +71,72 @@ namespace Infiniminer
         Dictionary<string,string> varDescriptions = new Dictionary<string,string>();
         Dictionary<string, bool> varAreMessage = new Dictionary<string, bool>();
 
+        public void Auth_Refuse(Player pl)
+        {
+            if (pl.rTime < DateTime.Now)
+            {
+                pl.rTime = DateTime.Now + TimeSpan.FromSeconds(1);
+
+                if (pl.rUpdateCount > 20)//20 was good cept water//needs to be around 22 due to loss
+                {
+                    ConsoleWrite("PLAYER_DEAD_UPDATE_FLOOD: " + pl.Handle + "@" + pl.rUpdateCount + " ROUNDTRIP MS:" + pl.NetConn.AverageRoundtripTime*1000);
+                    pl.Ore = 0;
+                    pl.Cash = 0;
+                    pl.Weight = 0;
+                    pl.Health = 0;
+                    pl.Alive = false;
+                    pl.Content[2] = 0;
+                    pl.Content[3] = 0;
+                    pl.Content[4] = 0;
+                    pl.Content[5] = 0;
+                    SendResourceUpdate(pl);
+                    SendPlayerDead(pl);
+                }
+                else if(pl.rSpeedCount > 10.0f && pl.Alive)//7
+                {
+                    ConsoleWrite("PLAYER_DEAD_TOO_FAST: " + pl.Handle + "@"+pl.rSpeedCount+" ROUNDTRIP MS:" + pl.NetConn.AverageRoundtripTime*1000);
+                    pl.Ore = 0;
+                    pl.Cash = 0;
+                    pl.Weight = 0;
+                    pl.Health = 0;
+                    pl.Alive = false;
+                    pl.Content[2] = 0;
+                    pl.Content[3] = 0;
+                    pl.Content[4] = 0;
+                    pl.Content[5] = 0;
+                    SendResourceUpdate(pl);
+                    SendPlayerDead(pl);
+                }
+                else if (pl.rCount > 10 && pl.Alive)
+                {
+                    ConsoleWrite("PLAYER_DEAD_ILLEGAL_MOVEMENT: " + pl.Handle + "@" + pl.rCount + " ROUNDTRIP MS:" + pl.NetConn.AverageRoundtripTime*1000);
+                    pl.Ore = 0;
+                    pl.Cash = 0;
+                    pl.Weight = 0;
+                    pl.Health = 0;
+                    pl.Alive = false;
+                    pl.Content[2] = 0;
+                    pl.Content[3] = 0;
+                    pl.Content[4] = 0;
+                    pl.Content[5] = 0;
+                    SendResourceUpdate(pl);
+                    SendPlayerDead(pl);
+                }
+                pl.rCount = 0;
+                pl.rUpdateCount = 0;
+                pl.rSpeedCount = 0;
+            }
+        }
+
+        public double Dist_Auth(Vector3 x, Vector3 y)
+        {
+            float dx = y.X - x.X;
+            float dy = 0;
+            float dz = y.Z - x.Z;
+            double dist = Math.Sqrt(dx * dx + dz * dz);
+            return dist;
+        }
+
         public Vector3 Auth_Position(Vector3 pos,Player pl)//check boundaries and legality of action
         {
             BlockType testpoint = BlockAtPoint(pos);
@@ -78,23 +144,28 @@ namespace Infiniminer
             if (testpoint == BlockType.None || testpoint == BlockType.Fire || testpoint == BlockType.Vacuum || testpoint == BlockType.Water || testpoint == BlockType.Lava || testpoint == BlockType.StealthBlockB && pl.Team == PlayerTeam.Blue || testpoint == BlockType.TransBlue && pl.Team == PlayerTeam.Blue || testpoint == BlockType.TrapR && pl.Team == PlayerTeam.Blue || testpoint == BlockType.TrapB && pl.Team == PlayerTeam.Red || testpoint == BlockType.StealthBlockR && pl.Team == PlayerTeam.Red || testpoint == BlockType.TransRed && pl.Team == PlayerTeam.Red)
             {//check if player is not in wall
                //falldamage
-                if (testpoint == BlockType.Fire)
-                {
-                    //burn
-                    if (pl.Health > 1)
-                    {
-                        pl.Health = pl.Health - 10;
-                        if (pl.Health == 0)
-                        {
-                            pl.Weight = 0;
-                            pl.Alive = false;
 
-                            SendResourceUpdate(pl);
-                            SendPlayerDead(pl);
-                            ConsoleWrite(pl.Handle + " died in the fire.");
-                        }
-                    }
-                }
+                //if (testpoint == BlockType.Fire)
+                //{
+                //    //burn
+                //    if (pl.Health > 1)
+                //    {
+                //        pl.Health = pl.Health - 10;
+                //        if (pl.Health == 0)
+                //        {
+                //            pl.Weight = 0;
+                //            pl.Alive = false;
+
+                //            SendResourceUpdate(pl);
+                //            SendPlayerDead(pl);
+                //            ConsoleWrite(pl.Handle + " died in the fire.");
+                //        }
+                //    }
+                //}
+                pl.rSpeedCount += Dist_Auth(pos, pl.Position);
+                pl.rUpdateCount += 1;
+
+                Auth_Refuse(pl);
             }
             else
             {
@@ -115,9 +186,16 @@ namespace Infiniminer
                     ushort z = (ushort)pos.Z;
 
                     if (x < 0 || y < 0 || z < 0 || x >= MAPSIZE || y >= MAPSIZE || z >= MAPSIZE)
+                    {
+                        Auth_Refuse(pl);
+                        pl.rCount += 1;
                         return pl.Position;
+                    }
 
                     SetBlockForPlayer(x, y, z, blockList[x, y, z], blockCreatorTeam[x, y, z], pl);
+                    Auth_Refuse(pl);
+                    pl.rCount += 1;
+
                     return pl.Position;
                 }
                 else//player is dead, return position silent
@@ -1886,9 +1964,9 @@ namespace Infiniminer
             netConfig.Port = 5565;
             netServer = new InfiniminerNetServer(netConfig);
             netServer.SetMessageTypeEnabled(NetMessageType.ConnectionApproval, true);
-            //netServer.SimulatedMinimumLatency = 0.1f;
+            //netServer.SimulatedMinimumLatency = 0.5f;
             //netServer.SimulatedLatencyVariance = 0.05f;
-            //netServer.SimulatedLoss = 0.1f;
+            //netServer.SimulatedLoss = 0.2f;
             //netServer.SimulatedDuplicates = 0.05f;
             //netServer.Configuration.SendBufferSize = 2048000;
             //netServer.Start();//starts too early
@@ -2264,7 +2342,10 @@ namespace Infiniminer
                                                             netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableInOrder3);
                                                 }
 
-                                                SendPlayerRespawn(player);//allow this player to instantly respawn
+                                                if (player.HealthMax > 0 && player.Team != PlayerTeam.None)
+                                                {
+                                                    SendPlayerRespawn(player);//allow this player to instantly respawn
+                                                }
                                             }
                                             break;
 
@@ -2328,6 +2409,15 @@ namespace Infiniminer
                                                 uint newhp = msgBuffer.ReadUInt32();
                                                 if (newhp < player.Health)
                                                 {
+                                                    if (player.Team == PlayerTeam.Red)
+                                                    {
+                                                        DebrisEffectAtPoint((int)(player.Position.X), (int)(player.Position.Y), (int)(player.Position.Z), BlockType.SolidRed, 10 + (int)(player.Health - newhp));
+                                                    }
+                                                    else
+                                                    {
+                                                        DebrisEffectAtPoint((int)(player.Position.X), (int)(player.Position.Y), (int)(player.Position.Z), BlockType.SolidBlue, 10 + (int)(player.Health - newhp));
+                                                    }
+
                                                     player.Health = newhp;
                                                     if (player.Health < 1)
                                                     {
@@ -2467,7 +2557,10 @@ namespace Infiniminer
                 {
                     ConsoleKeyInfo keyInfo = Console.ReadKey();
                     if (keyInfo.Key == ConsoleKey.Enter)
-                        ConsoleProcessInput();
+                    {
+                        if (consoleInput.Length > 0)
+                            ConsoleProcessInput();
+                    }
                     else if (keyInfo.Key == ConsoleKey.Backspace)
                     {
                         if (consoleInput.Length > 0)
@@ -2644,7 +2737,7 @@ namespace Infiniminer
                                                 int cc = p.ExplosiveList.Count;
 
                                                 int ca = 0;
-                                                while (ca < cc + 1)
+                                                while (ca < cc)
                                                 {
                                                     if (p.ExplosiveList[ca].X == i && p.ExplosiveList[ca].Y == j && p.ExplosiveList[ca].Z == k)
                                                     {
@@ -2706,7 +2799,7 @@ namespace Infiniminer
                                                         int cc = p.ExplosiveList.Count;
 
                                                         int ca = 0;
-                                                        while (ca < cc + 1)
+                                                        while (ca < cc)
                                                         {
                                                             if (p.ExplosiveList[ca].X == i && p.ExplosiveList[ca].Y == j && p.ExplosiveList[ca].Z == k)
                                                             {
@@ -3936,7 +4029,7 @@ namespace Infiniminer
                             int cc = p.ExplosiveList.Count;
 
                             int ca = 0;
-                            while(ca < cc+1)
+                            while(ca < cc)
                             {
                                 if (p.ExplosiveList[ca].X == x && p.ExplosiveList[ca].Y == y && p.ExplosiveList[ca].Z == z)
                                 {
@@ -4307,9 +4400,10 @@ namespace Infiniminer
              uint debrisType = msgBuffer.ReadUInt32();
              */
             // Send off the explosion to clients.
+
             NetBuffer msgBuffer = netServer.CreateBuffer();
             msgBuffer.Write((byte)InfiniminerMessage.TriggerDebris);
-            msgBuffer.Write(new Vector3(x, y, z));
+            msgBuffer.Write(new Vector3(x+0.5f, y+0.5f, z+0.5f));
             msgBuffer.Write((byte)(block));
             msgBuffer.Write(efftype);
 
@@ -5259,7 +5353,7 @@ namespace Infiniminer
 
         public void SendPlayerRespawn(Player player)
         {
-            if (!player.Alive)
+            if (!player.Alive && player.Team != PlayerTeam.None)
             {
                 //create respawn script
                 // Respawn a few blocks above a safe position above altitude 0.
@@ -5269,7 +5363,8 @@ namespace Infiniminer
                 for (int i = 0; i < 20; i++)
                 {
                     // Pick a random starting point.
-                    Vector3 startPos = new Vector3(randGen.Next(2, 62), 63, randGen.Next(2, 62));
+
+                Vector3 startPos = new Vector3(randGen.Next(basePosition[player.Team].X - 10, basePosition[player.Team].X + 10), basePosition[player.Team].Y, randGen.Next(basePosition[player.Team].Z - 10, basePosition[player.Team].Z + 10));
 
                     // See if this is a safe place to drop.
                     for (startPos.Y = 63; startPos.Y >= 54; startPos.Y--)
@@ -5298,7 +5393,9 @@ namespace Infiniminer
                 // Drop the player on the middle of the block, not at the corner.
                 player.Position += new Vector3(0.5f, 0, 0.5f);
                 //
-
+                player.rCount = 0;
+                player.rUpdateCount = 0;
+                player.rSpeedCount = 0;
                 NetBuffer msgBuffer = netServer.CreateBuffer();
                 msgBuffer.Write((byte)InfiniminerMessage.PlayerRespawn);
                 msgBuffer.Write(player.Position);

@@ -75,6 +75,10 @@ namespace Infiniminer
         public Color blueTeam = new Color();
         public bool compression = false;
         public string Handle = "";
+        public uint rCount = 0;
+        public uint rUpdateCount = 0;
+        public double rSpeedCount = 0;
+        public DateTime rTime = DateTime.Now;
         public uint Health = 0;
         public uint HealthMax = 0;
         public uint OreMax = 0;
