@@ -419,7 +419,7 @@ namespace Infiniminer.States
             if (_P.moveVector.X != 0 || _P.moveVector.Z != 0)
             {
                 //grab item
-                foreach (KeyValuePair<string, Item> bPair in _P.itemList)
+                foreach (KeyValuePair<uint, Item> bPair in _P.itemList)
                 {
                     TimeSpan diff = DateTime.Now - bPair.Value.Frozen;
                     if (diff.Milliseconds > 0)

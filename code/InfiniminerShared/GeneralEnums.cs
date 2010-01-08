@@ -95,6 +95,9 @@ namespace Infiniminer
         ResourceUpdate,         // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash: ReliableInOrder1
         HealthUpdate,
         WeightUpdate,
+        OreUpdate,
+        CashUpdate,
+        ItemUpdate,             // send its new x/y
         ContentUpdate,          // sends all player.content to player
         ContentSpecificUpdate,   //sends a single content update to a player
         PlayerContentUpdate,    //update a single players content(specific) for all players

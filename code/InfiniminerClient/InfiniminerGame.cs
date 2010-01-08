@@ -274,21 +274,30 @@ namespace Infiniminer
                                         break;
                                     case InfiniminerMessage.SetItem:
                                         {
-                                            Item newItem = new Item((Game)this);
-                                            newItem.ID = msgBuffer.ReadString();
+                                            ItemType iType = (ItemType)(msgBuffer.ReadByte());
+                                            Item newItem = new Item((Game)this,iType);
+                                            newItem.ID = msgBuffer.ReadUInt32();
                                             newItem.Position = msgBuffer.ReadVector3();
                                             newItem.Team = (PlayerTeam)msgBuffer.ReadByte();
                                             newItem.Heading = msgBuffer.ReadVector3();
-                                           
+                                            newItem.deltaPosition = newItem.Position;
                                             propertyBag.itemList.Add(newItem.ID, newItem);
+                                        }
+                                        break;
+                                    case InfiniminerMessage.ItemUpdate:
+                                        {
+                                            uint id = msgBuffer.ReadUInt32();
+
+                                            //if (propertyBag.itemList.ContainsKey(id))
+                                            propertyBag.itemList[id].Position = msgBuffer.ReadVector3();
                                         }
                                         break;
                                     case InfiniminerMessage.SetItemRemove:
                                         {
-                                            string text = msgBuffer.ReadString();
+                                            uint id = msgBuffer.ReadUInt32();
                                           
-                                            if (propertyBag.itemList.ContainsKey(text))
-                                                propertyBag.itemList.Remove(text);
+                                            if (propertyBag.itemList.ContainsKey(id))
+                                                propertyBag.itemList.Remove(id);
                                            
                                         }
                                         break;
@@ -325,6 +334,16 @@ namespace Infiniminer
                                     case InfiniminerMessage.WeightUpdate:
                                         {
                                             propertyBag.playerWeight = msgBuffer.ReadUInt32();                                           
+                                        }
+                                        break;
+                                    case InfiniminerMessage.OreUpdate:
+                                        {
+                                            propertyBag.playerOre = msgBuffer.ReadUInt32();
+                                        }
+                                        break;
+                                    case InfiniminerMessage.CashUpdate:
+                                        {
+                                            propertyBag.playerCash = msgBuffer.ReadUInt32();
                                         }
                                         break;
                                     case InfiniminerMessage.ContentUpdate:
@@ -459,14 +478,22 @@ namespace Infiniminer
 
                                             float distFromDebris = (blockPos + 0.5f * Vector3.One - propertyBag.playerPosition).Length();
 
-                                            if (debrisType == 1)
+                                            if (debrisType == 1)//block was destroyed
                                             {
                                                     propertyBag.particleEngine.CreateBlockDebris(blockPos, blockType, Math.Min(20.0f - distFromDebris, 10.0f)); 
                                             }
-                                            else if(debrisType == 0)
+                                            else if(debrisType == 0)//other players digging
                                             {
                                                 if (distFromDebris < 24)
-                                                    propertyBag.particleEngine.CreateDiggingDebris(blockPos);
+                                                    propertyBag.particleEngine.CreateDiggingDebris(blockPos, blockType);
+                                            }
+                                            else if (debrisType == 2)//block dmg debris
+                                            {
+                                                if (distFromDebris < 16)
+                                                    if (blockType == BlockType.SolidRed)
+                                                        propertyBag.particleEngine.CreateBloodSplatter(blockPos, Color.Red, 1.0f);
+                                                    else
+                                                        propertyBag.particleEngine.CreateBloodSplatter(blockPos, Color.Blue, 1.0f);
                                             }
                                             else if (debrisType > 10)//anything over this determines damage intensity for hurt effect
                                             {

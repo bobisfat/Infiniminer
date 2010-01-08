@@ -198,11 +198,39 @@ namespace Infiniminer
                     }
                     else
                     {
+                       
+                        Vector3 nv = p.Velocity;//adjustment axis
+                        //Vector3 fv = p.Velocity;//final velocity
+
+                        nv.X = 0;
+                        nv.Z = 0;
                         if (Math.Abs(p.Velocity.Y) > 2.0f)
+                        if (gameInstance.propertyBag.blockEngine.BlockAtPoint(p.Position + ((float)(gameTime.ElapsedGameTime.TotalSeconds) * nv)) != BlockType.None)
                         {
-                            p.Position -= (float)gameTime.ElapsedGameTime.TotalSeconds * p.Velocity / 2;
+                            p.Position.Y -= (float)gameTime.ElapsedGameTime.TotalSeconds * p.Velocity.Y / 2;
                             p.Velocity.Y = -p.Velocity.Y * p.Bounce;
                         }
+
+                        nv.X = p.Velocity.X;
+                        nv.Y = 0;
+                        nv.Z = 0;
+                        if (Math.Abs(p.Velocity.X) > 0.3f)
+                        if (gameInstance.propertyBag.blockEngine.BlockAtPoint(p.Position + ((float)(gameTime.ElapsedGameTime.TotalSeconds) * nv)) != BlockType.None)
+                        {
+                            p.Position.X -= (float)gameTime.ElapsedGameTime.TotalSeconds * p.Velocity.X / 2;
+                            p.Velocity.X = -p.Velocity.X * p.Bounce;
+                        }
+
+                        nv.X = 0;
+                        nv.Y = 0;
+                        nv.Z = p.Velocity.Z;
+                        if (Math.Abs(p.Velocity.Z) > 0.3f)
+                        if (gameInstance.propertyBag.blockEngine.BlockAtPoint(p.Position + ((float)(gameTime.ElapsedGameTime.TotalSeconds) * nv)) != BlockType.None)
+                        {
+                            p.Position.Z -= (float)gameTime.ElapsedGameTime.TotalSeconds * p.Velocity.Z / 2;
+                            p.Velocity.Z = -p.Velocity.Z * p.Bounce;
+                        }
+                        //p.Position -= (float)gameTime.ElapsedGameTime.TotalSeconds * p.Velocity / 2;
                         //p.Velocity.Y -= (p.Velocity.Y * (float)gameTime.ElapsedGameTime.TotalSeconds) / 2;
                     }
                 }
@@ -254,18 +282,102 @@ namespace Infiniminer
             }
         }
 
-        public void CreateDiggingDebris(Vector3 explosionPosition)
+        public void CreateDiggingDebris(Vector3 explosionPosition, BlockType block)
         {
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 10; i++)
             {
                 Particle p = new Particle();
                 p.Color = new Vector4(0.3f,0.3f,0.3f,1.0f);//0.35f,0.235f,0.156f,1.0f);//new Color(90, 60, 40);
                 p.Size = (float)(randGen.NextDouble() * 0.05 + 0.01);
                 p.Position = explosionPosition;
                 p.Position.Y += (float)randGen.NextDouble() - 0.5f;
-                p.Velocity = new Vector3((float)randGen.NextDouble() * 2 - 1, (float)randGen.NextDouble() * 3, (float)randGen.NextDouble() * 2 - 1);
+                p.Velocity = new Vector3((float)randGen.NextDouble() * 4 - 2, (float)randGen.NextDouble() * 3, (float)randGen.NextDouble() * 4 - 2);
                 p.Lifetime = DateTime.Now+TimeSpan.FromSeconds(2.0);
-                p.Bounce = 0.2f;
+                p.Bounce = 0.3f;
+                p.SizeChange = 0.1f;
+
+                if (block == BlockType.Gold)
+                {
+                    int ll = randGen.Next(0, 3);
+                    if (ll == 2)
+                    {
+                        p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
+                    }
+                    else
+                    {
+                        p.Color = new Vector4(0.65f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.1f), 1.0f);
+                        p.Gravity = 20.0f + (float)randGen.NextDouble() - 0.5f;
+                        p.Bounce = 0.1f;
+                    }
+
+                }
+                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2)
+                {
+                    p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
+                }
+                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2)
+                {
+                    p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
+                }
+                else if (block == BlockType.Sand)
+                {
+                    p.Color = new Vector4(0.45f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                }
+                else if (block == BlockType.Ore)
+                {
+                    int ll = randGen.Next(0, 3);
+                    if (ll == 2)
+                    {
+                        p.Color = new Vector4(0.45f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.255f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.186f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
+                    }
+                    else
+                    {
+                        p.Color = Vector4.One * (0.2f + (float)(randGen.NextDouble() * 0.7f));
+                        p.Gravity = 20.0f + (float)randGen.NextDouble() - 0.5f;
+                        p.Bounce = 0.4f;
+                    }
+                }
+                else if (block == BlockType.Water)
+                {
+                    p.Lifetime = DateTime.Now + TimeSpan.FromSeconds(0.0 - randGen.NextDouble());
+                    p.Color = new Vector4(0.1f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.4f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.70f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                    p.SizeChange = 0.2f;
+                    p.Bounce = 0.0f;
+                    p.Position.Y += ((float)randGen.NextDouble() * 0.5f) + 0.75f;
+                    p.Velocity = new Vector3(0.0f, -0.25f + (float)randGen.NextDouble(), 0.0f);
+                    p.Gravity = 6.0f;
+                }
+                else if (block == BlockType.Lava)
+                {
+                    p.Lifetime = DateTime.Now + TimeSpan.FromSeconds(0.0 - randGen.NextDouble());
+                    int ll = randGen.Next(0, 2);
+                    if (ll == 0)
+                    {
+                        p.Color = new Vector4(0.95f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.7f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.05f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                        p.Gravity = 6.0f;
+                        p.Velocity = new Vector3(((float)randGen.NextDouble() - 0.5f) * 2.0f, 1.0f + (float)randGen.NextDouble() * 2.0f - 0.25f, ((float)randGen.NextDouble() - 0.5f) * 2.0f);
+                    }
+                    else if (ll == 1)
+                    {
+                        p.Color = new Vector4(0.3f + (float)((randGen.NextDouble() - 0.5f) * 0.01f), 0.01f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.0f, 1.0f);
+                        p.Gravity = 2.0f + (float)randGen.NextDouble() - 0.5f;
+                        p.Velocity = new Vector3(((float)randGen.NextDouble() - 0.5f) * 2.0f, 1.0f + (float)randGen.NextDouble() * 2.0f - 0.25f, ((float)randGen.NextDouble() - 0.5f) * 2.0f);
+                    }
+                    else if (ll == 2)
+                    {
+                        p.Gravity = 4.0f + (float)randGen.NextDouble() - 0.5f;
+                        p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.02f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 0.01f, 1.0f);
+                        p.Velocity = new Vector3(((float)randGen.NextDouble() - 0.5f) * 2.0f, (float)randGen.NextDouble() * 1.0f - 0.25f, ((float)randGen.NextDouble() - 0.5f) * 2.0f);
+                    }
+                    p.SizeChange = 0.2f;
+                    p.Bounce = 0.0f;
+                    p.Position.Y += 1.0f + (float)randGen.NextDouble() - 0.5f;
+
+                }
+                else
+                {
+                    p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
+                }
                 particleList.Add(p);
             }
         }
@@ -320,6 +432,14 @@ namespace Infiniminer
                 else if (block == BlockType.Sand)
                 {
                     p.Color = new Vector4(0.45f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                }
+                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2)
+                {
+                    p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
+                }
+                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2)
+                {
+                    p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
                 else if (block == BlockType.Ore)
                 {

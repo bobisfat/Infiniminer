@@ -79,7 +79,7 @@ namespace Infiniminer
         public uint teamBlueCash = 0;
         public PlayerTeam teamWinners = PlayerTeam.None;
         public Dictionary<Vector3, Beacon> beaconList = new Dictionary<Vector3, Beacon>();
-        public Dictionary<string, Item> itemList = new Dictionary<string, Item>();
+        public Dictionary<uint, Item> itemList = new Dictionary<uint, Item>();
 
         // Screen effect stuff.
         private Random randGen = new Random();
@@ -163,6 +163,7 @@ namespace Infiniminer
             {
                 case BlockType.TransBlue:
                 case BlockType.SolidBlue:
+                case BlockType.SolidBlue2:
                 case BlockType.BeaconBlue:
                 case BlockType.BankBlue:
                 case BlockType.BaseBlue:
@@ -172,6 +173,7 @@ namespace Infiniminer
                     return PlayerTeam.Blue;
                 case BlockType.TransRed:
                 case BlockType.SolidRed:
+                case BlockType.SolidRed2:
                 case BlockType.BaseRed:
                 case BlockType.BeaconRed:
                 case BlockType.BankRed:
@@ -198,7 +200,7 @@ namespace Infiniminer
             addChatMessage("Map saved to " + filename, ChatMessageType.SayAll, 10f);//DateTime.Now.ToUniversalTime());
         }
 
-        public void GetItem(string ID)
+        public void GetItem(uint ID)
         {
             NetBuffer msgBuffer = netClient.CreateBuffer();
             msgBuffer.Write((byte)InfiniminerMessage.GetItem);
@@ -535,7 +537,7 @@ namespace Infiniminer
                 PlayerTools.Detonator,
                 PlayerTools.SpawnItem };
 
-                playerBlocks = new BlockType[17] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[18] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
@@ -549,7 +551,7 @@ namespace Infiniminer
                                              BlockType.Road,
                                              //BlockType.Lava,
                                              //BlockType.Dirt, 
-                                             //BlockType.Controller,
+                                             BlockType.Hinge,
                                              BlockType.Lever,
                                              BlockType.Pump,
                                              BlockType.Compressor,
@@ -562,50 +564,48 @@ namespace Infiniminer
                 {
                     case PlayerClass.Prospector:
                         playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
-                                                        PlayerTools.ConstructionGun,
-                                                        PlayerTools.ProspectingRadar     };
-                        playerBlocks = new BlockType[4] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
-                                                        playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
-                                                        playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
-                                                        BlockType.Ladder    };
+                                                            PlayerTools.ConstructionGun,
+                                                            PlayerTools.ProspectingRadar };
+
+                        playerBlocks = new BlockType[5] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                            playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
+                                                            playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
+                                                            playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
+                                                            BlockType.Shock
+                                                        };
                         break;
 
                     case PlayerClass.Miner:
-                        playerTools = new PlayerTools[2] {  PlayerTools.Pickaxe,
-                                                        PlayerTools.ConstructionGun     };
-                        playerBlocks = new BlockType[3] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
-                                                        playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
-                                                        BlockType.Ladder    };
+                        playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
+                                                            PlayerTools.ConstructionGun,
+                                                            PlayerTools.StrongArm };
+
+                        playerBlocks = new BlockType[2] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                            BlockType.Ladder };
                         break;
 
                     case PlayerClass.Engineer:
-                        playerTools = new PlayerTools[4] {  PlayerTools.Pickaxe,
-                                                        PlayerTools.ConstructionGun,     
-                                                        PlayerTools.DeconstructionGun,
-                                                        PlayerTools.SpawnItem };
-                        playerBlocks = new BlockType[13] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
-                                                        playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue, //Only need one entry due to right-click
-                                                        BlockType.Road,
+                        playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
+                                                            PlayerTools.ConstructionGun,     
+                                                            PlayerTools.DeconstructionGun };
+
+                        playerBlocks = new BlockType[9] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                        playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
                                                         BlockType.Ladder,
                                                         BlockType.Jump,
-                                                        BlockType.Shock,
-                                                        BlockType.Water,
                                                         BlockType.Pump,
                                                         BlockType.Pipe,
-                                                        playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
-                                                        playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
+                                                        BlockType.Lever,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue  };
                         break;
 
                     case PlayerClass.Sapper:
                         playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
-                                                        PlayerTools.ConstructionGun,
-                                                        PlayerTools.Detonator     };
-                        playerBlocks = new BlockType[4] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
-                                                        playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
-                                                        BlockType.Ladder,
-                                                        BlockType.Explosive     };
+                                                            PlayerTools.ConstructionGun,
+                                                            PlayerTools.Smash};
+                        playerBlocks = new BlockType[1] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                            };
                         break;
                 }
             }
@@ -680,10 +680,13 @@ namespace Infiniminer
 
             // Figure out what the result is.
             bool removeBlock = false;
-
+            int Damage = 0;
             InfiniminerSound sound = InfiniminerSound.DigDirt;
 
             BlockType block = blockEngine.BlockAtPoint(hitPoint);
+
+            //if(TeamFromBlock(block) !=
+            Damage = BlockInformation.GetMaxHP(block) > 0 ? 2 : 0;
             switch (block)
             {
                 case BlockType.Dirt:
@@ -715,12 +718,52 @@ namespace Infiniminer
                     break;
 
                 case BlockType.Gold:
-                    removeBlock = true;
+                    //removeBlock = true;
                     sound = InfiniminerSound.DigMetal;
                     break;
 
                 case BlockType.Diamond:
                     removeBlock = true;
+                    sound = InfiniminerSound.DigMetal;
+                    break;
+
+                case BlockType.SolidRed:
+                    if (playerTeam == PlayerTeam.Blue)
+                        Damage = 10;
+                    else if (playerOre > 1)
+                        Damage = 10;
+                    else//player has no ore
+                        Damage = 0;
+                    sound = InfiniminerSound.DigMetal;
+                    break;
+
+                case BlockType.SolidBlue:
+                    if (playerTeam == PlayerTeam.Red)
+                        Damage = 10;
+                    else if (playerOre > 1)
+                        Damage = 10;
+                    else//player has no ore
+                        Damage = 0;
+                    sound = InfiniminerSound.DigMetal;
+                    break;
+
+                case BlockType.SolidRed2:
+                    if (playerTeam == PlayerTeam.Blue)
+                        Damage = 10;
+                    else if (playerOre > 1)
+                        Damage = 10;
+                    else//player has no ore
+                        Damage = 0;
+                    sound = InfiniminerSound.DigMetal;
+                    break;
+
+                case BlockType.SolidBlue2:
+                    if (playerTeam == PlayerTeam.Red)
+                        Damage = 10;
+                    else if (playerOre > 1)
+                        Damage = 10;
+                    else//player has no ore
+                        Damage = 0;
                     sound = InfiniminerSound.DigMetal;
                     break;
             }
@@ -737,8 +780,21 @@ namespace Infiniminer
                 msgBuffer.Write((byte)BlockType.None);
                 netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
                 blockEngine.RemoveBlock(x,y,z);//local block removal//needs a sync check
-                particleEngine.CreateDiggingDebris(hitPoint);
+                particleEngine.CreateDiggingDebris(hitPoint - (playerCamera.GetLookVector()*0.3f),block);
                 particleEngine.CreateBlockDebris(new Vector3(x+0.5f,y+0.5f,z+0.5f), block, 10.0f);
+                PlaySound(sound);//local sound effect
+            }
+            else if(Damage > 0)
+            {
+                playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+                NetBuffer msgBuffer = netClient.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+                msgBuffer.Write(playerPosition);
+                msgBuffer.Write(playerCamera.GetLookVector());
+                msgBuffer.Write((byte)PlayerTools.Pickaxe);
+                msgBuffer.Write((byte)BlockType.None);
+                netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+                particleEngine.CreateDiggingDebris(hitPoint - (playerCamera.GetLookVector() * 0.3f), block);
                 PlaySound(sound);//local sound effect
             }
             else//it doesnt play the sound effect, but will still try send server ray for lag compensation
@@ -756,11 +812,6 @@ namespace Infiniminer
 
         public void FireConstructionGun(BlockType blockType)
         {
-            FireConstructionGun(blockType, false);
-        }
-
-        public void FireConstructionGun(BlockType blockType, bool alternate)
-        {
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
 
@@ -773,25 +824,7 @@ namespace Infiniminer
             msgBuffer.Write(playerPosition);
             msgBuffer.Write(playerCamera.GetLookVector());
             msgBuffer.Write((byte)PlayerTools.ConstructionGun);
-            BlockType nb = blockType;
-            if (alternate)
-            {
-                switch (nb)
-                {
-                    // Code allows to use alternate colour of everything, but it's only enabled for translucents
-                    /*case BlockType.BankBlue: nb = BlockType.BankRed; break;
-                    case BlockType.BeaconBlue: nb = BlockType.BeaconRed; break;
-                    case BlockType.SolidBlue: nb = BlockType.SolidRed; break;*/
-                    case BlockType.TransBlue: nb = BlockType.TransRed; break;
-
-                    /*case BlockType.BankRed: nb = BlockType.BankBlue; break;
-                    case BlockType.BeaconRed: nb = BlockType.BeaconBlue; break;
-                    case BlockType.SolidRed: nb = BlockType.SolidBlue; break;*/
-                    case BlockType.TransRed: nb = BlockType.TransBlue; break;
-                    default: break;//Nothing
-                }
-            }
-            msgBuffer.Write((byte)nb);
+            msgBuffer.Write((byte)blockType);
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
@@ -1000,6 +1033,10 @@ namespace Infiniminer
             else if (blockType == BlockType.Compressor)
             {
                 return "8: Compress/Decompress";
+            }
+            else if (blockType == BlockType.Hinge)
+            {
+                return "8: Set 9: Rotate";
             }
             else if (blockType == BlockType.Lever)
             {

@@ -100,6 +100,7 @@ namespace Infiniminer
             blockIcons[BlockType.Lever] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
             blockIcons[BlockType.RadarRed] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
             blockIcons[BlockType.RadarBlue] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
+            blockIcons[BlockType.Hinge] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
             //held icons
             blockIcons[BlockType.Diamond] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_diamond");
             blockIcons[BlockType.MagmaVent] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
@@ -110,6 +111,8 @@ namespace Infiniminer
             blockIcons[BlockType.Sand] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_sand");
             blockIcons[BlockType.Spring] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_spring");
             blockIcons[BlockType.Mud] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_dirt");
+            blockIcons[BlockType.SolidBlue2] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_solid_blue");
+            blockIcons[BlockType.SolidRed2] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_solid_red");
             //blockIcons[BlockType.Spring] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_rock");
             blockIcons[BlockType.None] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_deconstruction");
 
@@ -389,7 +392,7 @@ namespace Infiniminer
             spriteBatch.DrawString(uiFont, "LOOT: $" + _P.playerCash, new Vector2(textStart + 170, 2), Color.White);
             RenderMessageCenter(spriteBatch, String.Format("Health: {0:000}", _P.playerHealth) + "/" + String.Format("{0:000}", _P.playerHealthMax), new Vector2(graphicsDevice.Viewport.Width - 300, graphicsDevice.Viewport.Height - 20), _P.playerHealth >= _P.playerHealthMax / 4 ? _P.playerHealth >= _P.playerHealthMax * 0.8f ? Color.Green : Color.Gray : Defines.IM_RED, Color.Black);
             //spriteBatch.DrawString(uiFont, "HEALTH: " + _P.playerHealth + "/" + _P.playerHealthMax, new Vector2(textStart + 170, 2), Color.White);
-            spriteBatch.DrawString(uiFont, "WEIGHT: " + _P.playerWeight + "/" + _P.playerWeightMax, new Vector2(textStart + 360, 2), Color.White);
+            spriteBatch.DrawString(uiFont, "WEIGHT: " + _P.playerWeight + "/" + _P.playerWeightMax, new Vector2(textStart + 320, 2), Color.White);
             spriteBatch.DrawString(uiFont, "TEAM ORE: " + _P.teamOre, new Vector2(textStart + 515, 2), Color.White);
             spriteBatch.DrawString(uiFont, _P.redName + ": $" + _P.teamRedCash, new Vector2(textStart + 700, 2), _P.red);// Defines.IM_RED);
             spriteBatch.DrawString(uiFont, _P.blueName + ": $" + _P.teamBlueCash, new Vector2(textStart + 860, 2), _P.blue);// Defines.IM_BLUE);

@@ -124,7 +124,7 @@ namespace Infiniminer
                 }
             }
         }
-
+        public Vector3 deltaPosition = Vector3.Zero;
         private Vector3 position = Vector3.Zero;
         public Vector3 Position
         {
@@ -165,6 +165,19 @@ namespace Infiniminer
             // If we have more than 10 packets, remove the oldest.
             if (interpList.Count > 10)
                 interpList.RemoveAt(0);
+
+            if (Math.Abs(deltaPosition.X - position.X) > 5.0f)//warp player 
+            {
+                deltaPosition = position;
+            }
+            else if (Math.Abs(deltaPosition.X - position.X) > 5.0f)
+            {
+                deltaPosition = position;
+            }
+            else if (Math.Abs(deltaPosition.X - position.X) > 5.0f)
+            {
+                deltaPosition = position;
+            }
         }
 
         public void StepInterpolation(double gameTime)

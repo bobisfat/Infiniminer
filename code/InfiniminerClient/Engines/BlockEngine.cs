@@ -146,6 +146,8 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.HomeBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_home_blue"));
             blockTextures[(byte)BlockTexture.SolidRed] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_red"));
             blockTextures[(byte)BlockTexture.SolidBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_blue"));
+            blockTextures[(byte)BlockTexture.SolidRed2] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_red2"));//placeholder texture
+            blockTextures[(byte)BlockTexture.SolidBlue2] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_blue2"));//placeholder texture
             blockTextures[(byte)BlockTexture.Ladder] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_ladder"));
             blockTextures[(byte)BlockTexture.LadderTop] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_ladder_top"));
             blockTextures[(byte)BlockTexture.Spikes] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_spikes"));
@@ -205,6 +207,8 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.TrapVis] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_trapVis"));
             blockTextures[(byte)BlockTexture.Magma] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_magma"));
             blockTextures[(byte)BlockTexture.Lever] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism"));
+            blockTextures[(byte)BlockTexture.Hinge] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism"));
+            
             // Load our effects.
             basicEffect = gameInstance.Content.Load<Effect>("effect_basic");
 

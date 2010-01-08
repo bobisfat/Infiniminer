@@ -17,11 +17,13 @@ namespace Infiniminer
 {
     public class Item
     {
-        public string ID;
+        public uint ID;
         public PlayerTeam Team;
         public Vector3 Heading;
         public Vector3 Position;
-        public int Type;
+        public Vector3 Velocity = Vector3.Zero;
+        public Vector3 deltaPosition;
+        public ItemType Type;
         public DateTime Frozen;//frozen until greater than this time
 
         public bool QueueAnimationBreak = false;
@@ -30,10 +32,11 @@ namespace Infiniminer
         public SpriteModel SpriteModel;
         private Game gameInstance;
 
-        public Item(Game gameInstance)
+        public Item(Game gameInstance, ItemType iType)
         {
             Frozen = DateTime.Now;
-            
+
+            Type = iType;
             this.gameInstance = gameInstance;
             if (gameInstance != null)
             {
@@ -68,8 +71,21 @@ namespace Infiniminer
             if (gameInstance == null)
                 return;
 
-            string textureName = "sprites/tex_sprite_lemonorgoldnum";
-    
+            string textureName = "";
+
+            switch(Type)
+            {
+                case ItemType.Gold:
+                    textureName = "sprites/tex_sprite_lemonorgoldnum";
+                    break;
+                case ItemType.Ore:
+                    textureName = "sprites/tex_sprite_lemonorgoldnum";
+                    break;
+                default:
+                    textureName = "sprites/tex_sprite_lemonorgoldnum";
+                    break;
+            }
+            
             Texture2D orig = gameInstance.Content.Load<Texture2D>(textureName);
            
             this.SpriteModel.SetSpriteTexture(orig);

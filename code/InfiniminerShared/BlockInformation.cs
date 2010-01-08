@@ -5,6 +5,14 @@ using System.Text;
 
 namespace Infiniminer
 {
+    public enum ItemType : byte
+    {
+        None,
+        Gold,
+        Ore,
+        MAXIMUM
+    }
+
     public enum BlockType : byte
     {
         None,
@@ -28,6 +36,8 @@ namespace Infiniminer
         Road,
         SolidRed,
         SolidBlue,
+        SolidRed2,
+        SolidBlue2,
         Metal,
         DirtSign,
         Lava,
@@ -51,6 +61,7 @@ namespace Infiniminer
         Lever,
         RadarRed,
         RadarBlue,
+        Hinge,
         MAXIMUM
     }
 
@@ -98,6 +109,8 @@ namespace Infiniminer
         TeleSideB,
         SolidRed,
         SolidBlue,
+        SolidRed2,
+        SolidBlue2,
         Metal,
         DirtSign,
         Lava,
@@ -127,6 +140,7 @@ namespace Infiniminer
         TransBlue,
         RadarRed,
         RadarBlue,
+        Hinge,
         MAXIMUM
     }
 
@@ -143,21 +157,113 @@ namespace Infiniminer
 
     public class BlockInformation
     {
+        static int[] blockHP = new int[256];
+        static int[] blockMaxHP = new int[256];
+
+        static BlockInformation()
+        {
+            for (int a = 0; a < 255; a++)
+            {
+                blockHP[a] = 10;
+                blockMaxHP[a] = 30;
+            }
+
+            blockMaxHP[(byte)BlockType.Water] = 0;
+            blockMaxHP[(byte)BlockType.Lava] = 0;
+            blockMaxHP[(byte)BlockType.Spring] = 0;
+            blockMaxHP[(byte)BlockType.MagmaVent] = 0;
+            blockMaxHP[(byte)BlockType.Magma] = 0;
+            blockMaxHP[(byte)BlockType.Fire] = 0;
+            blockMaxHP[(byte)BlockType.BaseBlue] = 0;
+            blockMaxHP[(byte)BlockType.BaseRed] = 0;
+            blockMaxHP[(byte)BlockType.Vacuum] = 0;
+            blockMaxHP[(byte)BlockType.Sand] = 0;
+            blockMaxHP[(byte)BlockType.Dirt] = 0;
+            blockMaxHP[(byte)BlockType.Ore] = 0;
+            
+            blockHP[(byte)BlockType.Gold] = 80;
+            blockMaxHP[(byte)BlockType.Gold] = 80;
+
+            blockMaxHP[(byte)BlockType.SolidRed] = 50;
+            blockMaxHP[(byte)BlockType.SolidBlue] = 50;
+
+            blockHP[(byte)BlockType.SolidRed2] = 50;
+            blockMaxHP[(byte)BlockType.SolidRed2] = 100;
+
+            blockHP[(byte)BlockType.SolidBlue2] = 50;
+            blockMaxHP[(byte)BlockType.SolidBlue2] = 100;
+
+        }
+
+        public static int GetHP(BlockType blockType)
+        {
+            return blockHP[(byte)blockType];
+        }
+
+        public static int GetMaxHP(BlockType blockType)
+        {
+            return blockMaxHP[(byte)blockType];
+        }
+        //    switch (blockType)
+        //    {
+        //        case BlockType.RadarRed:
+        //        case BlockType.RadarBlue:
+        //        case BlockType.BankRed:
+        //        case BlockType.BankBlue:
+        //        case BlockType.BeaconRed:
+        //        case BlockType.BeaconBlue:
+        //        case BlockType.Lever:
+        //        case BlockType.Hinge:
+        //        case BlockType.Water:
+        //        case BlockType.Generator:
+        //        case BlockType.Controller:
+        //        case BlockType.Pump:
+        //        case BlockType.Compressor:
+        //        case BlockType.Lava:
+        //        case BlockType.Dirt:
+        //        case BlockType.Pipe:
+        //        case BlockType.StealthBlockB:
+        //        case BlockType.StealthBlockR:
+        //        case BlockType.TrapB:
+        //        case BlockType.TrapR:
+        //        case BlockType.TransRed:
+        //        case BlockType.TransBlue:
+        //        case BlockType.Road:
+        //        case BlockType.Jump:
+        //        case BlockType.Ladder:
+        //        case BlockType.Shock:
+        //        case BlockType.Explosive:
+        //            return 10;
+
+        //        case BlockType.SolidRed:
+        //        case BlockType.SolidBlue:
+        //            return 10;
+
+        //        case BlockType.SolidRed2:
+        //        case BlockType.SolidBlue2:
+        //            return 50;
+        //    }
+
+        //    return 10;
+        //}
+       
         public static uint GetCost(BlockType blockType)
         {
             switch (blockType)
             {
-                case BlockType.BankRed:
-                case BlockType.BankBlue:
-                case BlockType.BeaconRed:
-                case BlockType.BeaconBlue:
                 case BlockType.RadarRed:
                 case BlockType.RadarBlue:
+                    return 200;
+                case BlockType.BankRed:
+                case BlockType.BankBlue:
+                    return 200;
+                case BlockType.BeaconRed:
+                case BlockType.BeaconBlue:
                 case BlockType.Lever:
-                    return 50;
-
+                case BlockType.Hinge:
                 case BlockType.SolidRed:
                 case BlockType.SolidBlue:
+                    return 50;
                 case BlockType.Water:
                 case BlockType.Generator:
                 case BlockType.Controller:
@@ -208,6 +314,8 @@ namespace Infiniminer
                     return BlockTexture.Pump;
                 case BlockType.Compressor:
                     return BlockTexture.Compressor;
+                case BlockType.Hinge:
+                    return BlockTexture.Hinge;
                 case BlockType.Pipe:
                     return BlockTexture.Pipe;
                 case BlockType.Metal:
@@ -354,6 +462,10 @@ namespace Infiniminer
                     return BlockTexture.SolidRed;
                 case BlockType.SolidBlue:
                     return BlockTexture.SolidBlue;
+                case BlockType.SolidRed2:
+                    return BlockTexture.SolidRed2;
+                case BlockType.SolidBlue2:
+                    return BlockTexture.SolidBlue2;
                 case BlockType.TransRed:
                     return BlockTexture.TransRed;
                 case BlockType.TransBlue:

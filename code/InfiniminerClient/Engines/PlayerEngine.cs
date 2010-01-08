@@ -39,7 +39,15 @@ namespace Infiniminer
                 p.TimeIdle += (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (p.TimeIdle > 0.5f)
                     p.IdleAnimation = true;
+
+                p.deltaPosition = p.deltaPosition + (((p.Position - p.deltaPosition) * (8*(float)gameTime.ElapsedGameTime.TotalSeconds)));
+
                 p.SpriteModel.Update(gameTime);
+            }
+
+            foreach (KeyValuePair<uint, Item> i in _P.itemList)//  if (bPair.Value.Team == _P.playerTeam)//doesnt care which team
+            {
+                i.Value.deltaPosition = i.Value.deltaPosition + (((i.Value.Position - i.Value.deltaPosition) * (8*(float)gameTime.ElapsedGameTime.TotalSeconds)));
             }
         }
 
@@ -54,25 +62,26 @@ namespace Infiniminer
             {
                 if (p.Alive && p.ID != _P.playerMyId)
                 {
+
                     p.SpriteModel.Draw(_P.playerCamera.ViewMatrix,
                                        _P.playerCamera.ProjectionMatrix,
                                        _P.playerCamera.Position,
                                        _P.playerCamera.GetLookVector(),
-                                       p.Position - Vector3.UnitY * 1.5f,
+                                       p.deltaPosition - Vector3.UnitY * 1.5f,
                                        p.Heading,
                                        2);
                 }
             }
 
-            foreach (KeyValuePair<string, Item> i in _P.itemList)//  if (bPair.Value.Team == _P.playerTeam)//doesnt care which team
+            foreach (KeyValuePair<uint, Item> i in _P.itemList)//  if (bPair.Value.Team == _P.playerTeam)//doesnt care which team
             {
-                    i.Value.SpriteModel.Draw(_P.playerCamera.ViewMatrix,
+                     i.Value.SpriteModel.Draw(_P.playerCamera.ViewMatrix,
                                        _P.playerCamera.ProjectionMatrix,
                                        _P.playerCamera.Position,
                                        _P.playerCamera.GetLookVector(),
-                                       i.Value.Position - Vector3.UnitY * 1.5f,//* 1.5f probably not helpful
+                                       i.Value.deltaPosition,// - Vector3.UnitY * 0.5f,
                                        i.Value.Heading,
-                                       2); 
+                                       0.5f); 
             }
         }
 
