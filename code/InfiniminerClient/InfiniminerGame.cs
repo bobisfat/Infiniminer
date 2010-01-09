@@ -292,6 +292,15 @@ namespace Infiniminer
                                             propertyBag.itemList[id].Position = msgBuffer.ReadVector3();
                                         }
                                         break;
+                                    case InfiniminerMessage.ItemScaleUpdate:
+                                        {
+                                            
+                                            uint id = msgBuffer.ReadUInt32();
+
+                                            //if (propertyBag.itemList.ContainsKey(id))
+                                            propertyBag.itemList[id].Scale = msgBuffer.ReadFloat();
+                                        }
+                                        break;
                                     case InfiniminerMessage.SetItemRemove:
                                         {
                                             uint id = msgBuffer.ReadUInt32();

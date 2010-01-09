@@ -75,13 +75,26 @@ namespace Infiniminer
 
             foreach (KeyValuePair<uint, Item> i in _P.itemList)//  if (bPair.Value.Team == _P.playerTeam)//doesnt care which team
             {
-                     i.Value.SpriteModel.Draw(_P.playerCamera.ViewMatrix,
-                                       _P.playerCamera.ProjectionMatrix,
-                                       _P.playerCamera.Position,
-                                       _P.playerCamera.GetLookVector(),
-                                       i.Value.deltaPosition,// - Vector3.UnitY * 0.5f,
-                                       i.Value.Heading,
-                                       0.5f); 
+                if (i.Value.Billboard == true)//item always faces camera
+                {
+                    i.Value.SpriteModel.DrawBillboard(_P.playerCamera.ViewMatrix,
+                                      _P.playerCamera.ProjectionMatrix,
+                                      _P.playerCamera.Position,
+                                      _P.playerCamera.GetLookVector(),
+                                      i.Value.deltaPosition,
+                                      i.Value.Heading,
+                                      i.Value.Scale);
+                }
+                else//constrained like player sprites
+                {
+                    i.Value.SpriteModel.Draw(_P.playerCamera.ViewMatrix,
+                                      _P.playerCamera.ProjectionMatrix,
+                                      _P.playerCamera.Position,
+                                      _P.playerCamera.GetLookVector(),
+                                      i.Value.deltaPosition,
+                                      i.Value.Heading,
+                                      i.Value.Scale);
+                }
             }
         }
 

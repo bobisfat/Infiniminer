@@ -114,7 +114,7 @@ namespace Infiniminer
             netClient.SetMessageTypeEnabled(NetMessageType.ConnectionRejected, true);
 
             //netClient.SimulatedMinimumLatency = 0.5f;
-            //netClient.SimulatedLatencyVariance = 0.5f;
+            //netClient.SimulatedLatencyVariance = 0.1f;
             //netClient.SimulatedLoss = 0.2f;
             //netClient.SimulatedDuplicates = 0.1f;
             for (int a = 0; a < 50; a++)

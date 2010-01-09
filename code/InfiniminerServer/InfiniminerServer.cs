@@ -20,6 +20,10 @@ namespace Infiniminer
         PlayerBase RedBase;
         PlayerBase BlueBase;
 
+        public TimeSpan gameTime;
+        float delta;
+        public DateTime lastTime;
+
         public int MAPSIZE = 64;
         Thread physics;
         Dictionary<NetConnection, Player> playerList = new Dictionary<NetConnection, Player>();
@@ -1541,6 +1545,20 @@ namespace Infiniminer
         }
         public void SetItem(ItemType iType, Vector3 pos, Vector3 heading, Vector3 vel, PlayerTeam team)
         {
+            if(iType == ItemType.Gold || iType == ItemType.Ore)//merge minerals on the ground
+            foreach (KeyValuePair<uint, Item> iF in itemList)
+            {
+                    if (Distf(pos, iF.Value.Position) < 2.0f)
+                    {
+                        if (iType == iF.Value.Type && !iF.Value.Disposing)
+                        {
+                            iF.Value.Content[5] += 1;//supposed ore content
+                            iF.Value.Scale = 0.5f + (float)(iF.Value.Content[5]) * 0.1f;
+                            SendItemScaleUpdate(iF.Value);
+                            return;//item does not get created, instead merges
+                        }
+                    }
+            }
             
                 Item newItem = new Item(null, iType);
                 newItem.ID = GenerateItemID();
@@ -1922,9 +1940,8 @@ namespace Infiniminer
         {
             //Setup the variable toggles
             varBindingsInitialize();
-
             int tmpMaxPlayers = 16;
-
+            
             // Read in from the config file.
             DatafileWriter dataFile = new DatafileWriter("server.config.txt");
             if (dataFile.Data.ContainsKey("winningcash"))
@@ -1977,10 +1994,11 @@ namespace Infiniminer
             netConfig.Port = 5565;
             netServer = new InfiniminerNetServer(netConfig);
             netServer.SetMessageTypeEnabled(NetMessageType.ConnectionApproval, true);
+
             //netServer.SimulatedMinimumLatency = 0.5f;
-            //netServer.SimulatedLatencyVariance = 0.05f;
-            //netServer.SimulatedLoss = 0.2f;
-            //netServer.SimulatedDuplicates = 0.05f;
+           // netServer.SimulatedLatencyVariance = 0.05f;
+           // netServer.SimulatedLoss = 0.2f;
+           // netServer.SimulatedDuplicates = 0.05f;
             //netServer.Configuration.SendBufferSize = 2048000;
             //netServer.Start();//starts too early
             // Initialize variables we'll use.
@@ -2532,7 +2550,9 @@ namespace Infiniminer
 
                 // Check for players who are in the zone to deposit.
                 DepositForPlayers();
-
+                gameTime = DateTime.Now - lastTime;
+                lastTime = DateTime.Now;
+                delta = (float)(gameTime.TotalSeconds);
                 // Is it time to do a lava calculation? If so, do it!
                 TimeSpan timeSpan = DateTime.Now - sysTimer;
                 if (timeSpan.TotalMilliseconds > 250)
@@ -2561,32 +2581,109 @@ namespace Infiniminer
                             }
                     }
                 }
+
                 timeSpan = DateTime.Now - itemTimer;
-                if (timeSpan.TotalMilliseconds > 100)
+                if (timeSpan.TotalMilliseconds > 49)
                 {
                     Vector3 tv = Vector3.Zero;
                     Vector3 tvv = Vector3.Zero;
                     itemTimer = DateTime.Now;
+                    float GRAVITY = 4.0f;
 
                     foreach (KeyValuePair<uint, Item> i in itemList)
                     {
-                       
-                        tv = i.Value.Position;
-                        tvv = i.Value.Velocity;
-                        tv.Y -= 0.6f;
 
-                        if (BlockAtPoint(tv + tvv) == BlockType.None)//shouldnt be checking every 100ms, needs area check
+                        tv = i.Value.Position;
+                        //tv.Y -= 0.04f;
+                        //needs elapsed time instead of fixed figures
+                        if (BlockAtPoint(tv + i.Value.Velocity * (delta*50)) == BlockType.None)//shouldnt be checking every 100ms, needs area check
                         {
-                            i.Value.Position += i.Value.Velocity;
-                            i.Value.Velocity.Y -= 0.035f;
-                            if (i.Value.Velocity.Y < -0.5f)
-                                i.Value.Velocity.Y = -0.5f;
+                            i.Value.Position += i.Value.Velocity * (delta*50);
+                            i.Value.Velocity.X = i.Value.Velocity.X * (0.9999f * (delta * 50));
+                            i.Value.Velocity.Y -= GRAVITY * (delta*50);
+                            i.Value.Velocity.Z = i.Value.Velocity.Z * (0.9999f * (delta * 50));
 
                             SendItemUpdate(i.Value);
+
+                           // if (i.Value.Velocity.X == 0.0f && i.Value.Velocity.Y == 0.0f && i.Value.Velocity.Z == 0.0f)
+                           // {
+                                
+                           // }
+
                         }
                         else
                         {
-                            i.Value.Velocity.Y = 0.0f;
+                            //i.Value.Velocity = -i.Value.Velocity;
+                            //continue;
+                            if (i.Value.Velocity.X == 0.0f && i.Value.Velocity.Y == 0.0f && i.Value.Velocity.Z == 0.0f)
+                            {
+                              
+                                continue;
+                            }
+
+                                Vector3 nv = i.Value.Velocity;//adjustment axis
+                                nv.Y = i.Value.Velocity.Y;
+                                nv.X = 0;
+                                nv.Z = 0;
+                                if (Math.Abs(i.Value.Velocity.Y) > 2.5f)
+                                {
+                                    if (BlockAtPoint(tv + nv) != BlockType.None)
+                                    {
+                                        //i.Value.Position.Y -= i.Value.Velocity.Y;
+                                        //ConsoleWrite("yreverse");
+
+                                        i.Value.Velocity.Y = -i.Value.Velocity.Y / 2;//0.3f bounce
+                                    }
+                                }
+                                else
+                                {
+                                    i.Value.Velocity.Y = 0;
+                                }
+
+                                nv.X = i.Value.Velocity.X;
+                                nv.Y = 0;
+                                nv.Z = 0;
+                                if (Math.Abs(i.Value.Velocity.X) > 0.5f)
+                                {
+                                    if (BlockAtPoint(tv + nv) != BlockType.None)//gametime.elapse
+                                    {
+                                        //ConsoleWrite("xreverse");
+                                        //i.Value.Position.X -= i.Value.Velocity.X;
+                                        i.Value.Velocity.X = -i.Value.Velocity.X / 2;//bounce
+                                    }
+                                }
+                                else
+                                {
+                                    i.Value.Velocity.X = 0;
+                                }
+
+
+                                nv.X = 0;
+                                nv.Y = 0;
+                                nv.Z = i.Value.Velocity.Z;
+                                if (Math.Abs(i.Value.Velocity.Z) > 0.5f)
+                                {
+                                    if (BlockAtPoint(tv + nv) != BlockType.None)
+                                    {
+                                        // ConsoleWrite("zreverse");
+                                        // i.Value.Position.Z -= i.Value.Velocity.Z;
+                                        i.Value.Velocity.Z = -i.Value.Velocity.Z / 2;//bounce
+                                    }
+                                }
+                                else
+                                {
+                                    i.Value.Velocity.Z = 0;
+                                }
+                                //SendItemUpdate(i.Value);
+                        }
+                    }
+
+                    foreach (KeyValuePair<uint, Item> i in itemList)
+                    {
+                        if (i.Value.Disposing)
+                        {
+                            DeleteItem(i.Key);
+                            break;
                         }
                     }
                 }
@@ -3925,7 +4022,7 @@ namespace Infiniminer
                 }
                 else//ore goes onto ground
                 {
-                    SetItem(ItemType.Ore, hitPoint - (playerHeading * 0.3f), playerHeading, new Vector3(playerHeading.X * 0.1f, -playerHeading.Y * 0.1f, playerHeading.Z * 0.1f), PlayerTeam.None);
+                    SetItem(ItemType.Ore, hitPoint - (playerHeading * 0.3f), playerHeading, new Vector3(playerHeading.X * 1.5f, 0.0f, playerHeading.Z * 1.5f), PlayerTeam.None);
                 }
             }
 
@@ -3980,7 +4077,7 @@ namespace Infiniminer
                             if (player.Weight == player.WeightMax)
                             {
                                 //gold goes onto the ground
-                                SetItem(ItemType.Gold, hitPoint, playerHeading, new Vector3(playerHeading.X*0.1f,-playerHeading.Y*0.1f,playerHeading.Z*0.1f), PlayerTeam.None);
+                                SetItem(ItemType.Gold, hitPoint, playerHeading, new Vector3(playerHeading.X*0.3f,-playerHeading.Y*0.3f,playerHeading.Z*0.3f), PlayerTeam.None);
                             }
                         }
                     }
@@ -5408,23 +5505,112 @@ namespace Infiniminer
             }
         }
 
+        public void DeleteItem(uint ID)
+        {
+            SendSetItem(ID);
+            itemList.Remove(ID);
+            itemIDList.Remove(ID);
+        }
+
         public void GetItem(Player player,uint ID)
         {
             if (player.Alive)
-            {
-                
+            {    
                 foreach (KeyValuePair<uint, Item> bPair in itemList)//itemList[ID] for speed?
                 {
-                    if (bPair.Value.ID == ID)
+                    if (bPair.Value.ID == ID && bPair.Value.Disposing == false)
                     {
-                       
-                        if (Distf(player.Position, bPair.Value.Position) < 1.0)
+
+                        if (Distf((player.Position - Vector3.UnitY * 0.5f), bPair.Value.Position) < 1.2)
                         {
-                            itemList.Remove(bPair.Key);
-                            SendSetItem(bPair.Key);
-                            player.Cash = player.Cash + 5;
-                            SendCashUpdate(player);
-                          
+                            if (bPair.Value.Type == ItemType.Ore)
+                            {
+                                while (player.Ore < player.OreMax)
+                                {
+                                    if (bPair.Value.Content[5] > 0)
+                                    {
+                                        player.Ore += 20;//add to players ore
+                                        bPair.Value.Content[5] -= 1;//take away content of item
+
+                                        if (player.Ore >= player.OreMax)
+                                        {
+                                            player.Ore = player.OreMax;//exceeded weight
+                                            SendOreUpdate(player);
+                                            SendCashUpdate(player);
+                                            break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        SendWeightUpdate(player);//run out of item content
+                                        SendCashUpdate(player);
+                                        
+                                        break;
+                                    }
+                                }
+
+                                if (bPair.Value.Content[5] > 0)//recalc scale if item still has content
+                                {
+                                    bPair.Value.Scale = 0.5f + (float)(bPair.Value.Content[5]) * 0.1f;
+                                    SendItemScaleUpdate(bPair.Value);
+                                }
+                                else//removing item, no content left
+                                {
+                                    itemList[ID].Disposing = true;
+                                    SendSetItem(ID);
+                                    itemList.Remove(ID);
+                                    itemIDList.Remove(ID);
+                                }
+                            }
+                            else if (bPair.Value.Type == ItemType.Gold)
+                            {
+                                while (player.Weight < player.WeightMax)
+                                {
+                                    if (bPair.Value.Content[5] > 0)
+                                    {
+                                        player.Weight += 1;
+                                        player.Cash += 5;
+                                        bPair.Value.Content[5] -= 1;
+
+                                        if(player.Weight >= player.WeightMax)
+                                        {
+                                            player.Weight = player.WeightMax;
+                                            SendWeightUpdate(player);
+                                            SendCashUpdate(player); 
+                                            break;
+                                        }
+                                    }
+                                    else//item out of content
+                                    {
+                                        SendWeightUpdate(player);
+                                        SendCashUpdate(player); 
+                                        break;
+                                    }
+                                }
+
+                                if (bPair.Value.Content[5] > 0)//recalc scale if item remains
+                                {
+                                    bPair.Value.Scale = 0.5f + (float)(bPair.Value.Content[5]) * 0.1f;
+                                    SendItemScaleUpdate(bPair.Value);
+                                }
+                                else//item out of content
+                                {
+                                    itemList[ID].Disposing = true;
+                                    SendSetItem(ID);
+                                    itemList.Remove(ID);
+                                    itemIDList.Remove(ID);
+                                }
+                            }
+                            else
+                            {
+                                //just remove this unknown item
+                                itemList[ID].Disposing = true;
+                                SendSetItem(ID);
+                                itemList.Remove(ID);
+                                itemIDList.Remove(ID);
+                            }
+                            
+                            
                         }
                         return;
                     }
@@ -5596,6 +5782,19 @@ namespace Infiniminer
                if (netConn.Status == NetConnectionStatus.Connected)
                    netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableInOrder1);
         }
+
+        public void SendItemScaleUpdate(Item i)
+        {
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.ItemScaleUpdate);
+            msgBuffer.Write(i.ID);
+            msgBuffer.Write(i.Scale);
+
+            foreach (NetConnection netConn in playerList.Keys)
+                if (netConn.Status == NetConnectionStatus.Connected)
+                    netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableInOrder1);
+        }
+
         public void SendContentSpecificUpdate(Player player, int s)
         {
             if (player.NetConn.Status != NetConnectionStatus.Connected)

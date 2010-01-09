@@ -134,6 +134,35 @@ namespace Infiniminer
             effect.End();
         }
 
+        public void DrawBillboard(Matrix viewMatrix, Matrix projectionMatrix, Vector3 cameraPosition, Vector3 cameraForward, Vector3 drawPosition, Vector3 drawHeading, float drawScale)
+        {
+            VertexPositionTexture[] vertices = GenerateVertices(cameraPosition, drawPosition, drawHeading, drawScale);
+            //Matrix world = Matrix.CreateBillboard(drawPosition, cameraPosition, Vector3.UnitY, cameraForward);
+            Matrix world = Matrix.CreateBillboard(drawPosition, cameraPosition, Vector3.UnitY, cameraForward);
+
+            effect.Parameters["xWorld"].SetValue(world);
+            effect.Parameters["xView"].SetValue(viewMatrix);
+            effect.Parameters["xProjection"].SetValue(projectionMatrix);
+            effect.Parameters["xTexture"].SetValue(texSprite);
+            effect.Begin();
+            effect.Techniques[0].Passes[0].Begin();
+
+            graphicsDevice.RenderState.CullMode = CullMode.None;
+            graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Point;
+
+            // Since the per-pixel alpha is either 0 or 1 we can use an alpha test instead of alpha blending.
+            graphicsDevice.RenderState.AlphaTestEnable = true;
+            graphicsDevice.RenderState.AlphaFunction = CompareFunction.Greater;
+            graphicsDevice.RenderState.ReferenceAlpha = 128;
+
+            graphicsDevice.DrawUserPrimitives(PrimitiveType.TriangleList, vertices, 0, vertices.Length / 3);
+
+            graphicsDevice.RenderState.AlphaTestEnable = false;
+
+            effect.Techniques[0].Passes[0].End();
+            effect.End();
+        }
+
         public void DrawText(Matrix viewMatrix, Matrix projectionMatrix, Vector3 drawPosition, string hoverText)
         {
             DrawText(viewMatrix, projectionMatrix, drawPosition, hoverText, new Color(255, 255, 255, 255));

@@ -98,6 +98,7 @@ namespace Infiniminer
         OreUpdate,
         CashUpdate,
         ItemUpdate,             // send its new x/y
+        ItemScaleUpdate,
         ContentUpdate,          // sends all player.content to player
         ContentSpecificUpdate,   //sends a single content update to a player
         PlayerContentUpdate,    //update a single players content(specific) for all players

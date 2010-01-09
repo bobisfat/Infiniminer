@@ -19,10 +19,14 @@ namespace Infiniminer
     {
         public uint ID;
         public PlayerTeam Team;
+        public int[] Content;
+        public bool Disposing;//deleting from array in progress
         public Vector3 Heading;
         public Vector3 Position;
+        public float Scale = 0.5f;
         public Vector3 Velocity = Vector3.Zero;
         public Vector3 deltaPosition;
+        public bool Billboard = true;//always faces camera, no angles
         public ItemType Type;
         public DateTime Frozen;//frozen until greater than this time
 
@@ -34,6 +38,8 @@ namespace Infiniminer
 
         public Item(Game gameInstance, ItemType iType)
         {
+            Content = new int[20];
+
             Frozen = DateTime.Now;
 
             Type = iType;
@@ -43,6 +49,10 @@ namespace Infiniminer
                 this.SpriteModel = new SpriteModel(gameInstance, 4);
                 UpdateSpriteTexture();
                 this.IdleAnimation = true;
+            }
+            else
+            {
+                Content[5] = 1;
             }
         }
 
@@ -57,10 +67,10 @@ namespace Infiniminer
                     idleAnimation = value;
                     if (gameInstance != null)
                     {
-                        if (idleAnimation)
-                            SpriteModel.SetPassiveAnimation("1,0.2");
-                        else
-                            SpriteModel.SetPassiveAnimation("0,0.2;1,0.2;2,0.2;1,0.2");
+                       // if (idleAnimation)
+                            SpriteModel.SetPassiveAnimation("1,1");
+                       // else
+                       //     SpriteModel.SetPassiveAnimation("0,0.2;1,0.2;2,0.2;1,0.2");
                     }
                 }
             }
@@ -76,10 +86,10 @@ namespace Infiniminer
             switch(Type)
             {
                 case ItemType.Gold:
-                    textureName = "sprites/tex_sprite_lemonorgoldnum";
+                    textureName = "sprites/tex_sprite_lemonorgold";
                     break;
                 case ItemType.Ore:
-                    textureName = "sprites/tex_sprite_lemonorgoldnum";
+                    textureName = "sprites/tex_sprite_lemonorore";
                     break;
                 default:
                     textureName = "sprites/tex_sprite_lemonorgoldnum";

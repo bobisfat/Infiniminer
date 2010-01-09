@@ -426,11 +426,12 @@ namespace Infiniminer.States
                     {
                        
                         float dx = bPair.Value.Position.X - _P.playerPosition.X;
-                        float dy = bPair.Value.Position.Y - _P.playerPosition.Y;
+                        float dy = bPair.Value.Position.Y - _P.playerPosition.Y+1.0f;
                         float dz = bPair.Value.Position.Z - _P.playerPosition.Z;
+                       
                         float distance = (float)(Math.Sqrt(dx * dx + dy * dy + dz * dz));
                        
-                        if (distance < 1.0)
+                        if (distance < 1.2)
                         {
                             bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds(1000);//no interaction for a second after trying once
                             _P.GetItem(bPair.Value.ID);
