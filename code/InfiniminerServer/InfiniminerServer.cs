@@ -5542,7 +5542,7 @@ namespace Infiniminer
                                     }
                                     else
                                     {
-                                        SendWeightUpdate(player);//run out of item content
+                                        SendOreUpdate(player);//run out of item content
                                         SendCashUpdate(player);
                                         
                                         break;
