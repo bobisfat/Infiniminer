@@ -62,6 +62,7 @@ namespace Infiniminer
         RadarRed,
         RadarBlue,
         Hinge,
+        Highlight,//purely for particle effect
         MAXIMUM
     }
 
@@ -180,6 +181,7 @@ namespace Infiniminer
             blockMaxHP[(byte)BlockType.Sand] = 0;
             blockMaxHP[(byte)BlockType.Dirt] = 0;
             blockMaxHP[(byte)BlockType.Ore] = 0;
+            blockMaxHP[(byte)BlockType.Rock] = 0;
             
             blockHP[(byte)BlockType.Gold] = 80;
             blockMaxHP[(byte)BlockType.Gold] = 80;

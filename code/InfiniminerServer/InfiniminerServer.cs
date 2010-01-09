@@ -20,12 +20,14 @@ namespace Infiniminer
         PlayerBase RedBase;
         PlayerBase BlueBase;
 
-        public TimeSpan gameTime;
+        public TimeSpan[] serverTime = { TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero };
+        public int timeQueue = 0;
         float delta;
         public DateTime lastTime;
 
         public int MAPSIZE = 64;
         Thread physics;
+        Thread mechanics;
         Dictionary<NetConnection, Player> playerList = new Dictionary<NetConnection, Player>();
         bool sleeping = true;
         int lavaBlockCount = 0;
@@ -615,6 +617,10 @@ namespace Infiniminer
             physics = new Thread(new ThreadStart(this.DoPhysics));
             physics.Priority = ThreadPriority.Normal;
             physics.Start();
+
+            mechanics = new Thread(new ThreadStart(this.DoMechanics));
+            mechanics.Priority = ThreadPriority.AboveNormal;
+            mechanics.Start();
         }
 
         public string GetExtraInfo()
@@ -2550,13 +2556,12 @@ namespace Infiniminer
 
                 // Check for players who are in the zone to deposit.
                 DepositForPlayers();
-                gameTime = DateTime.Now - lastTime;
-                lastTime = DateTime.Now;
-                delta = (float)(gameTime.TotalSeconds);
+                    
                 // Is it time to do a lava calculation? If so, do it!
                 TimeSpan timeSpan = DateTime.Now - sysTimer;
                 if (timeSpan.TotalMilliseconds > 250)
                 {
+                    //ConsoleWrite("" + delta);
                     sysTimer = DateTime.Now;
 
                     //secondflow += 1;
@@ -2582,111 +2587,6 @@ namespace Infiniminer
                     }
                 }
 
-                timeSpan = DateTime.Now - itemTimer;
-                if (timeSpan.TotalMilliseconds > 49)
-                {
-                    Vector3 tv = Vector3.Zero;
-                    Vector3 tvv = Vector3.Zero;
-                    itemTimer = DateTime.Now;
-                    float GRAVITY = 4.0f;
-
-                    foreach (KeyValuePair<uint, Item> i in itemList)
-                    {
-
-                        tv = i.Value.Position;
-                        //tv.Y -= 0.04f;
-                        //needs elapsed time instead of fixed figures
-                        if (BlockAtPoint(tv + i.Value.Velocity * (delta*50)) == BlockType.None)//shouldnt be checking every 100ms, needs area check
-                        {
-                            i.Value.Position += i.Value.Velocity * (delta*50);
-                            i.Value.Velocity.X = i.Value.Velocity.X * (0.9999f * (delta * 50));
-                            i.Value.Velocity.Y -= GRAVITY * (delta*50);
-                            i.Value.Velocity.Z = i.Value.Velocity.Z * (0.9999f * (delta * 50));
-
-                            SendItemUpdate(i.Value);
-
-                           // if (i.Value.Velocity.X == 0.0f && i.Value.Velocity.Y == 0.0f && i.Value.Velocity.Z == 0.0f)
-                           // {
-                                
-                           // }
-
-                        }
-                        else
-                        {
-                            //i.Value.Velocity = -i.Value.Velocity;
-                            //continue;
-                            if (i.Value.Velocity.X == 0.0f && i.Value.Velocity.Y == 0.0f && i.Value.Velocity.Z == 0.0f)
-                            {
-                              
-                                continue;
-                            }
-
-                                Vector3 nv = i.Value.Velocity;//adjustment axis
-                                nv.Y = i.Value.Velocity.Y;
-                                nv.X = 0;
-                                nv.Z = 0;
-                                if (Math.Abs(i.Value.Velocity.Y) > 2.5f)
-                                {
-                                    if (BlockAtPoint(tv + nv) != BlockType.None)
-                                    {
-                                        //i.Value.Position.Y -= i.Value.Velocity.Y;
-                                        //ConsoleWrite("yreverse");
-
-                                        i.Value.Velocity.Y = -i.Value.Velocity.Y / 2;//0.3f bounce
-                                    }
-                                }
-                                else
-                                {
-                                    i.Value.Velocity.Y = 0;
-                                }
-
-                                nv.X = i.Value.Velocity.X;
-                                nv.Y = 0;
-                                nv.Z = 0;
-                                if (Math.Abs(i.Value.Velocity.X) > 0.5f)
-                                {
-                                    if (BlockAtPoint(tv + nv) != BlockType.None)//gametime.elapse
-                                    {
-                                        //ConsoleWrite("xreverse");
-                                        //i.Value.Position.X -= i.Value.Velocity.X;
-                                        i.Value.Velocity.X = -i.Value.Velocity.X / 2;//bounce
-                                    }
-                                }
-                                else
-                                {
-                                    i.Value.Velocity.X = 0;
-                                }
-
-
-                                nv.X = 0;
-                                nv.Y = 0;
-                                nv.Z = i.Value.Velocity.Z;
-                                if (Math.Abs(i.Value.Velocity.Z) > 0.5f)
-                                {
-                                    if (BlockAtPoint(tv + nv) != BlockType.None)
-                                    {
-                                        // ConsoleWrite("zreverse");
-                                        // i.Value.Position.Z -= i.Value.Velocity.Z;
-                                        i.Value.Velocity.Z = -i.Value.Velocity.Z / 2;//bounce
-                                    }
-                                }
-                                else
-                                {
-                                    i.Value.Velocity.Z = 0;
-                                }
-                                //SendItemUpdate(i.Value);
-                        }
-                    }
-
-                    foreach (KeyValuePair<uint, Item> i in itemList)
-                    {
-                        if (i.Value.Disposing)
-                        {
-                            DeleteItem(i.Key);
-                            break;
-                        }
-                    }
-                }
                 // Handle console keypresses.
                 while (Console.KeyAvailable)
                 {
@@ -2727,6 +2627,7 @@ namespace Infiniminer
                     Thread.Sleep(100);
 
                     physics.Abort();
+                    mechanics.Abort();
                     return true;//terminates server thread completely
                 }
 
@@ -2772,6 +2673,37 @@ namespace Infiniminer
                             blockList[i, j, k] = BlockType.None;
                         }
         }
+
+        public void DoMechanics()
+        {
+            DateTime lastFlowCalc = DateTime.Now;
+
+            while (1 == 1)
+            {
+                while (physicsEnabled)
+                {
+                    TimeSpan timeSpan = DateTime.Now - lastFlowCalc;
+                    serverTime[timeQueue] = DateTime.Now - lastTime;//timeQueue
+
+                    timeQueue += 1;
+                    if (timeQueue > 19)
+                        timeQueue = 0;
+
+                    lastTime = DateTime.Now;
+                    delta = (float)((serverTime[0].TotalSeconds + serverTime[1].TotalSeconds + serverTime[2].TotalSeconds + serverTime[3].TotalSeconds + serverTime[4].TotalSeconds + serverTime[5].TotalSeconds + serverTime[6].TotalSeconds + serverTime[7].TotalSeconds + serverTime[8].TotalSeconds + serverTime[9].TotalSeconds + serverTime[10].TotalSeconds + serverTime[11].TotalSeconds + serverTime[12].TotalSeconds + serverTime[13].TotalSeconds + serverTime[14].TotalSeconds + serverTime[15].TotalSeconds + serverTime[16].TotalSeconds + serverTime[17].TotalSeconds + serverTime[18].TotalSeconds + serverTime[19].TotalSeconds) / 20);
+
+                    if (timeSpan.TotalMilliseconds > 50)
+                    {
+
+                        lastFlowCalc = DateTime.Now;
+                        DoItems();
+
+                    }
+                    Thread.Sleep(1);
+                }
+                Thread.Sleep(50);
+            }
+        }
         public void DoPhysics()
         {
             DateTime lastFlowCalc = DateTime.Now;
@@ -2794,7 +2726,116 @@ namespace Infiniminer
                 Thread.Sleep(50);
             }
         }
+        public void DoItems()
+    {
+        
 
+            Vector3 tv = Vector3.Zero;
+            Vector3 tvv = Vector3.Zero;
+        
+            float GRAVITY = 4.0f;
+
+            foreach (KeyValuePair<uint, Item> i in itemList)
+            {
+
+                tv = i.Value.Position;
+                tv.Y -= 0.2f;
+                //needs elapsed time instead of fixed figures
+                if (BlockAtPoint(tv + i.Value.Velocity * (delta*50)) == BlockType.None)//shouldnt be checking every 100ms, needs area check
+                {
+                    i.Value.Position += i.Value.Velocity * (delta*50);
+                    i.Value.Velocity.X = i.Value.Velocity.X * 0.99f;
+                    i.Value.Velocity.Y -= GRAVITY * (delta*50);
+
+                    if (i.Value.Velocity.Y > 5.0f || i.Value.Velocity.Y < -5.0f)
+                        ConsoleWrite("y " + i.Value.Velocity.Y);
+
+                    i.Value.Velocity.Z = i.Value.Velocity.Z * 0.99f;
+
+                    SendItemUpdate(i.Value);
+
+                    // if (i.Value.Velocity.X == 0.0f && i.Value.Velocity.Y == 0.0f && i.Value.Velocity.Z == 0.0f)
+                    // {
+
+                    // }
+
+                }
+                else
+                {
+                    //i.Value.Velocity = -i.Value.Velocity;
+                    //continue;
+                    if (i.Value.Velocity.X == 0.0f && i.Value.Velocity.Y == 0.0f && i.Value.Velocity.Z == 0.0f)
+                    {
+                        ConsoleWrite("item sleeping");
+                        continue;
+                    }
+
+                    Vector3 nv = i.Value.Velocity;//adjustment axis
+                    nv.Y = i.Value.Velocity.Y;
+                    nv.X = 0;
+                    nv.Z = 0;
+                    if (Math.Abs(i.Value.Velocity.Y) > 2.5f)
+                    {
+                        if (BlockAtPoint(tv + nv) != BlockType.None)
+                        {
+                            //i.Value.Position.Y -= i.Value.Velocity.Y;
+                            //ConsoleWrite("yreverse");
+
+                            i.Value.Velocity.Y = -i.Value.Velocity.Y / 2;//0.3f bounce
+                        }
+                    }
+                    else
+                    {
+                        i.Value.Velocity.Y = 0;
+                    }
+
+                    nv.X = i.Value.Velocity.X;
+                    nv.Y = 0;
+                    nv.Z = 0;
+                    if (Math.Abs(i.Value.Velocity.X) > 0.5f)
+                    {
+                        if (BlockAtPoint(tv + nv) != BlockType.None)//gametime.elapse
+                        {
+                            //ConsoleWrite("xreverse");
+                            //i.Value.Position.X -= i.Value.Velocity.X;
+                            i.Value.Velocity.X = -i.Value.Velocity.X / 2;//bounce
+                        }
+                    }
+                    else
+                    {
+                        i.Value.Velocity.X = 0;
+                    }
+
+
+                    nv.X = 0;
+                    nv.Y = 0;
+                    nv.Z = i.Value.Velocity.Z;
+                    if (Math.Abs(i.Value.Velocity.Z) > 0.5f)
+                    {
+                        if (BlockAtPoint(tv + nv) != BlockType.None)
+                        {
+                            // ConsoleWrite("zreverse");
+                            // i.Value.Position.Z -= i.Value.Velocity.Z;
+                            i.Value.Velocity.Z = -i.Value.Velocity.Z / 2;//bounce
+                        }
+                    }
+                    else
+                    {
+                        i.Value.Velocity.Z = 0;
+                    }
+                    //SendItemUpdate(i.Value);
+                }
+            }
+
+            foreach (KeyValuePair<uint, Item> i in itemList)
+            {
+                if (i.Value.Disposing)
+                {
+                    DeleteItem(i.Key);
+                    break;
+                }
+            }
+        }
         public void DoStuff()
         {
             frameid += 1;//make unique id to prevent reprocessing gravity
@@ -4816,14 +4857,12 @@ namespace Infiniminer
                     SendServerMessageToPlayer("Cancelled link.", player.NetConn);
                     return true;
                 }
+
+                int freeslot = 9;
                 int nb = 0;
                 for (nb = 2; nb < 7; nb++)
                 {
-                    if (blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6] == 0)
-                    {
-                        break;
-                    }
-                    else if (blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 1] == x && blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 2] == y && blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 3] == z)
+                    if (blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 1] == x && blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 2] == y && blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6 + 3] == z)
                     {
 
 
@@ -4844,7 +4883,15 @@ namespace Infiniminer
 
                         return true;
                     }
+                    else if (blockListContent[player.Content[2], player.Content[3], player.Content[4], nb * 6] == 0 && freeslot == 9)
+                    {
+                        freeslot = nb;
+                        break;//makes sure that we arent reattaching links over and over
+                    }
                 }
+
+                if (freeslot == 9)
+                    return false;
 
                 if (nb != 7)//didnt hit end of switch-link limit
                 {//should check teams and connection to itself
@@ -5130,67 +5177,64 @@ namespace Infiniminer
 
                                 if (blockListContent[x, y, z, 1] == 1 && blockListContent[x, y, z, 2] < 3)//+x -> +y//checking upwards clear
                                 {
-                                    SendServerMessageToPlayer("gc +-x +y", player.NetConn);
+                                    //if (player != null)
+                                    //SendServerMessageToPlayer("gc +-x +y", player.NetConn);
                                    //diagonal block = blockList[x + rely, y + relx, z + relz];//x + rely * (a - 1), y + relx * (a - 1), z + relz * (a - 1)];
                                     block = blockList[x, y + (relx * mod), z];//relx*mod
                                 }
                                 else if (blockListContent[x, y, z, 1] == 1 && blockListContent[x, y, z, 2] > 2)//+z -> +y//checking upwards clear
                                 {
-                                    SendServerMessageToPlayer("gc +-z +y", player.NetConn);
+                                    //if (player != null)
+                                    //SendServerMessageToPlayer("gc +-z +y", player.NetConn);
                                     block = blockList[x, y + (relz * mod), z];//relx*mod
                                 }
                                 else if (blockListContent[x, y, z, 1] == 0 && blockListContent[x, y, z, 2] == 0)//+y -> +x
                                 {
-                                    SendServerMessageToPlayer("gc +y +x",player.NetConn);
+                                    //if (player != null)
+                                    //SendServerMessageToPlayer("gc +y +x",player.NetConn);
                                     block = blockList[x + rely, y, z];
                                 }
                                 else if (blockListContent[x, y, z, 1] == 0 && blockListContent[x, y, z, 2] == 2)//+y -> -x
                                 {
-                                    SendServerMessageToPlayer("gc +y -x", player.NetConn);
-                                   // SendServerMessageToPlayer("its here",player.NetConn);
+                                    //if (player != null)
+                                    //SendServerMessageToPlayer("gc +y -x", player.NetConn);
                                     block = blockList[x - rely, y, z];
                                 }
                                 else if (blockListContent[x, y, z, 1] == 0 && blockListContent[x, y, z, 2] == 3)//+y -> +z
                                 {
-                                    SendServerMessageToPlayer("gc +y +z", player.NetConn);
+                                    //if (player != null)
+                                    //SendServerMessageToPlayer("gc +y +z", player.NetConn);
                                     block = blockList[x, y, z + rely];
                                 }
                                 else if (blockListContent[x, y, z, 1] == 0 && blockListContent[x, y, z, 2] == 4)//+y -> -z
                                 {
-                                    SendServerMessageToPlayer("gc +y -z", player.NetConn);
-                                    // SendServerMessageToPlayer("its here",player.NetConn);
+                                    //if (player != null)
+                                    //SendServerMessageToPlayer("gc +y -z", player.NetConn);
+                         
                                     block = blockList[x, y, z - rely];
                                 }
                                 if (block != BlockType.None)
                                 {
                                     green = false;//obstruction
 
-                                    if (player != null)
-                                    {
-                                        if (blockListContent[x, y, z, 1] != 1 && blockListContent[x, y, z, 2] == 0)
-                                            SendServerMessageToPlayer("not clear +x +y:" + (a - 1) + " " + blockList[x, y + (relx * mod), z], player.NetConn);
-                                        if (blockListContent[x, y, z, 1] != 1 && blockListContent[x, y, z, 2] == 2)
-                                            SendServerMessageToPlayer("not clear -x +y:" + (a - 1) + " " + blockList[x, y + (relx * mod), z], player.NetConn);
-                                        else if (blockListContent[x, y, z, 2] == 3)
-                                            SendServerMessageToPlayer("not clear y+z:" + (a - 1) + " " + blockList[x, y, z + rely], player.NetConn);
-                                        else if (blockListContent[x, y, z, 2] == 4)
-                                            SendServerMessageToPlayer("not clear y-z:" + (a - 1) + " " + blockList[x, y, z - rely], player.NetConn);
-                                        else if (blockListContent[x, y, z, 2] == 2)
-                                            SendServerMessageToPlayer("not clear y-x:" + (a - 1) + " " + blockList[x-rely, y, z], player.NetConn);
-                                        else
-                                            SendServerMessageToPlayer("not clear y+x:" + (a - 1) + " " + blockList[x+rely, y, z], player.NetConn);
-                                    }
+                                    //if (player != null)
+                                    //{
+                                    //    if (blockListContent[x, y, z, 1] != 1 && blockListContent[x, y, z, 2] == 0)
+                                    //        SendServerMessageToPlayer("not clear +x +y:" + (a - 1) + " " + blockList[x, y + (relx * mod), z], player.NetConn);
+                                    //    if (blockListContent[x, y, z, 1] != 1 && blockListContent[x, y, z, 2] == 2)
+                                    //        SendServerMessageToPlayer("not clear -x +y:" + (a - 1) + " " + blockList[x, y + (relx * mod), z], player.NetConn);
+                                    //    else if (blockListContent[x, y, z, 2] == 3)
+                                    //        SendServerMessageToPlayer("not clear y+z:" + (a - 1) + " " + blockList[x, y, z + rely], player.NetConn);
+                                    //    else if (blockListContent[x, y, z, 2] == 4)
+                                    //        SendServerMessageToPlayer("not clear y-z:" + (a - 1) + " " + blockList[x, y, z - rely], player.NetConn);
+                                    //    else if (blockListContent[x, y, z, 2] == 2)
+                                    //        SendServerMessageToPlayer("not clear y-x:" + (a - 1) + " " + blockList[x-rely, y, z], player.NetConn);
+                                    //    else
+                                    //        SendServerMessageToPlayer("not clear y+x:" + (a - 1) + " " + blockList[x+rely, y, z], player.NetConn);
+                                    //}
 
                                 }
                             }
-
-                            //}
-                            //else
-                            //{
-                            //    //hinge is missing pieces out of its array
-                            //    repairme = true;
-                            //}
-
                         }
 
                         if (repairme == false)
@@ -5198,13 +5242,14 @@ namespace Infiniminer
                         }
                         else
                         {
+                            if (player != null)
                             SendServerMessageToPlayer("Hinge requires repair.", player.NetConn);
                         }
 
                         if (repairme == false)
                         if (green == true)
                         {
-                            for (int a = 2; a < 5; a++)//7
+                            for (int a = 2; a < 7; a++)//7
                             {
                                 if (blockListContent[x, y, z, a * 6] > 0)
                                 {
@@ -5232,8 +5277,8 @@ namespace Infiniminer
                                             blockListContent[x, y, z, a * 6 + 1] = x;
                                             blockListContent[x, y, z, a * 6 + 2] = y + a - 1;
                                             blockListContent[x, y, z, a * 6 + 3] = z;
-
-                                            SendServerMessageToPlayer("green +x +y", player.NetConn);
+                                            //if (player != null)
+                                            //SendServerMessageToPlayer("green +x +y", player.NetConn);
                                         }
                                         else if (blockListContent[x, y, z, 1] == 1 && blockListContent[x, y, z, 2] == 3)// +z -> +y
                                         {
@@ -5248,8 +5293,8 @@ namespace Infiniminer
                                             blockListContent[x, y, z, a * 6 + 1] = x;
                                             blockListContent[x, y, z, a * 6 + 2] = y + a - 1;
                                             blockListContent[x, y, z, a * 6 + 3] = z;
-
-                                            SendServerMessageToPlayer("green +z +y", player.NetConn);
+                                            //if (player != null)
+                                            //SendServerMessageToPlayer("green +z +y", player.NetConn);
                                         }
                                         else if (blockListContent[x, y, z, 1] == 1 && blockListContent[x, y, z, 2] == 2)// -x -> +y
                                         {
@@ -5264,7 +5309,8 @@ namespace Infiniminer
                                             blockListContent[x, y, z, a * 6 + 1] = x;
                                             blockListContent[x, y, z, a * 6 + 2] = y + (a - 1);
                                             blockListContent[x, y, z, a * 6 + 3] = z;
-                                            SendServerMessageToPlayer("green -x +y", player.NetConn);
+                                            //if (player != null)
+                                            //SendServerMessageToPlayer("green -x +y", player.NetConn);
                                         }
                                         else if (blockListContent[x, y, z, 1] == 1 && blockListContent[x, y, z, 2] == 4)// -z -> +y
                                         {
@@ -5279,7 +5325,8 @@ namespace Infiniminer
                                             blockListContent[x, y, z, a * 6 + 1] = x;
                                             blockListContent[x, y, z, a * 6 + 2] = y + (a - 1);
                                             blockListContent[x, y, z, a * 6 + 3] = z;
-                                            SendServerMessageToPlayer("green -z +y", player.NetConn);
+                                            //if (player != null)
+                                            //SendServerMessageToPlayer("green -z +y", player.NetConn);
                                         }
                                         else if (blockListContent[x, y, z, 1] == 0 && blockListContent[x, y, z, 2] == 0)// +y -> +x
                                         {
@@ -5294,7 +5341,8 @@ namespace Infiniminer
                                             blockListContent[x, y, z, a * 6 + 1] = x + a - 1;
                                             blockListContent[x, y, z, a * 6 + 2] = y;
                                             blockListContent[x, y, z, a * 6 + 3] = z;
-                                            SendServerMessageToPlayer("green +y +x", player.NetConn);
+                                            //if (player != null)
+                                            //SendServerMessageToPlayer("green +y +x", player.NetConn);
                                         }
                                         else if (blockListContent[x, y, z, 1] == 0 && blockListContent[x, y, z, 2] == 3)// +y -> +z
                                         {
@@ -5309,7 +5357,8 @@ namespace Infiniminer
                                             blockListContent[x, y, z, a * 6 + 1] = x;
                                             blockListContent[x, y, z, a * 6 + 2] = y;
                                             blockListContent[x, y, z, a * 6 + 3] = z + a - 1;
-                                            SendServerMessageToPlayer("green +y +z", player.NetConn);
+                                            //if (player != null)
+                                            //SendServerMessageToPlayer("green +y +z", player.NetConn);
                                         }
                                         else if (blockListContent[x, y, z, 1] == 0 && blockListContent[x, y, z, 2] == 2)// +y -> -x
                                         {
@@ -5324,7 +5373,8 @@ namespace Infiniminer
                                             blockListContent[x, y, z, a * 6 + 1] = x - (a - 1);
                                             blockListContent[x, y, z, a * 6 + 2] = y;
                                             blockListContent[x, y, z, a * 6 + 3] = z;
-                                            SendServerMessageToPlayer("green +y -x", player.NetConn);
+                                            //if (player != null)
+                                            //SendServerMessageToPlayer("green +y -x", player.NetConn);
                                         }
                                         else if (blockListContent[x, y, z, 1] == 0 && blockListContent[x, y, z, 2] == 4)// +y -> -z
                                         {
@@ -5339,9 +5389,11 @@ namespace Infiniminer
                                             blockListContent[x, y, z, a * 6 + 1] = x;
                                             blockListContent[x, y, z, a * 6 + 2] = y;
                                             blockListContent[x, y, z, a * 6 + 3] = z - (a - 1);
-                                            SendServerMessageToPlayer("green +y -z", player.NetConn);
+                                            //if (player != null)
+                                            //SendServerMessageToPlayer("green +y -z", player.NetConn);
                                         }
-                                        SetBlockDebris((ushort)(bx), (ushort)(by), (ushort)(bz), BlockType.None, PlayerTeam.None);
+                                        //setblockdebris for visible changes
+                                        SetBlock((ushort)(bx), (ushort)(by), (ushort)(bz), BlockType.None, PlayerTeam.None);
                                     }
                                 }
                                 else
@@ -5351,9 +5403,8 @@ namespace Infiniminer
                                     blockListContent[x, y, z, a * 6 + 2] = 0;
                                     blockListContent[x, y, z, a * 6 + 3] = 0;
                                     repairme = true;
-                                    SendServerMessageToPlayer("Empty requires repair on " + a, player.NetConn);
-                                    //missing pieces in hinge
-                                    //break;
+                                    //if (player != null)
+                                    //SendServerMessageToPlayer("Empty requires repair on " + a, player.NetConn); 
                                 }
                             }
 
@@ -5372,12 +5423,75 @@ namespace Infiniminer
                 }
                 else if (btn == 2)
                 {
-                    blockListContent[x, y, z, 2] = 3;//2 ;//-x -> +
-                    blockListContent[x, y, z, 1] = 1;
-                    if (player != null)
-                        SendServerMessageToPlayer("Rotation!", player.NetConn);
+                    if (blockListContent[x, y, z, 1] != 1 && blockList[x, y+1, z] != BlockType.None)//checks hinge vert / if it has a block
+                    {
+                        //SendServerMessageToPlayer("The hinge must returned to horizontal position.", player.NetConn);
+                        blockListContent[x, y, z, 2] += 1;
+                        if (blockListContent[x, y, z, 2] > 4)
+                            blockListContent[x, y, z, 2] = 0;
 
-                    for (int a = 2; a < 5; a++)//7
+                        if (blockListContent[x, y, z, 2] == 1)//1 is not a viable direction to set
+                            blockListContent[x, y, z, 2] = 2;
+
+                        if (player != null)
+                        {
+                            string direction = "";
+                            if (blockListContent[x, y, z, 2] == 0) //+x
+                                direction = "North";
+                            else if (blockListContent[x, y, z, 2] == 2) //-x
+                                direction = "South";
+                            else if (blockListContent[x, y, z, 2] == 3) //+z
+                                direction = "East";
+                            else if (blockListContent[x, y, z, 2] == 4) //-z
+                                direction = "West";
+
+                            SendServerMessageToPlayer("The hinge was rotated to face "+direction+".", player.NetConn);
+                        }
+
+                        for (int a = 2; a < 7; a++)
+                        {
+                            if (blockListContent[x, y, z, a * 6] > 0)
+                            {
+                                if(blockListContent[x, y, z, 2] == 0) //+x
+                                    DebrisEffectAtPoint(x+a, y, z, BlockType.Highlight, 1);
+                                else if(blockListContent[x, y, z, 2] == 2) //-x
+                                    DebrisEffectAtPoint(x-a, y, z, BlockType.Highlight, 1);
+                                else if (blockListContent[x, y, z, 2] == 3) //+z
+                                    DebrisEffectAtPoint(x, y, z+a, BlockType.Highlight, 1);
+                                else if (blockListContent[x, y, z, 2] == 4) //-z
+                                    DebrisEffectAtPoint(x, y, z-a, BlockType.Highlight, 1);
+                            }
+                        }
+                        //rotate without changing anything
+                        return true;
+                    }
+                    
+                    blockListContent[x, y, z, 2] += 1;
+                    if (blockListContent[x, y, z, 2] > 4)
+                        blockListContent[x, y, z, 2] = 0;
+
+                    if (blockListContent[x, y, z, 2] == 1)//1 is not a viable direction to set
+                        blockListContent[x, y, z, 2] = 2;
+
+                    //blockListContent[x, y, z, 2] = 3;//2 ;//-x -> +
+                    blockListContent[x, y, z, 1] = 1;
+
+                    if (player != null)
+                    {
+                        string direction = "";
+                        if (blockListContent[x, y, z, 2] == 0) //+x
+                            direction = "North";
+                        else if (blockListContent[x, y, z, 2] == 2) //-x
+                            direction = "South";
+                        else if (blockListContent[x, y, z, 2] == 3) //+z
+                            direction = "East";
+                        else if (blockListContent[x, y, z, 2] == 4) //-z
+                            direction = "West";
+
+                        SendServerMessageToPlayer("The hinge was rotated to face " + direction + ".", player.NetConn);
+                    }
+
+                    for (int a = 2; a < 7; a++)//7
                     {
                         if (blockListContent[x, y, z, 2] == 0)
                         {
@@ -5389,8 +5503,9 @@ namespace Infiniminer
                             blockListContent[x, y, z, a * 6 + 2] = y;
                             blockListContent[x, y, z, a * 6 + 3] = z;
 
-                            if (player != null)
-                                SendServerMessageToPlayer("lposx:" + (a - 1) + " " + blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]], player.NetConn);
+                            DebrisEffectAtPoint((float)(blockListContent[x, y, z, a * 6 + 1]), (float)(blockListContent[x, y, z, a * 6 + 2]), (float)(blockListContent[x, y, z, a * 6 + 3]), BlockType.Highlight, 1);
+                            //if (player != null)
+                            //    SendServerMessageToPlayer("lposx:" + (a - 1) + " " + blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]], player.NetConn);
 
                         }
                         else if (blockListContent[x, y, z, 2] == 2)
@@ -5403,8 +5518,9 @@ namespace Infiniminer
                             blockListContent[x, y, z, a * 6 + 2] = y;
                             blockListContent[x, y, z, a * 6 + 3] = z;
 
-                            if (player != null)
-                                SendServerMessageToPlayer("lnegx:" + (a - 1) + " " + blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]], player.NetConn);
+                            DebrisEffectAtPoint((float)(blockListContent[x, y, z, a * 6 + 1]), (float)(blockListContent[x, y, z, a * 6 + 2]), (float)(blockListContent[x, y, z, a * 6 + 3]), BlockType.Highlight, 1);
+                            //if (player != null)
+                            //    SendServerMessageToPlayer("lnegx:" + (a - 1) + " " + blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]], player.NetConn);
 
                         }
                         else if (blockListContent[x, y, z, 2] == 3)
@@ -5417,8 +5533,9 @@ namespace Infiniminer
                             blockListContent[x, y, z, a * 6 + 2] = y;
                             blockListContent[x, y, z, a * 6 + 3] = z + a - 1;
 
-                            if (player != null)
-                                SendServerMessageToPlayer("lposz:" + (a - 1) + " " + blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]], player.NetConn);
+                            DebrisEffectAtPoint((float)(blockListContent[x, y, z, a * 6 + 1]), (float)(blockListContent[x, y, z, a * 6 + 2]), (float)(blockListContent[x, y, z, a * 6 + 3]), BlockType.Highlight, 1);
+                            //if (player != null)
+                            //    SendServerMessageToPlayer("lposz:" + (a - 1) + " " + blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]], player.NetConn);
 
                         }
                         else if (blockListContent[x, y, z, 2] == 4)
@@ -5431,8 +5548,10 @@ namespace Infiniminer
                             blockListContent[x, y, z, a * 6 + 2] = y;
                             blockListContent[x, y, z, a * 6 + 3] = z - (a - 1);
 
-                            if (player != null)
-                                SendServerMessageToPlayer("lnegz:" + (a - 1) + " " + blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]], player.NetConn);
+                            DebrisEffectAtPoint((float)(blockListContent[x, y, z, a * 6 + 1]), (float)(blockListContent[x, y, z, a * 6 + 2]), (float)(blockListContent[x, y, z, a * 6 + 3]), BlockType.Highlight, 1);
+
+                            //if (player != null)
+                            //    SendServerMessageToPlayer("lnegz:" + (a - 1) + " " + blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]], player.NetConn);
 
                         }
                     }

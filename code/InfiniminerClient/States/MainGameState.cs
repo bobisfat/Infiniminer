@@ -433,13 +433,25 @@ namespace Infiniminer.States
                        
                         if (distance < 1.2)
                         {
-                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds(1000);//no interaction for a second after trying once
-                            _P.GetItem(bPair.Value.ID);
+                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds(500);//no interaction for half a second after trying once
+
+                            if (bPair.Value.Type == ItemType.Ore && _P.playerOre < _P.playerOreMax)//stops re-requesting items it doesnt need
+                            {
+                                _P.GetItem(bPair.Value.ID);
+                            }
+                            else if (bPair.Value.Type == ItemType.Gold && _P.playerWeight < _P.playerWeightMax)//stops re-requesting items it doesnt need
+                            {
+                                _P.GetItem(bPair.Value.ID);
+                            }
+                            else
+                            {
+                                //we dont know what this item is
+                            }
                             //break;
                         }
                         else
                         {
-                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds((int)(distance*50));//retry based on objects distance
+                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds((int)(distance*100));//retry based on objects distance
                         }
                     }
                 }
