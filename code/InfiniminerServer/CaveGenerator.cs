@@ -62,10 +62,6 @@ namespace Infiniminer
             int cavesToCarveSand = randGen.Next(size / 16, size / 8);
             for (int i = 0; i < cavesToCarveSand; i++)
                 CaveGenerator.PaintWithRandomWalk(ref caveData, ref caveNoiseSand, size, randGen.Next(1, 2), BlockType.Sand, false);
-            cavesToCarveSand = randGen.Next(size / 16, size / 8);
-            for (int i = 0; i < cavesToCarveSand; i++)
-                CaveGenerator.PaintWithRandomWalk(ref caveData, ref caveNoiseSand, size, randGen.Next(1, 2), BlockType.Sand, false);
-
 
             // Carve some caves into the ground.
             float[, ,] caveNoise = CaveGenerator.GeneratePerlinNoise(32);

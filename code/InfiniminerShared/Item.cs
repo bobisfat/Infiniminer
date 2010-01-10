@@ -26,7 +26,7 @@ namespace Infiniminer
         public float Scale = 0.5f;
         public Vector3 Velocity = Vector3.Zero;
         public Vector3 deltaPosition;
-        public bool Billboard = true;//always faces camera, no angles
+        public bool Billboard = false;
         public ItemType Type;
         public DateTime Frozen;//frozen until greater than this time
 

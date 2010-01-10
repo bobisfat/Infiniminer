@@ -170,14 +170,15 @@ namespace Infiniminer
             {
                 deltaPosition = position;
             }
-            else if (Math.Abs(deltaPosition.X - position.X) > 5.0f)
+            else if (Math.Abs(deltaPosition.Y - position.Y) > 5.0f)
             {
                 deltaPosition = position;
             }
-            else if (Math.Abs(deltaPosition.X - position.X) > 5.0f)
+            else if (Math.Abs(deltaPosition.Z - position.Z) > 5.0f)
             {
                 deltaPosition = position;
             }
+
         }
 
         public void StepInterpolation(double gameTime)

@@ -315,13 +315,21 @@ namespace Infiniminer
                 {
                     p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
                 }
+                else if (block == BlockType.RadarRed)
+                {
+                    p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
+                }
+                else if (block == BlockType.RadarBlue)
+                {
+                    p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
+                }
                 else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2)
                 {
                     p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
                 else if (block == BlockType.Sand)
                 {
-                    p.Color = new Vector4(0.45f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                    p.Color = new Vector4(0.9f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.7f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.3f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
                 }
                 else if (block == BlockType.Ore)
                 {
@@ -453,7 +461,15 @@ namespace Infiniminer
                 }
                 else if (block == BlockType.Sand)
                 {
-                    p.Color = new Vector4(0.45f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.15f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                    p.Color = new Vector4(0.9f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.7f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 0.3f + (float)((randGen.NextDouble() - 0.5f) * 0.025f), 1.0f);
+                }
+                else if (block == BlockType.RadarRed)
+                {
+                    p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
+                }
+                else if (block == BlockType.RadarBlue)
+                {
+                    p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
                 else if (block == BlockType.SolidRed || block == BlockType.SolidRed2)
                 {

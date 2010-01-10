@@ -97,10 +97,10 @@ namespace Infiniminer
             blockIcons[BlockType.Dirt] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_dirt");
             blockIcons[BlockType.Pump] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pump");
             blockIcons[BlockType.Compressor] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_compressor");
-            blockIcons[BlockType.Lever] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
-            blockIcons[BlockType.RadarRed] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
-            blockIcons[BlockType.RadarBlue] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
-            blockIcons[BlockType.Hinge] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
+            blockIcons[BlockType.Lever] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_lever");
+            blockIcons[BlockType.RadarRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_radar");
+            blockIcons[BlockType.RadarBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_radar");
+            blockIcons[BlockType.Hinge] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_hinge");
             //held icons
             blockIcons[BlockType.Diamond] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_diamond");
             blockIcons[BlockType.MagmaVent] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");

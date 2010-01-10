@@ -40,8 +40,10 @@ namespace Infiniminer
                 if (p.TimeIdle > 0.5f)
                     p.IdleAnimation = true;
 
-                p.deltaPosition = p.deltaPosition + (((p.Position - p.deltaPosition) * (8*(float)gameTime.ElapsedGameTime.TotalSeconds)));
-
+                if (!(float.IsNaN(p.Position.X)))
+                p.deltaPosition = p.deltaPosition + (((p.Position - p.deltaPosition) * (8 * (float)gameTime.ElapsedGameTime.TotalSeconds)));
+                //.zero for NAN problems with dragging window
+                
                 p.SpriteModel.Update(gameTime);
             }
 
@@ -67,7 +69,7 @@ namespace Infiniminer
                                        _P.playerCamera.ProjectionMatrix,
                                        _P.playerCamera.Position,
                                        _P.playerCamera.GetLookVector(),
-                                       p.deltaPosition - Vector3.UnitY * 1.5f,
+                                       p.deltaPosition - Vector3.UnitY * 1.5f,//delta
                                        p.Heading,
                                        2);
                 }
@@ -81,7 +83,7 @@ namespace Infiniminer
                                       _P.playerCamera.ProjectionMatrix,
                                       _P.playerCamera.Position,
                                       _P.playerCamera.GetLookVector(),
-                                      i.Value.deltaPosition,
+                                      i.Value.deltaPosition - Vector3.UnitY * i.Value.Scale / 10,
                                       i.Value.Heading,
                                       i.Value.Scale);
                 }
@@ -91,7 +93,7 @@ namespace Infiniminer
                                       _P.playerCamera.ProjectionMatrix,
                                       _P.playerCamera.Position,
                                       _P.playerCamera.GetLookVector(),
-                                      i.Value.deltaPosition,
+                                      i.Value.deltaPosition - Vector3.UnitY * i.Value.Scale / 10,
                                       i.Value.Heading,
                                       i.Value.Scale);
                 }
@@ -132,8 +134,6 @@ namespace Infiniminer
                         playerText = p.Handle;
                         if (p.Ping > 0)
                             playerText = "*** " + playerText + " ***";
-
-                        playerText = playerText + " " + p.Health;//use content updates
 
                         p.SpriteModel.DrawText(_P.playerCamera.ViewMatrix,
                                                _P.playerCamera.ProjectionMatrix,

@@ -401,6 +401,23 @@ namespace Infiniminer
                         default: return BlockTexture.BankTopBlue;
                     }
 
+                case BlockType.RadarRed:
+                case BlockType.RadarBlue:
+                    switch (faceDir)
+                    {
+                        case BlockFaceDirection.YDecreasing:
+                            return BlockTexture.LadderTop;
+                        case BlockFaceDirection.YIncreasing:
+                            return blockType == BlockType.RadarRed ? BlockTexture.BeaconRed : BlockTexture.BeaconBlue;
+                        case BlockFaceDirection.XDecreasing:
+                        case BlockFaceDirection.XIncreasing:
+                            return BlockTexture.TeleSideA;
+                        case BlockFaceDirection.ZDecreasing:
+                        case BlockFaceDirection.ZIncreasing:
+                            return BlockTexture.TeleSideB;
+                    }
+                    break;
+
                 case BlockType.BeaconRed:
                 case BlockType.BeaconBlue:
                     switch (faceDir)
@@ -456,10 +473,6 @@ namespace Infiniminer
                             return BlockTexture.Jump;
                     }
                     break;
-                case BlockType.RadarRed://fixme
-                    return BlockTexture.SolidRed;
-                case BlockType.RadarBlue://fixme
-                    return BlockTexture.SolidBlue;
                 case BlockType.SolidRed:
                     return BlockTexture.SolidRed;
                 case BlockType.SolidBlue:

@@ -1552,11 +1552,11 @@ namespace Infiniminer
         public void SetItem(ItemType iType, Vector3 pos, Vector3 heading, Vector3 vel, PlayerTeam team)
         {
             if(iType == ItemType.Gold || iType == ItemType.Ore)//merge minerals on the ground
-            foreach (KeyValuePair<uint, Item> iF in itemList)
+            foreach (KeyValuePair<uint, Item> iF in itemList)//pretty inefficient
             {
                     if (Distf(pos, iF.Value.Position) < 2.0f)
                     {
-                        if (iType == iF.Value.Type && !iF.Value.Disposing)
+                        if (iType == iF.Value.Type && !iF.Value.Disposing && iF.Value.Content[5] < 10)//limit stacks to 10
                         {
                             iF.Value.Content[5] += 1;//supposed ore content
                             iF.Value.Scale = 0.5f + (float)(iF.Value.Content[5]) * 0.1f;
@@ -2726,9 +2726,9 @@ namespace Infiniminer
                 Thread.Sleep(50);
             }
         }
+
         public void DoItems()
-    {
-        
+        {
 
             Vector3 tv = Vector3.Zero;
             Vector3 tvv = Vector3.Zero;
@@ -2747,8 +2747,8 @@ namespace Infiniminer
                     i.Value.Velocity.X = i.Value.Velocity.X * 0.99f;
                     i.Value.Velocity.Y -= GRAVITY * (delta*50);
 
-                    if (i.Value.Velocity.Y > 5.0f || i.Value.Velocity.Y < -5.0f)
-                        ConsoleWrite("y " + i.Value.Velocity.Y);
+                    //if (i.Value.Velocity.Y > 5.0f || i.Value.Velocity.Y < -5.0f)
+                      //  ConsoleWrite("y " + i.Value.Velocity.Y);
 
                     i.Value.Velocity.Z = i.Value.Velocity.Z * 0.99f;
 
@@ -4056,9 +4056,14 @@ namespace Infiniminer
 
             if (giveOre > 0)
             {
-                if (player.Ore < player.OreMax)
+                if (player.Ore < player.OreMax - giveOre)
                 {
                     player.Ore += giveOre;
+                    SendOreUpdate(player);
+                }
+                else if(player.Ore < player.OreMax)//vaporize some ore to fit into players inventory
+                {
+                    player.Ore = player.OreMax;
                     SendOreUpdate(player);
                 }
                 else//ore goes onto ground
@@ -4077,7 +4082,17 @@ namespace Infiniminer
                     SendCashUpdate(player);
                 }
                 else
+                {
                     removeBlock = false;
+                    if (block == BlockType.Gold)
+                    {
+                        if (player.Weight == player.WeightMax)
+                        {
+                            //gold goes onto the ground
+                            SetItem(ItemType.Gold, hitPoint, playerHeading, new Vector3(playerHeading.X * 1.5f, 0.0f, playerHeading.Z * 1.5f), PlayerTeam.None);
+                        }
+                    }
+                }
             }
 
             if (removeBlock)//block falls away with any hit
@@ -4092,6 +4107,35 @@ namespace Infiniminer
                 {
                     if (blockListHP[x, y, z] < Damage)
                     {
+                        if(block == BlockType.RadarRed)
+                        {
+                            foreach (Player p in playerList.Values)
+                            {
+                                if (p.Alive && p.Team == PlayerTeam.Blue)
+                                {
+                                    if (p.Content[1] == 1)
+                                    {
+                                        p.Content[1] = 0;//goes off radar again
+                                        SendPlayerContentUpdate(p, 1);
+                                    }
+                                }
+                            }
+                        }
+                        else if(block == BlockType.RadarBlue)
+                        { 
+                            foreach (Player p in playerList.Values)
+                            {
+                                if (p.Alive && p.Team == PlayerTeam.Red)
+                                {
+                                    if (p.Content[1] == 1)
+                                    {
+                                        p.Content[1] = 0;//goes off radar again
+                                        SendPlayerContentUpdate(p, 1);
+                                    }
+                                }
+                            }
+                        }
+                        
                         SetBlockDebris(x, y, z, BlockType.None, PlayerTeam.None);//blockset + adds debris for all players
                         
                         blockListHP[x, y, z] = 0;
@@ -4111,14 +4155,6 @@ namespace Infiniminer
                             if (blockListHP[x, y, z] < 21)
                             {
                                 SetBlock(x, y, z, blockCreatorTeam[x, y, z] == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue, blockCreatorTeam[x, y, z]);
-                            }
-                        }
-                        else if (block == BlockType.Gold)
-                        {
-                            if (player.Weight == player.WeightMax)
-                            {
-                                //gold goes onto the ground
-                                SetItem(ItemType.Gold, hitPoint, playerHeading, new Vector3(playerHeading.X*0.3f,-playerHeading.Y*0.3f,playerHeading.Z*0.3f), PlayerTeam.None);
                             }
                         }
                     }
@@ -4724,8 +4760,6 @@ namespace Infiniminer
                                 case BlockType.Ore:
                                 case BlockType.SolidRed:
                                 case BlockType.SolidBlue:
-                                case BlockType.RadarRed:
-                                case BlockType.RadarBlue:
                                 case BlockType.TransRed:
                                 case BlockType.TransBlue:
                                 case BlockType.Water:
@@ -4739,11 +4773,48 @@ namespace Infiniminer
                                 case BlockType.TrapR:
                                 case BlockType.TrapB:
                                 case BlockType.Road:
+                               // case BlockType.RadarBlue:
+                               // case BlockType.RadarRed:
                                     destroyBlock = true;
                                     break;
                             }
                             if (destroyBlock)
+                            {
+                                if (blockList[x + dx, y + dy, z + dz] == BlockType.RadarRed)//requires special remove
+                                {//never executes??
+                                    ConsoleWrite("blue should go off radar");
+                                    foreach (Player p in playerList.Values)
+                                    {
+                                        if (p.Alive && p.Team == PlayerTeam.Blue)
+                                        {
+                                            if (p.Content[1] == 1)
+                                            {
+                                                ConsoleWrite("blue went off radar");
+                                                p.Content[1] = 0;//goes off radar again
+                                                SendPlayerContentUpdate(p, 1);
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (blockList[x + dx, y + dy, z + dz] == BlockType.RadarBlue)//requires special remove
+                                {
+                                    ConsoleWrite("red should go off radar");
+                                    foreach (Player p in playerList.Values)
+                                    {
+                                        if (p.Alive && p.Team == PlayerTeam.Red)
+                                        {
+                                            if (p.Content[1] == 1)
+                                            {
+                                                ConsoleWrite("red went off radar");
+                                                p.Content[1] = 0;//goes off radar again
+                                                SendPlayerContentUpdate(p, 1);
+                                            }
+                                        }
+                                    }
+                                }
+
                                 SetBlock((ushort)(x + dx), (ushort)(y + dy), (ushort)(z + dz), BlockType.None, PlayerTeam.None);
+                            }
                         }
             }
             else
