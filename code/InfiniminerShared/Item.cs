@@ -68,7 +68,15 @@ namespace Infiniminer
                     if (gameInstance != null)
                     {
                        // if (idleAnimation)
-                            SpriteModel.SetPassiveAnimation("1,1");
+                        if (Type == ItemType.Artifact)
+                        {
+                            //SpriteModel.
+                            //SpriteModel.SetPassiveAnimation("0,0.5 ; 1,0.5 ; 2,0.5 ; 1,0.5");
+                            //SpriteModel.StartActiveAnimation("3,0.15");
+                            //SpriteModel.
+                        }
+                        //else
+                          //  SpriteModel.SetPassiveAnimation("0,0.2;1,0.2;2,0.2;1,0.2");
                        // else
                        //     SpriteModel.SetPassiveAnimation("0,0.2;1,0.2;2,0.2;1,0.2");
                     }
@@ -90,6 +98,9 @@ namespace Infiniminer
                     break;
                 case ItemType.Ore:
                     textureName = "sprites/tex_sprite_lemonorore";
+                    break;
+                case ItemType.Artifact:
+                    textureName = "sprites/tex_sprite_artifact";
                     break;
                 default:
                     textureName = "sprites/tex_sprite_lemonorgoldnum";

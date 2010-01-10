@@ -10,6 +10,7 @@ namespace Infiniminer
         None,
         Gold,
         Ore,
+        Artifact,
         MAXIMUM
     }
 
@@ -27,6 +28,7 @@ namespace Infiniminer
         Explosive,
         Jump,
         Shock,
+        ArtCase,
         BankRed,
         BankBlue,
         BaseRed,
@@ -186,6 +188,9 @@ namespace Infiniminer
             blockHP[(byte)BlockType.Gold] = 80;
             blockMaxHP[(byte)BlockType.Gold] = 80;
 
+            blockHP[(byte)BlockType.ArtCase] = 50;
+            blockMaxHP[(byte)BlockType.ArtCase] = 200;
+
             blockMaxHP[(byte)BlockType.SolidRed] = 50;
             blockMaxHP[(byte)BlockType.SolidBlue] = 50;
 
@@ -256,6 +261,7 @@ namespace Infiniminer
                 case BlockType.RadarRed:
                 case BlockType.RadarBlue:
                     return 200;
+                case BlockType.ArtCase:
                 case BlockType.BankRed:
                 case BlockType.BankBlue:
                     return 200;
@@ -360,7 +366,15 @@ namespace Infiniminer
                     return BlockTexture.TrapB;
                 case BlockType.TrapR:
                    return BlockTexture.TrapR;
-
+                case BlockType.ArtCase:
+                   switch (faceDir)
+                   {
+                       case BlockFaceDirection.XIncreasing: return BlockTexture.BankFrontRed;
+                       case BlockFaceDirection.XDecreasing: return BlockTexture.BankBackRed;
+                       case BlockFaceDirection.ZIncreasing: return BlockTexture.BankLeftRed;
+                       case BlockFaceDirection.ZDecreasing: return BlockTexture.BankRightRed;
+                       default: return BlockTexture.BankTopRed;
+                   }
                 case BlockType.BankRed:
                     switch (faceDir)
                     {

@@ -108,7 +108,6 @@ namespace Infiniminer
         public void Draw(Matrix viewMatrix, Matrix projectionMatrix, Vector3 cameraPosition, Vector3 cameraForward, Vector3 drawPosition, Vector3 drawHeading, float drawScale)
         {
             VertexPositionTexture[] vertices = GenerateVertices(cameraPosition, drawPosition, drawHeading, drawScale);
-            //Matrix world = Matrix.CreateBillboard(drawPosition, cameraPosition, Vector3.UnitY, cameraForward);
             Matrix world = Matrix.CreateConstrainedBillboard(drawPosition, cameraPosition, Vector3.UnitY, cameraForward, null);
 
             effect.Parameters["xWorld"].SetValue(world);
@@ -118,10 +117,11 @@ namespace Infiniminer
             effect.Begin();
             effect.Techniques[0].Passes[0].Begin();
 
-            graphicsDevice.RenderState.CullMode = CullMode.None;
+            graphicsDevice.RenderState.CullMode = CullMode.CullClockwiseFace;
             graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Point;
 
             // Since the per-pixel alpha is either 0 or 1 we can use an alpha test instead of alpha blending.
+
             graphicsDevice.RenderState.AlphaTestEnable = true;
             graphicsDevice.RenderState.AlphaFunction = CompareFunction.Greater;
             graphicsDevice.RenderState.ReferenceAlpha = 128;

@@ -147,7 +147,7 @@ namespace Infiniminer
         {
             BlockType testpoint = BlockAtPoint(pos);
 
-            if (testpoint == BlockType.None || testpoint == BlockType.Fire || testpoint == BlockType.Vacuum || testpoint == BlockType.Water || testpoint == BlockType.Lava || testpoint == BlockType.StealthBlockB && pl.Team == PlayerTeam.Blue || testpoint == BlockType.TransBlue && pl.Team == PlayerTeam.Blue || testpoint == BlockType.TrapR && pl.Team == PlayerTeam.Blue || testpoint == BlockType.TrapB && pl.Team == PlayerTeam.Red || testpoint == BlockType.StealthBlockR && pl.Team == PlayerTeam.Red || testpoint == BlockType.TransRed && pl.Team == PlayerTeam.Red)
+            if (testpoint == BlockType.None || testpoint == BlockType.Fire || testpoint == BlockType.Vacuum || testpoint == BlockType.Water || testpoint == BlockType.Lava || testpoint == BlockType.StealthBlockB && pl.Team == PlayerTeam.Blue || testpoint == BlockType.TransBlue && pl.Team == PlayerTeam.Blue || testpoint == BlockType.StealthBlockR && pl.Team == PlayerTeam.Red || testpoint == BlockType.TransRed && pl.Team == PlayerTeam.Red)
             {//check if player is not in wall
                //falldamage
 
@@ -177,6 +177,7 @@ namespace Infiniminer
             {
                 if (pl.Alive)
                 {
+                    
                     //pl.Ore = 0;//should be calling death function for player
                     //pl.Cash = 0;
                     //pl.Weight = 0;
@@ -191,12 +192,34 @@ namespace Infiniminer
                     ushort y = (ushort)pos.Y;
                     ushort z = (ushort)pos.Z;
 
+                    
                     if (x < 0 || y < 0 || z < 0 || x >= MAPSIZE || y >= MAPSIZE || z >= MAPSIZE)
                     {
                         Auth_Refuse(pl);
                         pl.rCount += 1;
                         return pl.Position;
                     }
+
+                    if (testpoint == BlockType.TrapB)
+                        if (pl.Team == PlayerTeam.Red)//destroy trap block
+                        {
+                            pl.rSpeedCount += Dist_Auth(pos, pl.Position);
+                            pl.rUpdateCount += 1;
+
+                            Auth_Refuse(pl);
+                            SetBlockDebris(x, y, z, BlockType.None, PlayerTeam.None);
+                            return (pos);
+                        }
+                    else if (testpoint == BlockType.TrapR)
+                        if (pl.Team == PlayerTeam.Blue)//destroy trap block
+                        {
+                            pl.rSpeedCount += Dist_Auth(pos, pl.Position);
+                            pl.rUpdateCount += 1;
+
+                            Auth_Refuse(pl);
+                            SetBlockDebris(x, y, z, BlockType.None, PlayerTeam.None);
+                            return (pos);
+                        }
 
                     SetBlockForPlayer(x, y, z, blockList[x, y, z], blockCreatorTeam[x, y, z], pl);
                     Auth_Refuse(pl);
@@ -2300,7 +2323,7 @@ namespace Infiniminer
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        for (int a = 0; a < 50; a++)
+                                                        for (int a = 0; a < 100; a++)
                                                         {
                                                             player.Content[a] = 0;
                                                         }
@@ -2310,7 +2333,7 @@ namespace Infiniminer
                                                         player.WeightMax = 20;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        for (int a = 0; a < 50; a++)
+                                                        for (int a = 0; a < 100; a++)
                                                         {
                                                             player.Content[a] = 0;
                                                         }
@@ -2320,7 +2343,7 @@ namespace Infiniminer
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        for (int a = 0; a < 50; a++)
+                                                        for (int a = 0; a < 100; a++)
                                                         {
                                                             player.Content[a] = 0;
                                                         }
@@ -2330,7 +2353,7 @@ namespace Infiniminer
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        for (int a = 0; a < 50; a++)
+                                                        for (int a = 0; a < 100; a++)
                                                         {
                                                             player.Content[a] = 0;
                                                         }
@@ -4135,6 +4158,14 @@ namespace Infiniminer
                                 }
                             }
                         }
+                        else if (block == BlockType.ArtCase)
+                        {
+                            if (y < MAPSIZE - 1)
+                                if (blockList[x, y + 1, z] == BlockType.Vacuum)
+                                {
+                                    blockList[x, y + 1, z] = BlockType.None;
+                                }
+                        }
                         
                         SetBlockDebris(x, y, z, BlockType.None, PlayerTeam.None);//blockset + adds debris for all players
                         
@@ -4314,7 +4345,7 @@ namespace Infiniminer
                     player.Content[5] = (byte)block;
                     for (uint cc = 0; cc < 20; cc++)//copy the content values
                     {
-                        player.Content[6 + cc] = blockListContent[x, y, z, cc];
+                        player.Content[50 + cc] = blockListContent[x, y, z, cc];//50 is past players accessible content, it is for server only
                     }
 
                     if (block == BlockType.Explosive)//must update player explosive keys
@@ -4328,7 +4359,7 @@ namespace Infiniminer
                             {
                                 if (p.ExplosiveList[ca].X == x && p.ExplosiveList[ca].Y == y && p.ExplosiveList[ca].Z == z)
                                 {
-                                    player.Content[6 + 17] = (int)p.ID;
+                                    player.Content[50 + 17] = (int)p.ID;
                                     p.ExplosiveList.RemoveAt(ca);//experimental
                                     break;
                                 }
@@ -4360,7 +4391,7 @@ namespace Infiniminer
                         SendContentSpecificUpdate(player, 5);
                         for (uint cc = 0; cc < 20; cc++)//copy the content values
                         {
-                            blockListContent[bx, by, bz, cc] = player.Content[6 + cc];
+                            blockListContent[bx, by, bz, cc] = player.Content[50 + cc];
                             if (cc == 17 && block == BlockType.Explosive)//explosive list for tnt update
                             {
                                 foreach (Player p in playerList.Values)
@@ -4372,7 +4403,7 @@ namespace Infiniminer
                                     }
                                 }
                             }
-                            player.Content[6 + cc] = 0;
+                            player.Content[50 + cc] = 0;
                         }
 
                         blockListContent[bx, by, bz, 10] = 1;//undergoing gravity changes 
@@ -4443,7 +4474,7 @@ namespace Infiniminer
 
                 exactPoint.Y = exactPoint.Y + (float)1.0;//0.25 = items height
 
-                SetItem(ItemType.Gold, exactPoint, playerHeading, Vector3.Zero, player.Team);
+                SetItem(ItemType.Artifact, exactPoint, playerHeading, Vector3.Zero, player.Team);
                // player.Ore -= blockCost;
                // SendResourceUpdate(player);
 
@@ -4492,6 +4523,19 @@ namespace Infiniminer
             if (blockList[(ushort)hitPoint.X, (ushort)hitPoint.Y, (ushort)hitPoint.Z] == BlockType.Lava || blockList[(ushort)hitPoint.X, (ushort)hitPoint.Y, (ushort)hitPoint.Z] == BlockType.Water)
                 actionFailed = true;
 
+            if(!actionFailed)
+            if (blockType == BlockType.ArtCase)
+            {//space above must be cleared
+                if (blockList[(ushort)hitPoint.X, (ushort)hitPoint.Y + 1, (ushort)hitPoint.Z] != BlockType.None)
+                {
+                    actionFailed = true;
+                }
+                else
+                {
+                    SetBlock(x, (ushort)(y+1), z, BlockType.Vacuum, player.Team);//space for artifact
+                }
+            }
+
             if (actionFailed)
             {
                 // Decharge the player's gun.
@@ -4507,12 +4551,15 @@ namespace Infiniminer
                     //blockType = BlockType.Fire;
 
                 SetBlock(x, y, z, blockType, player.Team);
-                if (blockType == BlockType.SolidRed || blockType == BlockType.SolidBlue)
+
+                if(BlockInformation.GetMaxHP(blockType) > 0)
                 {
-                    blockListHP[x, y, z] = 10;//base block hp for the suck
+                    blockListHP[x, y, z] = BlockInformation.GetHP(blockType);//base block hp
                 }
+
                 player.Ore -= blockCost;
-                SendResourceUpdate(player);
+                SendOreUpdate(player);
+                //SendResourceUpdate(player);
 
                 // Play the sound.
                 PlaySound(InfiniminerSound.ConstructionGun, player.Position);
@@ -4547,6 +4594,7 @@ namespace Infiniminer
                 blockType == BlockType.SolidRed2 ||
                 blockType == BlockType.BankBlue ||
                 blockType == BlockType.BankRed ||
+                blockType == BlockType.ArtCase ||
                 blockType == BlockType.Jump ||
                 blockType == BlockType.Ladder ||
                 blockType == BlockType.Road ||
@@ -4610,6 +4658,15 @@ namespace Infiniminer
                             }
                         }
                     }
+                }
+                else if (blockType == BlockType.ArtCase)
+                {
+                    if(y < MAPSIZE-1)
+                        if (blockList[x, y + 1, z] == BlockType.Vacuum)
+                        {
+                            blockList[x, y + 1, z] = BlockType.None;
+                            //should free artifact
+                        }
                 }
                 // Remove the block.
                 SetBlock(x, y, z, BlockType.None, PlayerTeam.None);

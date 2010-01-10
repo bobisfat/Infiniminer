@@ -534,15 +534,17 @@ namespace Infiniminer
                 PlayerTools.ConstructionGun,
                 PlayerTools.DeconstructionGun,
                 PlayerTools.ProspectingRadar,
-                PlayerTools.Detonator,
-                PlayerTools.SpawnItem };
+                PlayerTools.SpawnItem,
+                PlayerTools.Detonator
+                };
 
-                playerBlocks = new BlockType[18] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[19] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
                                              BlockType.Jump,
                                              BlockType.Shock,
+                                             BlockType.ArtCase,
                                              playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
@@ -589,13 +591,14 @@ namespace Infiniminer
                                                             PlayerTools.ConstructionGun,     
                                                             PlayerTools.DeconstructionGun };
 
-                        playerBlocks = new BlockType[9] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                        playerBlocks = new BlockType[10] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
                                                         BlockType.Ladder,
                                                         BlockType.Jump,
                                                         BlockType.Pump,
                                                         BlockType.Pipe,
                                                         BlockType.Lever,
+                                                        BlockType.ArtCase,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue  };
                         break;
@@ -1013,6 +1016,10 @@ namespace Infiniminer
             if (blockType == BlockType.BankRed && playerTeam == PlayerTeam.Red)
             {
                 return "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE";
+            }
+            else if (blockType == BlockType.ArtCase)
+            {
+                return "8: PLACE ARTIFACT  9: RETRIEVE ARTIFACT";
             }
             else if (blockType == BlockType.BankBlue && playerTeam == PlayerTeam.Blue)
             {
