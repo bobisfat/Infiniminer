@@ -105,7 +105,7 @@ namespace Infiniminer
         // Draw the SpriteModel into gamespace at drawLocation, facing drawAngle, where the camera is located at 
         // cameraLocation (used for finding the angle between the camera and the sprite's forward direction). 
         // The sprite will be drawn as 1*drawScale engine units wide and 1.5*drawScale engine units tall.
-        public void Draw(Matrix viewMatrix, Matrix projectionMatrix, Vector3 cameraPosition, Vector3 cameraForward, Vector3 drawPosition, Vector3 drawHeading, float drawScale)
+        public void Draw(Matrix viewMatrix, Matrix projectionMatrix, Vector3 cameraPosition, Vector3 cameraForward, Vector3 drawPosition, Vector3 drawHeading, float drawScale, Vector4 col)
         {
             VertexPositionTexture[] vertices = GenerateVertices(cameraPosition, drawPosition, drawHeading, drawScale);
             Matrix world = Matrix.CreateConstrainedBillboard(drawPosition, cameraPosition, Vector3.UnitY, cameraForward, null);
@@ -114,6 +114,8 @@ namespace Infiniminer
             effect.Parameters["xView"].SetValue(viewMatrix);
             effect.Parameters["xProjection"].SetValue(projectionMatrix);
             effect.Parameters["xTexture"].SetValue(texSprite);
+            effect.Parameters["xColor"].SetValue(new Vector4(col.X, col.Y, col.Z, col.W));
+
             effect.Begin();
             effect.Techniques[0].Passes[0].Begin();
 

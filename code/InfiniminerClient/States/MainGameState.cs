@@ -90,7 +90,10 @@ namespace Infiniminer.States
                 _P.FirePickaxe();
                 _P.playerToolCooldown = _P.GetToolCooldown(PlayerTools.Pickaxe) * 0.4f;//(_P.playerClass == PlayerClass.Miner ? 0.4f : 1.0f);
             }
-
+            if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.SpawnItem)
+            {
+                _P.FireSpawnItem();
+            }
             // Prospector radar stuff.
             if (!_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.ProspectingRadar)
             {
@@ -415,46 +418,51 @@ namespace Infiniminer.States
                         crouching = true;
                 //}
             }
-
-            if (_P.moveVector.X != 0 || _P.moveVector.Z != 0)
+            //grab item
+            foreach (KeyValuePair<uint, Item> bPair in _P.itemList)
             {
-                //grab item
-                foreach (KeyValuePair<uint, Item> bPair in _P.itemList)
+                TimeSpan diff = DateTime.Now - bPair.Value.Frozen;
+                if (diff.Milliseconds > 0)
                 {
-                    TimeSpan diff = DateTime.Now - bPair.Value.Frozen;
-                    if (diff.Milliseconds > 0)
-                    {
-                       
-                        float dx = bPair.Value.Position.X - _P.playerPosition.X;
-                        float dy = bPair.Value.Position.Y - _P.playerPosition.Y+1.0f;
-                        float dz = bPair.Value.Position.Z - _P.playerPosition.Z;
-                       
-                        float distance = (float)(Math.Sqrt(dx * dx + dy * dy + dz * dz));
-                       
-                        if (distance < 1.2)
-                        {
-                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds(500);//no interaction for half a second after trying once
 
-                            if (bPair.Value.Type == ItemType.Ore && _P.playerOre < _P.playerOreMax)//stops re-requesting items it doesnt need
-                            {
-                                _P.GetItem(bPair.Value.ID);
-                            }
-                            else if (bPair.Value.Type == ItemType.Gold && _P.playerWeight < _P.playerWeightMax)//stops re-requesting items it doesnt need
-                            {
-                                _P.GetItem(bPair.Value.ID);
-                            }
-                            else
-                            {
-                                //we dont know what this item is
-                            }
-                            //break;
+                    float dx = bPair.Value.Position.X - _P.playerPosition.X;
+                    float dy = bPair.Value.Position.Y - _P.playerPosition.Y + 1.0f;
+                    float dz = bPair.Value.Position.Z - _P.playerPosition.Z;
+
+                    float distance = (float)(Math.Sqrt(dx * dx + dy * dy + dz * dz));
+
+                    if (distance < 1.2)
+                    {
+                        bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds(500);//no interaction for half a second after trying once
+
+                        if (bPair.Value.Type == ItemType.Ore && _P.playerOre < _P.playerOreMax)//stops requesting items it doesnt need
+                        {
+                            _P.GetItem(bPair.Value.ID);
+                        }
+                        else if (bPair.Value.Type == ItemType.Gold && _P.playerWeight < _P.playerWeightMax)
+                        {
+                            _P.GetItem(bPair.Value.ID);
+                        }
+                        else if (bPair.Value.Type == ItemType.Artifact && _P.Content[10] == 0)
+                        {
+                            _P.GetItem(bPair.Value.ID);
                         }
                         else
                         {
-                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds((int)(distance*100));//retry based on objects distance
+                            //we dont know what this item is
                         }
+                        //break;
+                    }
+                    else
+                    {
+                        bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds((int)(distance * 100));//retry based on objects distance
                     }
                 }
+            }
+
+            if (_P.moveVector.X != 0 || _P.moveVector.Z != 0)
+            {
+               
                 // "Flatten" the movement vector so that we don"t move up/down.
                 if (_P.Content[5] > 0 && _P.playerClass == PlayerClass.Sapper)
                 {

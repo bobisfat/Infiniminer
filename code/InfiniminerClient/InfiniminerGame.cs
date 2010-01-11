@@ -281,6 +281,9 @@ namespace Infiniminer
                                             newItem.Team = (PlayerTeam)msgBuffer.ReadByte();
                                             newItem.Heading = msgBuffer.ReadVector3();
                                             newItem.deltaPosition = newItem.Position;
+                                            newItem.Content[1] = msgBuffer.ReadInt32();
+                                            newItem.Content[2] = msgBuffer.ReadInt32();
+                                            newItem.Content[3] = msgBuffer.ReadInt32();
                                             propertyBag.itemList.Add(newItem.ID, newItem);
                                         }
                                         break;

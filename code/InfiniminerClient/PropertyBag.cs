@@ -31,6 +31,8 @@ namespace Infiniminer
         public bool[,] mapLoadProgress = null;
         public string serverName = "";
 
+        public float colorPulse = 1.0f;//color fading
+        bool colorDirection = true;//increases when true
         //Input stuff.
         public KeyBindHandler keyBinds = null;
 
@@ -375,6 +377,20 @@ namespace Infiniminer
         // Version used during updates.
         public void UpdateCamera(GameTime gameTime)
         {
+            if (gameTime != null)
+            if (colorDirection)
+            {
+                colorPulse += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (colorPulse > 1.5f)
+                    colorDirection = !colorDirection;
+            }
+            else
+            {
+                colorPulse -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (colorPulse < 0.5f)
+                    colorDirection = !colorDirection;
+            }
+
             // If we have a gameTime object, apply screen jitter.
             if (screenEffect == ScreenEffect.Explosion)
             {
@@ -918,8 +934,8 @@ namespace Infiniminer
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
 
-            playerToolCooldown = GetToolCooldown(PlayerTools.SpawnItem);
-            constructionGunAnimation = -5;
+            //playerToolCooldown = GetToolCooldown(PlayerTools.SpawnItem);
+            //constructionGunAnimation = -5;
 
             // Send the message.
             NetBuffer msgBuffer = netClient.CreateBuffer();
@@ -989,6 +1005,11 @@ namespace Infiniminer
                     {
                         BlockType blockType = blockEngine.BlockAtPoint(scanPoint);
                         if (blockType == BlockType.Gold)
+                        {
+                            distanceReading = Math.Min(distanceReading, 0.5f * k);
+                            valueReading = Math.Max(valueReading, 200);
+                        }
+                        else if (blockType == BlockType.ArtCase)
                         {
                             distanceReading = Math.Min(distanceReading, 0.5f * k);
                             valueReading = Math.Max(valueReading, 200);

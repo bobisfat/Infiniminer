@@ -138,6 +138,7 @@ Content\sprites\tex_sprite_lemonorore.xnb
 Content\icons\tex_icon_radar.xnb
 Content\icons\tex_icon_hinge.xnb
 Content\icons\tex_icon_lever.xnb
+Content\sprites\tex_sprite_artifact.xnb
 Content\font_04b08.xnb
 Content\font_04b03b.xnb
 Content\sounds\build.xnb
@@ -159,6 +160,5 @@ Content\sounds\rockfall.xnb
 Content\song_title.xnb
 Content\tmp.xnb
 Content\models\basketball.xnb
-Content\sprites\tex_sprite_artifact.xnb
 Content\song_title.wma
 Content\tmp.wma

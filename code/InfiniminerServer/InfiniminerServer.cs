@@ -19,7 +19,6 @@ namespace Infiniminer
         Dictionary<PlayerTeam, PlayerBase> basePosition = new Dictionary<PlayerTeam, PlayerBase>();
         PlayerBase RedBase;
         PlayerBase BlueBase;
-
         public TimeSpan[] serverTime = { TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero };
         public int timeQueue = 0;
         float delta;
@@ -27,7 +26,7 @@ namespace Infiniminer
 
         public int MAPSIZE = 64;
         Thread physics;
-        Thread mechanics;
+        //Thread mechanics;
         Dictionary<NetConnection, Player> playerList = new Dictionary<NetConnection, Player>();
         bool sleeping = true;
         int lavaBlockCount = 0;
@@ -78,6 +77,56 @@ namespace Infiniminer
         Dictionary<string,string> varDescriptions = new Dictionary<string,string>();
         Dictionary<string, bool> varAreMessage = new Dictionary<string, bool>();
 
+        public void Player_Dead(Player player)
+        {
+            ConsoleWrite("PLAYER_DEAD: " + player.Handle + " DROPPED:" + player.Ore + " ore/" + player.Cash + " gold!");
+
+            if (player.Ore > 19)
+            {
+                uint it = SetItem(ItemType.Ore, player.Position, Vector3.Zero, new Vector3((float)(randGen.NextDouble() - 0.5) * 2, (float)(randGen.NextDouble() * 1.5), (float)(randGen.NextDouble() - 0.5) * 2), PlayerTeam.None);
+                itemList[it].Content[5] += (int)(player.Ore / 20);
+                itemList[it].Scale = 0.5f + (float)(itemList[it].Content[5]) * 0.1f;
+                SendItemScaleUpdate(itemList[it]);
+            }
+
+            if (player.Cash > 4)
+            {
+                uint it = SetItem(ItemType.Gold, player.Position, Vector3.Zero, new Vector3((float)(randGen.NextDouble() - 0.5) * 2, (float)(randGen.NextDouble() * 1.5), (float)(randGen.NextDouble() - 0.5) * 2), PlayerTeam.None);
+                itemList[it].Content[5] += (int)(player.Cash / 5);
+                itemList[it].Scale = 0.5f + (float)(itemList[it].Content[5]) * 0.1f;
+                SendItemScaleUpdate(itemList[it]);
+            }
+
+            if (player.Content[10] > 0)
+            {
+                uint it = SetItem(ItemType.Artifact, player.Position, Vector3.Zero, new Vector3((float)(randGen.NextDouble() - 0.5) * 2, (float)(randGen.NextDouble() * 1.5), (float)(randGen.NextDouble() - 0.5) * 2), PlayerTeam.None);
+                itemList[it].Content[5] = player.Content[10];//setting artifacts ID
+            }
+
+            player.Ore = 0;
+            player.Cash = 0;//gold
+            player.Weight = 0;
+            player.Health = 0;
+            
+            player.Content[2] = 0;
+            player.Content[3] = 0;
+            player.Content[4] = 0;
+            player.Content[5] = 0;//ability slot
+            player.Content[10] = 0;//artifact slot
+
+            if (player.Alive == true)//avoid sending multiple death threats
+            {
+                player.Alive = false;
+                SendResourceUpdate(player);
+                SendPlayerDead(player);
+            }
+            
+            if (player.HealthMax > 0 && player.Team != PlayerTeam.None)
+            {
+                SendPlayerRespawn(player);//allow this player to instantly respawn
+            }
+        }
+
         public void Auth_Refuse(Player pl)
         {
             if (pl.rTime < DateTime.Now)
@@ -87,47 +136,18 @@ namespace Infiniminer
                 if (pl.rUpdateCount > 20)//20 was good cept water//needs to be around 22 due to loss
                 {
                     ConsoleWrite("PLAYER_DEAD_UPDATE_FLOOD: " + pl.Handle + "@" + pl.rUpdateCount + " ROUNDTRIP MS:" + pl.NetConn.AverageRoundtripTime*1000);
-                    pl.Ore = 0;
-                    pl.Cash = 0;
-                    pl.Weight = 0;
-                    pl.Health = 0;
-                    pl.Alive = false;
-                    pl.Content[2] = 0;
-                    pl.Content[3] = 0;
-                    pl.Content[4] = 0;
-                    pl.Content[5] = 0;
-                    SendResourceUpdate(pl);
-                    SendPlayerDead(pl);
+                    Player_Dead(pl);
+                    
                 }
                 else if(pl.rSpeedCount > 10.0f && pl.Alive)//7
                 {
                     ConsoleWrite("PLAYER_DEAD_TOO_FAST: " + pl.Handle + "@"+pl.rSpeedCount+" ROUNDTRIP MS:" + pl.NetConn.AverageRoundtripTime*1000);
-                    pl.Ore = 0;
-                    pl.Cash = 0;
-                    pl.Weight = 0;
-                    pl.Health = 0;
-                    pl.Alive = false;
-                    pl.Content[2] = 0;
-                    pl.Content[3] = 0;
-                    pl.Content[4] = 0;
-                    pl.Content[5] = 0;
-                    SendResourceUpdate(pl);
-                    SendPlayerDead(pl);
+                    Player_Dead(pl);
                 }
                 else if (pl.rCount > 10 && pl.Alive)
                 {
                     ConsoleWrite("PLAYER_DEAD_ILLEGAL_MOVEMENT: " + pl.Handle + "@" + pl.rCount + " ROUNDTRIP MS:" + pl.NetConn.AverageRoundtripTime*1000);
-                    pl.Ore = 0;
-                    pl.Cash = 0;
-                    pl.Weight = 0;
-                    pl.Health = 0;
-                    pl.Alive = false;
-                    pl.Content[2] = 0;
-                    pl.Content[3] = 0;
-                    pl.Content[4] = 0;
-                    pl.Content[5] = 0;
-                    SendResourceUpdate(pl);
-                    SendPlayerDead(pl);
+                    Player_Dead(pl);
                 }
                 pl.rCount = 0;
                 pl.rUpdateCount = 0;
@@ -641,9 +661,9 @@ namespace Infiniminer
             physics.Priority = ThreadPriority.Normal;
             physics.Start();
 
-            mechanics = new Thread(new ThreadStart(this.DoMechanics));
-            mechanics.Priority = ThreadPriority.AboveNormal;
-            mechanics.Start();
+            //mechanics = new Thread(new ThreadStart(this.DoMechanics));
+            //mechanics.Priority = ThreadPriority.AboveNormal;
+            //mechanics.Start();
         }
 
         public string GetExtraInfo()
@@ -1572,7 +1592,7 @@ namespace Infiniminer
             itemIDList.Add(newId);
             return newId;
         }
-        public void SetItem(ItemType iType, Vector3 pos, Vector3 heading, Vector3 vel, PlayerTeam team)
+        public uint SetItem(ItemType iType, Vector3 pos, Vector3 heading, Vector3 vel, PlayerTeam team)
         {
             if(iType == ItemType.Gold || iType == ItemType.Ore)//merge minerals on the ground
             foreach (KeyValuePair<uint, Item> iF in itemList)//pretty inefficient
@@ -1584,7 +1604,7 @@ namespace Infiniminer
                             iF.Value.Content[5] += 1;//supposed ore content
                             iF.Value.Scale = 0.5f + (float)(iF.Value.Content[5]) * 0.1f;
                             SendItemScaleUpdate(iF.Value);
-                            return;//item does not get created, instead merges
+                            return iF.Key;//item does not get created, instead merges
                         }
                     }
             }
@@ -1595,8 +1615,22 @@ namespace Infiniminer
                 newItem.Heading = heading;
                 newItem.Position = pos;
                 newItem.Velocity = vel;
+
+                if (iType == ItemType.Artifact)
+                {
+                    newItem.Content[1] = (int)(randGen.NextDouble() * 100);//r
+                    newItem.Content[2] = (int)(randGen.NextDouble() * 100);//g
+                    newItem.Content[3] = (int)(randGen.NextDouble() * 100);//b
+                }
+                else
+                {
+                    newItem.Content[1] = 100;//r
+                    newItem.Content[2] = 100;//g
+                    newItem.Content[3] = 100;//b
+                }
                 itemList[newItem.ID] = newItem;
                 SendSetItem(newItem.ID, newItem.Type, newItem.Position, newItem.Team, newItem.Heading);
+                return newItem.ID;
         }
 
         public void SetBlockForPlayer(ushort x, ushort y, ushort z, BlockType blockType, PlayerTeam team, Player player)
@@ -2037,8 +2071,8 @@ namespace Infiniminer
 
             // Store the last time that we did a flow calculation.
             DateTime lastFlowCalc = DateTime.Now;
+            DateTime lastFlowCalcZ = DateTime.Now;//temporary
             DateTime sysTimer = DateTime.Now;
-            DateTime itemTimer = DateTime.Now;
             //Check if we should autoload a level
             if (dataFile.Data.ContainsKey("autoload") && bool.Parse(dataFile.Data["autoload"]))
             {
@@ -2378,19 +2412,6 @@ namespace Infiniminer
 
                                         case InfiniminerMessage.PlayerDead:
                                             {
-                                                ConsoleWrite("PLAYER_DEAD: " + player.Handle);
-                                                player.Ore = 0;
-                                                player.Cash = 0;
-                                                player.Weight = 0;
-                                                player.Health = 0;
-                                                player.Alive = false;
-                                                player.Content[2] = 0;
-                                                player.Content[3] = 0;
-                                                player.Content[4] = 0;
-                                                player.Content[5] = 0;
-                                                SendResourceUpdate(player);
-                                                SendPlayerDead(player);
-
                                                 string deathMessage = msgBuffer.ReadString();
                                                 if (deathMessage != "")
                                                 {
@@ -2402,11 +2423,7 @@ namespace Infiniminer
                                                         if (netConn.Status == NetConnectionStatus.Connected)
                                                             netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableInOrder3);
                                                 }
-
-                                                if (player.HealthMax > 0 && player.Team != PlayerTeam.None)
-                                                {
-                                                    SendPlayerRespawn(player);//allow this player to instantly respawn
-                                                }
+                                                Player_Dead(player);
                                             }
                                             break;
 
@@ -2610,6 +2627,24 @@ namespace Infiniminer
                     }
                 }
 
+                TimeSpan timeSpanZ = DateTime.Now - lastFlowCalcZ;
+                serverTime[timeQueue] = DateTime.Now - lastTime;//timeQueue
+
+                timeQueue += 1;
+                if (timeQueue > 19)
+                    timeQueue = 0;
+
+                lastTime = DateTime.Now;
+                delta = (float)((serverTime[0].TotalSeconds + serverTime[1].TotalSeconds + serverTime[2].TotalSeconds + serverTime[3].TotalSeconds + serverTime[4].TotalSeconds + serverTime[5].TotalSeconds + serverTime[6].TotalSeconds + serverTime[7].TotalSeconds + serverTime[8].TotalSeconds + serverTime[9].TotalSeconds + serverTime[10].TotalSeconds + serverTime[11].TotalSeconds + serverTime[12].TotalSeconds + serverTime[13].TotalSeconds + serverTime[14].TotalSeconds + serverTime[15].TotalSeconds + serverTime[16].TotalSeconds + serverTime[17].TotalSeconds + serverTime[18].TotalSeconds + serverTime[19].TotalSeconds) / 20);
+
+                if (timeSpanZ.TotalMilliseconds > 50)
+                {
+
+                    lastFlowCalcZ = DateTime.Now;
+                    DoItems();
+
+                }
+
                 // Handle console keypresses.
                 while (Console.KeyAvailable)
                 {
@@ -2650,7 +2685,7 @@ namespace Infiniminer
                     Thread.Sleep(100);
 
                     physics.Abort();
-                    mechanics.Abort();
+                   // mechanics.Abort();
                     return true;//terminates server thread completely
                 }
 
@@ -2697,7 +2732,7 @@ namespace Infiniminer
                         }
         }
 
-        public void DoMechanics()
+        public void DoMechanics()//seems to crash from time to time? probably due to item creation while thread is processing
         {
             DateTime lastFlowCalc = DateTime.Now;
 
@@ -2752,59 +2787,44 @@ namespace Infiniminer
 
         public void DoItems()
         {
-
             Vector3 tv = Vector3.Zero;
             Vector3 tvv = Vector3.Zero;
         
-            float GRAVITY = 4.0f;
+            float GRAVITY = 0.1f; 
 
             foreach (KeyValuePair<uint, Item> i in itemList)
             {
 
                 tv = i.Value.Position;
-                tv.Y -= 0.2f;
-                //needs elapsed time instead of fixed figures
+                tv.Y -= 0.2f;//changes where the item rests
+                
                 if (BlockAtPoint(tv + i.Value.Velocity * (delta*50)) == BlockType.None)//shouldnt be checking every 100ms, needs area check
                 {
+                    i.Value.Velocity.Y -= GRAVITY;// *(delta * 50);//delta interferes with sleep states
                     i.Value.Position += i.Value.Velocity * (delta*50);
-                    i.Value.Velocity.X = i.Value.Velocity.X * 0.99f;
-                    i.Value.Velocity.Y -= GRAVITY * (delta*50);
-
-                    //if (i.Value.Velocity.Y > 5.0f || i.Value.Velocity.Y < -5.0f)
-                      //  ConsoleWrite("y " + i.Value.Velocity.Y);
-
-                    i.Value.Velocity.Z = i.Value.Velocity.Z * 0.99f;
-
+                    //i.Value.Velocity.X = i.Value.Velocity.X * 0.99f;
+                    //i.Value.Velocity.Z = i.Value.Velocity.Z * 0.99f;
                     SendItemUpdate(i.Value);
 
-                    // if (i.Value.Velocity.X == 0.0f && i.Value.Velocity.Y == 0.0f && i.Value.Velocity.Z == 0.0f)
-                    // {
-
-                    // }
+                    if (i.Value.Position.Y < -50)//fallen off map
+                    {
+                        i.Value.Disposing = true;
+                    }
+                   
 
                 }
-                else
+                else if (i.Value.Velocity.X != 0.0f || i.Value.Velocity.Y != 0.0f || i.Value.Velocity.Z != 0.0f)
                 {
-                    //i.Value.Velocity = -i.Value.Velocity;
-                    //continue;
-                    if (i.Value.Velocity.X == 0.0f && i.Value.Velocity.Y == 0.0f && i.Value.Velocity.Z == 0.0f)
-                    {
-                        ConsoleWrite("item sleeping");
-                        continue;
-                    }
 
                     Vector3 nv = i.Value.Velocity;//adjustment axis
                     nv.Y = i.Value.Velocity.Y;
                     nv.X = 0;
                     nv.Z = 0;
-                    if (Math.Abs(i.Value.Velocity.Y) > 2.5f)
+                    if (Math.Abs(i.Value.Velocity.Y) > 0.5f)
                     {
                         if (BlockAtPoint(tv + nv) != BlockType.None)
                         {
-                            //i.Value.Position.Y -= i.Value.Velocity.Y;
-                            //ConsoleWrite("yreverse");
-
-                            i.Value.Velocity.Y = -i.Value.Velocity.Y / 2;//0.3f bounce
+                            i.Value.Velocity.Y = -i.Value.Velocity.Y / 2;
                         }
                     }
                     else
@@ -2817,11 +2837,9 @@ namespace Infiniminer
                     nv.Z = 0;
                     if (Math.Abs(i.Value.Velocity.X) > 0.5f)
                     {
-                        if (BlockAtPoint(tv + nv) != BlockType.None)//gametime.elapse
+                        if (BlockAtPoint(tv + nv) != BlockType.None)
                         {
-                            //ConsoleWrite("xreverse");
-                            //i.Value.Position.X -= i.Value.Velocity.X;
-                            i.Value.Velocity.X = -i.Value.Velocity.X / 2;//bounce
+                            i.Value.Velocity.X = -i.Value.Velocity.X / 2;
                         }
                     }
                     else
@@ -2837,20 +2855,22 @@ namespace Infiniminer
                     {
                         if (BlockAtPoint(tv + nv) != BlockType.None)
                         {
-                            // ConsoleWrite("zreverse");
-                            // i.Value.Position.Z -= i.Value.Velocity.Z;
-                            i.Value.Velocity.Z = -i.Value.Velocity.Z / 2;//bounce
+                            i.Value.Velocity.Z = -i.Value.Velocity.Z / 2;
                         }
                     }
                     else
                     {
                         i.Value.Velocity.Z = 0;
                     }
-                    //SendItemUpdate(i.Value);
                 }
+                else
+                {
+                   //item no longer needs to move
+                }
+                
             }
-
-            foreach (KeyValuePair<uint, Item> i in itemList)
+           
+            foreach (KeyValuePair<uint, Item> i in itemList)//depreciated since no longer using threads
             {
                 if (i.Value.Disposing)
                 {
@@ -4438,17 +4458,17 @@ namespace Infiniminer
             bool actionFailed = false;
 
             // If there's no surface within range, bail.
-            Vector3 hitPoint = Vector3.Zero;
-            Vector3 buildPoint = Vector3.Zero;
-            Vector3 exactPoint = Vector3.Zero;
-            if (!RayCollision(playerPosition, playerHeading, 6, 25, ref hitPoint, ref buildPoint))
-            {
-                actionFailed = true;
-            }
-            else
-            {
-                exactPoint = RayCollisionExact(playerPosition, playerHeading, 6, 25, ref hitPoint, ref buildPoint);
-            }
+            Vector3 hitPoint = playerPosition;//Vector3.Zero;
+            Vector3 buildPoint = playerPosition;
+            Vector3 exactPoint = playerPosition;
+            //if (!RayCollision(playerPosition, playerHeading, 6, 25, ref hitPoint, ref buildPoint))
+            //{
+            //    actionFailed = true;
+            //}
+            //else
+            //{
+            //    exactPoint = RayCollisionExact(playerPosition, playerHeading, 6, 25, ref hitPoint, ref buildPoint);
+            //}
             ushort x = (ushort)buildPoint.X;
             ushort y = (ushort)buildPoint.Y;
             ushort z = (ushort)buildPoint.Z;
@@ -4474,7 +4494,7 @@ namespace Infiniminer
 
                 exactPoint.Y = exactPoint.Y + (float)1.0;//0.25 = items height
 
-                SetItem(ItemType.Artifact, exactPoint, playerHeading, Vector3.Zero, player.Team);
+                SetItem(ItemType.Artifact, exactPoint, playerHeading, playerHeading*3, player.Team);
                // player.Ore -= blockCost;
                // SendResourceUpdate(player);
 
@@ -5848,6 +5868,19 @@ namespace Infiniminer
                                     itemIDList.Remove(ID);
                                 }
                             }
+                            else if(bPair.Value.Type == ItemType.Artifact)
+                            {
+                                if (player.Content[10] == 0)//empty artifact slot
+                                {
+                                    player.Content[10] = (int)(bPair.Key);//grabbed it
+                                    SendContentSpecificUpdate(player, 10);//tell player 
+                                    SendPlayerContentUpdate(player, 10);//tell everyone else
+                                    itemList[ID].Disposing = true;
+                                    SendSetItem(ID);
+                                    itemList.Remove(ID);
+                                    itemIDList.Remove(ID);
+                                }
+                            }
                             else
                             {
                                 //just remove this unknown item
@@ -6173,7 +6206,7 @@ namespace Infiniminer
                         netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableInOrder2);
         }
 
-        public void SendSetItem(uint id, ItemType iType, Vector3 position, PlayerTeam team, Vector3 heading)
+        public void SendSetItem(uint id, ItemType iType, Vector3 position, PlayerTeam team, Vector3 heading)//update player joined also
         {
             NetBuffer msgBuffer = netServer.CreateBuffer();
             msgBuffer.Write((byte)InfiniminerMessage.SetItem);
@@ -6182,6 +6215,9 @@ namespace Infiniminer
             msgBuffer.Write(position);
             msgBuffer.Write((byte)team);
             msgBuffer.Write(heading);
+            msgBuffer.Write(itemList[id].Content[1]);
+            msgBuffer.Write(itemList[id].Content[2]);
+            msgBuffer.Write(itemList[id].Content[3]);
 
             foreach (NetConnection netConn in playerList.Keys)
                 if (netConn.Status == NetConnectionStatus.Connected)
@@ -6234,6 +6270,9 @@ namespace Infiniminer
                 msgBuffer.Write(position);
                 msgBuffer.Write((byte)bPair.Value.Team);
                 msgBuffer.Write(heading);
+                msgBuffer.Write(itemList[bPair.Key].Content[1]);
+                msgBuffer.Write(itemList[bPair.Key].Content[2]);
+                msgBuffer.Write(itemList[bPair.Key].Content[3]);
 
                 if (player.NetConn.Status == NetConnectionStatus.Connected)
                     netServer.SendMessage(msgBuffer, player.NetConn, NetChannel.ReliableInOrder2);
