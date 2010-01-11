@@ -88,6 +88,7 @@ namespace Infiniminer
         public uint Cash = 0;
         public int[] Content = new Int32[100];
         public bool Alive = false;
+        public DateTime respawnTimer = DateTime.Now;
         public List<Vector3> ExplosiveList = new List<Vector3>();
         public uint ID;
         public Vector3 Heading = Vector3.Zero;
@@ -233,6 +234,20 @@ namespace Infiniminer
                     if (usingTool == true && gameInstance != null)
                         SpriteModel.StartActiveAnimation("3,0.15");
                 }
+            }
+        }
+        public DateTime playerToolCooldown = DateTime.Now;
+        public float GetToolCooldown(PlayerTools tool)//this is only the server sides cooldown list
+        {//needs to be converted to over a time frame
+            switch (tool)
+            {
+                case PlayerTools.Pickaxe: return 0.1f;// 0.55f;
+                case PlayerTools.Detonator: return 0.01f;
+                case PlayerTools.ConstructionGun: return 0.5f;
+                case PlayerTools.DeconstructionGun: return 0.5f;
+                case PlayerTools.ProspectingRadar: return 0.5f;
+                case PlayerTools.SpawnItem: return 0.05f;
+                default: return 0;
             }
         }
 

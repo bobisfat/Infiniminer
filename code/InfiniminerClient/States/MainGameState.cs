@@ -88,7 +88,7 @@ namespace Infiniminer.States
             if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.Pickaxe)
             {
                 _P.FirePickaxe();
-                _P.playerToolCooldown = _P.GetToolCooldown(PlayerTools.Pickaxe) * 0.4f;//(_P.playerClass == PlayerClass.Miner ? 0.4f : 1.0f);
+               //_P.playerToolCooldown = _P.GetToolCooldown(PlayerTools.Pickaxe);//(_P.playerClass == PlayerClass.Miner ? 0.4f : 1.0f);
             }
             if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.SpawnItem)
             {
@@ -418,6 +418,7 @@ namespace Infiniminer.States
                         crouching = true;
                 //}
             }
+            
             //grab item
             foreach (KeyValuePair<uint, Item> bPair in _P.itemList)
             {
@@ -443,7 +444,7 @@ namespace Infiniminer.States
                         {
                             _P.GetItem(bPair.Value.ID);
                         }
-                        else if (bPair.Value.Type == ItemType.Artifact && _P.Content[10] == 0)
+                        else if (bPair.Value.Type == ItemType.Artifact && _P.Content[10] == 0 && bPair.Value.Content[6] == 0)//[10] artifact slot, [6] locked item
                         {
                             _P.GetItem(bPair.Value.ID);
                         }
@@ -462,7 +463,6 @@ namespace Infiniminer.States
 
             if (_P.moveVector.X != 0 || _P.moveVector.Z != 0)
             {
-               
                 // "Flatten" the movement vector so that we don"t move up/down.
                 if (_P.Content[5] > 0 && _P.playerClass == PlayerClass.Sapper)
                 {
@@ -474,6 +474,7 @@ namespace Infiniminer.States
                 }
                 
                 _P.moveVector.Normalize();
+                    
                 _P.moveVector *= MOVESPEED * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (movingOnRoad)
                     _P.moveVector *= 2;
@@ -494,6 +495,18 @@ namespace Infiniminer.States
                     if (!TryToMoveTo(new Vector3(0, 0, _P.moveVector.Z), gameTime)) { }
                     if (!TryToMoveTo(new Vector3(_P.moveVector.X, 0, 0), gameTime)) { }
                 }
+            }
+
+            if (_P.forceStrength > 0.0f)
+            {
+                if (TryToMoveTo((_P.forceVector * _P.forceStrength) * (float)gameTime.ElapsedGameTime.TotalSeconds, gameTime)) { }
+                else
+                {
+                    if (!TryToMoveTo(new Vector3(0, 0, (_P.forceVector.Z * _P.forceStrength) * (float)gameTime.ElapsedGameTime.TotalSeconds), gameTime)) { }
+                    if (!TryToMoveTo(new Vector3((_P.forceVector.X * _P.forceStrength) * (float)gameTime.ElapsedGameTime.TotalSeconds, 0, 0), gameTime)) { }
+                }
+
+                _P.forceStrength -= (float)gameTime.ElapsedGameTime.TotalSeconds;
             }
         }
 

@@ -99,6 +99,7 @@ namespace Infiniminer
         CashUpdate,
         ItemUpdate,             // send its new x/y
         ItemScaleUpdate,
+        ItemContentSpecificUpdate,
         ContentUpdate,          // sends all player.content to player
         ContentSpecificUpdate,   //sends a single content update to a player
         PlayerContentUpdate,    //update a single players content(specific) for all players
@@ -118,6 +119,7 @@ namespace Infiniminer
         PlayerAlive,            // (uint id for server) :ReliableInOrder2
         PlayerPing,             // uint id
         PlayerHurt,             // allows client to tell server of damage
+        PlayerSlap,            // slap an enemy
         PlayerPosition,         // server sends client new position\
         PlayerRespawn,          // allows the player to respawn
         ChatMessage,            // byte type, string message : ReliableInOrder3

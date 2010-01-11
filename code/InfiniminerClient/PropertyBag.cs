@@ -57,6 +57,8 @@ namespace Infiniminer
         public uint playerCash = 0;
         public uint playerWeight = 0;
         public uint playerOreMax = 0;
+        public Vector3 forceVector = Vector3.Zero;
+        public float forceStrength = 0.0f;
         public AudioListener listenPos = new AudioListener();
         public int[] Content = new Int32[50];
 
@@ -691,8 +693,32 @@ namespace Infiniminer
             //play sound locally
             Vector3 hitPoint = Vector3.Zero;
             Vector3 buildPoint = Vector3.Zero;
-            if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2, 10, ref hitPoint, ref buildPoint, BlockType.Water))
+
+            bool dig = blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2, 10, ref hitPoint, ref buildPoint, BlockType.Water);
+            
+            Vector3 attackVector = playerPosition + (playerCamera.GetLookVector()*0.8f);
+
+            foreach (Player p in playerList.Values)
+            {
+                if(p.ID != playerMyId && p.Team != playerTeam)
+                if((attackVector - (p.deltaPosition-Vector3.UnitY*0.2f)).Length() < 0.7f)
+                {
+                    NetBuffer msgBuffer = netClient.CreateBuffer();
+                    msgBuffer.Write((byte)InfiniminerMessage.PlayerSlap);
+                    msgBuffer.Write(playerPosition);
+                    msgBuffer.Write(playerCamera.GetLookVector());
+                    msgBuffer.Write((byte)PlayerTools.Pickaxe);
+                    msgBuffer.Write(p.ID);
+                    netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+
+                    playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+                    return;//dig = false;//allows you to hit multiple enemies.. if it wasnt for tool cooldown!
+                }
+            }
+
+            if (dig == false)
                 return;
+            
             ushort x = (ushort)hitPoint.X;
             ushort y = (ushort)hitPoint.Y;
             ushort z = (ushort)hitPoint.Z;
@@ -806,6 +832,7 @@ namespace Infiniminer
             else if(Damage > 0)
             {
                 playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+
                 NetBuffer msgBuffer = netClient.CreateBuffer();
                 msgBuffer.Write((byte)InfiniminerMessage.UseTool);
                 msgBuffer.Write(playerPosition);
@@ -1146,7 +1173,7 @@ namespace Infiniminer
         {
             switch (tool)
             {
-                case PlayerTools.Pickaxe: return 1.0f;// 0.55f;
+                case PlayerTools.Pickaxe: return 0.4f;// 0.55f;
                 case PlayerTools.Detonator: return 0.01f;
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;
@@ -1160,7 +1187,7 @@ namespace Infiniminer
         {
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
-
+            if(!playerDead)
             if (lastPosition != playerPosition)//do full network update
             {
                 lastPosition = playerPosition;
