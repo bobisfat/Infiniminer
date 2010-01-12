@@ -174,7 +174,13 @@ namespace Infiniminer
                 case BlockType.StealthBlockB:
                 case BlockType.TrapB:
                 case BlockType.RadarBlue:
+                case BlockType.ArtCaseB:
+                case BlockType.GlassR:
+                case BlockType.ConstructionB:
                     return PlayerTeam.Blue;
+                case BlockType.ConstructionR:
+                case BlockType.GlassB:
+                case BlockType.ArtCaseR:
                 case BlockType.TransRed:
                 case BlockType.SolidRed:
                 case BlockType.SolidRed2:
@@ -556,27 +562,28 @@ namespace Infiniminer
                 PlayerTools.Detonator
                 };
 
-                playerBlocks = new BlockType[19] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[21] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
                                              BlockType.Jump,
                                              BlockType.Shock,
-                                             BlockType.ArtCase,
+                                             playerTeam == PlayerTeam.Red ? BlockType.ArtCaseR : BlockType.ArtCaseB,
                                              playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
                                              playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
                                              BlockType.Explosive,
-                                             BlockType.Road,
-                                             //BlockType.Lava,
-                                             //BlockType.Dirt, 
+                                              //BlockType.Lava,
+                                             BlockType.Pipe, 
                                              BlockType.Hinge,
+                                             BlockType.Metal,
                                              BlockType.Lever,
                                              BlockType.Pump,
                                              BlockType.Compressor,
                                              playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
-                                             BlockType.Water };
+                                             BlockType.Water,
+                                             BlockType.GlassR };
             }
             else
             {
@@ -616,7 +623,7 @@ namespace Infiniminer
                                                         BlockType.Pump,
                                                         BlockType.Pipe,
                                                         BlockType.Lever,
-                                                        BlockType.ArtCase,
+                                                        playerTeam == PlayerTeam.Red ? BlockType.ArtCaseR : BlockType.ArtCaseB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue  };
                         break;
@@ -824,7 +831,7 @@ namespace Infiniminer
                 msgBuffer.Write((byte)PlayerTools.Pickaxe);
                 msgBuffer.Write((byte)BlockType.None);
                 netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
-                blockEngine.RemoveBlock(x,y,z);//local block removal//needs a sync check
+                blockEngine.RemoveBlock(x,y,z);//local block removal
                 particleEngine.CreateDiggingDebris(hitPoint - (playerCamera.GetLookVector()*0.3f),block);
                 particleEngine.CreateBlockDebris(new Vector3(x+0.5f,y+0.5f,z+0.5f), block, 10.0f);
                 PlaySound(sound);//local sound effect
@@ -1036,7 +1043,7 @@ namespace Infiniminer
                             distanceReading = Math.Min(distanceReading, 0.5f * k);
                             valueReading = Math.Max(valueReading, 200);
                         }
-                        else if (blockType == BlockType.ArtCase)
+                        else if (blockType == BlockType.ArtCaseR || blockType == BlockType.ArtCaseB)
                         {
                             distanceReading = Math.Min(distanceReading, 0.5f * k);
                             valueReading = Math.Max(valueReading, 200);
@@ -1065,7 +1072,11 @@ namespace Infiniminer
             {
                 return "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE";
             }
-            else if (blockType == BlockType.ArtCase)
+            else if (blockType == BlockType.ArtCaseR && playerTeam == PlayerTeam.Red)
+            {
+                return "8: PLACE ARTIFACT  9: RETRIEVE ARTIFACT";
+            }
+            else if (blockType == BlockType.ArtCaseB && playerTeam == PlayerTeam.Blue)
             {
                 return "8: PLACE ARTIFACT  9: RETRIEVE ARTIFACT";
             }

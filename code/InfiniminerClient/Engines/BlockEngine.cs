@@ -166,6 +166,9 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.BankFrontBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_front_blue"));
             blockTextures[(byte)BlockTexture.BankRightBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_right_blue"));
             blockTextures[(byte)BlockTexture.BankBackBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_back_blue"));
+            blockTextures[(byte)BlockTexture.ArtCaseR] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_artcase_red"));
+            blockTextures[(byte)BlockTexture.ArtCaseB] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_artcase_blue"));
+            
             //base block
             blockTextures[(byte)BlockTexture.BaseTopRed] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_top_red"));
             blockTextures[(byte)BlockTexture.BaseLeftRed] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_left_red"));
@@ -191,6 +194,11 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.BeaconBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_beacon_top_blue"));
             blockTextures[(byte)BlockTexture.TransRed] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_trans_red"));
             blockTextures[(byte)BlockTexture.TransBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_trans_blue"));
+            blockTextures[(byte)BlockTexture.GlassR] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_glass_red"));
+            blockTextures[(byte)BlockTexture.GlassB] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_glass_blue"));
+            blockTextures[(byte)BlockTexture.ForceR] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_force_red"));
+            blockTextures[(byte)BlockTexture.ForceB] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_force_blue"));
+           
             blockTextures[(byte)BlockTexture.Generator] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_generator"));
             blockTextures[(byte)BlockTexture.Controller] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_controller"));
             blockTextures[(byte)BlockTexture.Pipe] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_pipe"));
@@ -208,7 +216,8 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.Magma] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_magma"));
             blockTextures[(byte)BlockTexture.Lever] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism"));
             blockTextures[(byte)BlockTexture.Hinge] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism"));
-            
+            blockTextures[(byte)BlockTexture.Construction] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_construction"));
+           
             // Load our effects.
             basicEffect = gameInstance.Content.Load<Effect>("effect_basic");
 
@@ -374,13 +383,15 @@ namespace Infiniminer
             if (vertexBuffer == null)
                 return;
 
-            if (blocktex == BlockTexture.Lava)
+            if (blocktex == BlockTexture.Lava || blocktex == BlockTexture.ForceR || blocktex == BlockTexture.ForceB)
             {
                 basicEffect.CurrentTechnique = basicEffect.Techniques["LavaBlock"];
-                basicEffect.Parameters["xTime"].SetValue(elapsedTime%5);
+                basicEffect.Parameters["xTime"].SetValue(elapsedTime % 5);
             }
             else
+            {
                 basicEffect.CurrentTechnique = basicEffect.Techniques["Block"];
+            }
             
             basicEffect.Parameters["xWorld"].SetValue(Matrix.Identity);
             basicEffect.Parameters["xView"].SetValue(gameInstance.propertyBag.playerCamera.ViewMatrix);
@@ -403,10 +414,20 @@ namespace Infiniminer
                     graphicsDevice.RenderState.AlphaBlendEnable = true;
                     graphicsDevice.RenderState.SourceBlend = Blend.SourceAlpha;
                     graphicsDevice.RenderState.DestinationBlend = Blend.InverseSourceAlpha;
+                    graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Linear;
                 }
-
+                else if (blocktex == BlockTexture.GlassR || blocktex == BlockTexture.GlassB || blocktex == BlockTexture.ForceR || blocktex == BlockTexture.ForceB)
+                {
+                    graphicsDevice.RenderState.AlphaTestEnable = true;
+                    graphicsDevice.RenderState.AlphaFunction = CompareFunction.Greater;
+                    graphicsDevice.RenderState.ReferenceAlpha = 128;
+                    graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Point;
+                }
+                else
+                {
+                    graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Linear;
+                }
                 graphicsDevice.RenderState.CullMode = CullMode.CullCounterClockwiseFace;
-                graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Linear;
                 graphicsDevice.VertexDeclaration = vertexDeclaration;
                 graphicsDevice.Vertices[0].SetSource(vertexBuffer, 0, VertexPositionTextureShade.SizeInBytes);
                 graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, vertexBuffer.SizeInBytes / VertexPositionTextureShade.SizeInBytes / 3);
@@ -416,6 +437,10 @@ namespace Infiniminer
                 {
                     graphicsDevice.RenderState.DepthBufferWriteEnable = true;
                     graphicsDevice.RenderState.AlphaBlendEnable = false;
+                }
+                else if (blocktex == BlockTexture.GlassR || blocktex == BlockTexture.GlassB || blocktex == BlockTexture.ForceR || blocktex == BlockTexture.ForceB)
+                {
+                    graphicsDevice.RenderState.AlphaTestEnable = false;
                 }
                 pass.End();
             }
@@ -559,7 +584,7 @@ namespace Infiniminer
         private void _AddBlock(ushort x, ushort y, ushort z, BlockFaceDirection dir, BlockType type, int x2, int y2, int z2, BlockFaceDirection dir2)
         {
             BlockType type2 = blockList[x2, y2, z2];
-            if (type2 != BlockType.None && type2 != BlockType.TrapB && type != BlockType.TrapB && type != BlockType.TrapR && type2 != BlockType.TrapR && type != BlockType.TransRed && type != BlockType.TransBlue && type != BlockType.Water && type != BlockType.StealthBlockB && type != BlockType.StealthBlockR && type2 != BlockType.TransRed && type2 != BlockType.TransBlue && type2 != BlockType.Water && type2 != BlockType.StealthBlockB && type2 != BlockType.StealthBlockR)
+            if (type2 != BlockType.None && type != BlockType.ForceR && type != BlockType.ForceB && type2 != BlockType.ForceR && type2 != BlockType.ForceB && type != BlockType.GlassR && type != BlockType.GlassB && type2 != BlockType.GlassR && type2 != BlockType.GlassB && type2 != BlockType.TrapB && type != BlockType.TrapB && type != BlockType.TrapR && type2 != BlockType.TrapR && type != BlockType.TransRed && type != BlockType.TransBlue && type != BlockType.Water && type != BlockType.StealthBlockB && type != BlockType.StealthBlockR && type2 != BlockType.TransRed && type2 != BlockType.TransBlue && type2 != BlockType.Water && type2 != BlockType.StealthBlockB && type2 != BlockType.StealthBlockR)
                 HideQuad((ushort)x2, (ushort)y2, (ushort)z2, dir2, type2);
             else
                 ShowQuad(x, y, z, dir, type);
@@ -584,7 +609,7 @@ namespace Infiniminer
         {
             BlockType type = blockList[x, y, z];
             BlockType type2 = blockList[x2, y2, z2];
-            if (type2 != BlockType.None && type2 != BlockType.TrapB && type != BlockType.TrapB && type != BlockType.TrapR && type2 != BlockType.TrapR && type != BlockType.TransRed && type != BlockType.TransBlue && type != BlockType.Water && type != BlockType.StealthBlockB && type != BlockType.StealthBlockR && type2 != BlockType.TransRed && type2 != BlockType.TransBlue && type2 != BlockType.Water && type2 != BlockType.StealthBlockB && type2 != BlockType.StealthBlockR)
+            if (type2 != BlockType.None && type2 != BlockType.GlassR && type2 != BlockType.GlassB && type2 != BlockType.ForceR && type2 != BlockType.ForceB && type != BlockType.GlassR && type != BlockType.GlassB && type != BlockType.ForceR && type != BlockType.ForceB && type2 != BlockType.TrapB && type != BlockType.TrapB && type != BlockType.TrapR && type2 != BlockType.TrapR && type != BlockType.TransRed && type != BlockType.TransBlue && type != BlockType.Water && type != BlockType.StealthBlockB && type != BlockType.StealthBlockR && type2 != BlockType.TransRed && type2 != BlockType.TransBlue && type2 != BlockType.Water && type2 != BlockType.StealthBlockB && type2 != BlockType.StealthBlockR)
                 ShowQuad((ushort)x2, (ushort)y2, (ushort)z2, dir2, type2);
             else
                 HideQuad(x, y, z, dir, type);

@@ -28,7 +28,8 @@ namespace Infiniminer
         Explosive,
         Jump,
         Shock,
-        ArtCase,
+        ArtCaseR,
+        ArtCaseB,
         BankRed,
         BankBlue,
         BaseRed,
@@ -65,6 +66,12 @@ namespace Infiniminer
         RadarBlue,
         Hinge,
         Highlight,//purely for particle effect
+        ConstructionR,//a temporary block for difficult-to-make blocks
+        ConstructionB,
+        GlassR,
+        GlassB,
+        ForceR,
+        ForceB,
         MAXIMUM
     }
 
@@ -144,6 +151,13 @@ namespace Infiniminer
         RadarRed,
         RadarBlue,
         Hinge,
+        Construction,
+        GlassR,
+        GlassB,
+        ArtCaseR,
+        ArtCaseB,
+        ForceR,
+        ForceB,
         MAXIMUM
     }
 
@@ -184,12 +198,30 @@ namespace Infiniminer
             blockMaxHP[(byte)BlockType.Dirt] = 0;
             blockMaxHP[(byte)BlockType.Ore] = 0;
             blockMaxHP[(byte)BlockType.Rock] = 0;
-            
+            blockMaxHP[(byte)BlockType.ForceR] = 0;
+            blockMaxHP[(byte)BlockType.ForceB] = 0;
+
+            blockHP[(byte)BlockType.ConstructionR] = 100;
+            blockMaxHP[(byte)BlockType.ConstructionR] = 200;
+            blockHP[(byte)BlockType.ConstructionB] = 100;
+            blockMaxHP[(byte)BlockType.ConstructionB] = 200;
+
             blockHP[(byte)BlockType.Gold] = 80;
             blockMaxHP[(byte)BlockType.Gold] = 80;
+            blockHP[(byte)BlockType.Metal] = 50;
+            blockMaxHP[(byte)BlockType.Metal] = 1;//non-repairable
 
-            blockHP[(byte)BlockType.ArtCase] = 50;
-            blockMaxHP[(byte)BlockType.ArtCase] = 200;
+            blockHP[(byte)BlockType.GlassR] = 10;
+            blockMaxHP[(byte)BlockType.GlassR] = 50;
+
+            blockHP[(byte)BlockType.GlassB] = 10;
+            blockMaxHP[(byte)BlockType.GlassB] = 50;
+
+            blockHP[(byte)BlockType.ArtCaseR] = 50;
+            blockMaxHP[(byte)BlockType.ArtCaseR] = 200;
+
+            blockHP[(byte)BlockType.ArtCaseB] = 50;
+            blockMaxHP[(byte)BlockType.ArtCaseB] = 200;
 
             blockMaxHP[(byte)BlockType.SolidRed] = 50;
             blockMaxHP[(byte)BlockType.SolidBlue] = 50;
@@ -261,7 +293,8 @@ namespace Infiniminer
                 case BlockType.RadarRed:
                 case BlockType.RadarBlue:
                     return 200;
-                case BlockType.ArtCase:
+                case BlockType.ArtCaseR:
+                case BlockType.ArtCaseB:
                 case BlockType.BankRed:
                 case BlockType.BankBlue:
                     return 200;
@@ -284,8 +317,11 @@ namespace Infiniminer
                 case BlockType.StealthBlockR:
                 case BlockType.TrapB:
                 case BlockType.TrapR:
+                case BlockType.ConstructionR:
+                case BlockType.ConstructionB:
                     return 10;
 
+                case BlockType.Metal:
                 case BlockType.TransRed:
                 case BlockType.TransBlue:
                     return 25;
@@ -299,6 +335,8 @@ namespace Infiniminer
                 case BlockType.Shock:
                     return 50;
                 case BlockType.Explosive:
+                case BlockType.GlassR:
+                case BlockType.GlassB:
                     return 100;
             }
 
@@ -366,14 +404,34 @@ namespace Infiniminer
                     return BlockTexture.TrapB;
                 case BlockType.TrapR:
                    return BlockTexture.TrapR;
-                case BlockType.ArtCase:
+                case BlockType.ConstructionR:
+                case BlockType.ConstructionB:
+                   return BlockTexture.Construction;
+                case BlockType.GlassR:
+                   return BlockTexture.GlassR;
+                case BlockType.GlassB:
+                   return BlockTexture.GlassB;
+                case BlockType.ForceR:
+                   return BlockTexture.ForceR;
+                case BlockType.ForceB:
+                   return BlockTexture.ForceB;
+                case BlockType.ArtCaseR:
                    switch (faceDir)
                    {
-                       case BlockFaceDirection.XIncreasing: return BlockTexture.BankFrontRed;
+                       case BlockFaceDirection.XIncreasing: return BlockTexture.ArtCaseR;
                        case BlockFaceDirection.XDecreasing: return BlockTexture.BankBackRed;
                        case BlockFaceDirection.ZIncreasing: return BlockTexture.BankLeftRed;
                        case BlockFaceDirection.ZDecreasing: return BlockTexture.BankRightRed;
                        default: return BlockTexture.BankTopRed;
+                   }
+                case BlockType.ArtCaseB:
+                   switch (faceDir)
+                   {
+                       case BlockFaceDirection.XIncreasing: return BlockTexture.ArtCaseB;
+                       case BlockFaceDirection.XDecreasing: return BlockTexture.BankBackBlue;
+                       case BlockFaceDirection.ZIncreasing: return BlockTexture.BankLeftBlue;
+                       case BlockFaceDirection.ZDecreasing: return BlockTexture.BankRightBlue;
+                       default: return BlockTexture.BankTopBlue;
                    }
                 case BlockType.BankRed:
                     switch (faceDir)

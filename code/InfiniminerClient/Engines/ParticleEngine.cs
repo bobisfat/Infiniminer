@@ -311,7 +311,7 @@ namespace Infiniminer
                     }
 
                 }
-                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2)
+                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2 || block == BlockType.GlassR || block == BlockType.ArtCaseR)
                 {
                     p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
                 }
@@ -323,7 +323,19 @@ namespace Infiniminer
                 {
                     p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
-                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2)
+                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2 || block == BlockType.GlassB || block == BlockType.ArtCaseB)
+                {
+                    p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
+                }
+                else if (block == BlockType.Metal)
+                {
+                    p.Color = Vector4.One * (0.2f + (float)(randGen.NextDouble() * 0.7f));
+                }
+                else if (block == BlockType.ConstructionR)
+                {
+                    p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
+                }
+                else if (block == BlockType.ConstructionB)
                 {
                     p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
@@ -471,13 +483,25 @@ namespace Infiniminer
                 {
                     p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
-                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2)
+                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2 || block == BlockType.GlassR || block == BlockType.ArtCaseR)
                 {
                     p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
                 }
-                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2)
+                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2 || block == BlockType.GlassB || block == BlockType.ArtCaseB)
                 {
                     p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
+                }
+                else if (block == BlockType.ConstructionR)
+                {
+                    p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
+                }
+                else if (block == BlockType.ConstructionB)
+                {
+                    p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
+                }
+                else if (block == BlockType.Metal)
+                {
+                    p.Color = Vector4.One * (0.2f + (float)(randGen.NextDouble() * 0.7f));
                 }
                 else if (block == BlockType.Ore)
                 {

@@ -83,6 +83,8 @@ namespace Infiniminer
             blockIcons[BlockType.Shock] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_spikes");
             blockIcons[BlockType.TransBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_translucent_blue");
             blockIcons[BlockType.TransRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_translucent_red");
+            blockIcons[BlockType.GlassB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_glassb");
+            blockIcons[BlockType.GlassR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_glassr");
             blockIcons[BlockType.BeaconRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_beacon");
             blockIcons[BlockType.BeaconBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_beacon");
             blockIcons[BlockType.Road] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_road");
@@ -93,6 +95,7 @@ namespace Infiniminer
             blockIcons[BlockType.StealthBlockB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_stealth");
             blockIcons[BlockType.StealthBlockR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_stealth");
             blockIcons[BlockType.TrapB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
+            blockIcons[BlockType.Metal] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_metal");
             blockIcons[BlockType.TrapR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
             blockIcons[BlockType.Dirt] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_dirt");
             blockIcons[BlockType.Pump] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pump");
@@ -101,7 +104,10 @@ namespace Infiniminer
             blockIcons[BlockType.RadarRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_radar");
             blockIcons[BlockType.RadarBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_radar");
             blockIcons[BlockType.Hinge] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_hinge");
-            blockIcons[BlockType.ArtCase] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_hinge");
+            blockIcons[BlockType.ArtCaseR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_artcaser");
+            blockIcons[BlockType.ArtCaseB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_artcaseb");
+            blockIcons[BlockType.ConstructionR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
+            blockIcons[BlockType.ConstructionB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
             //held icons
             blockIcons[BlockType.Diamond] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_diamond");
             blockIcons[BlockType.MagmaVent] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");

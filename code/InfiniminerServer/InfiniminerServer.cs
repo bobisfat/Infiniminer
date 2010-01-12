@@ -101,6 +101,10 @@ namespace Infiniminer
             {
                 uint it = SetItem(ItemType.Artifact, player.Position, Vector3.Zero, new Vector3((float)(randGen.NextDouble() - 0.5) * 2, (float)(randGen.NextDouble() * 1.5), (float)(randGen.NextDouble() - 0.5) * 2), PlayerTeam.None);
                 itemList[it].Content[5] = player.Content[10];//setting artifacts ID
+
+                player.Content[10] = 0;//artifact slot
+
+                SendContentSpecificUpdate(player, 10);//tell player he has no artifact now
             }
 
             player.Ore = 0;
@@ -112,7 +116,7 @@ namespace Infiniminer
             player.Content[3] = 0;
             player.Content[4] = 0;
             player.Content[5] = 0;//ability slot
-            player.Content[10] = 0;//artifact slot
+           
 
             player.rSpeedCount = 0;
 
@@ -3142,6 +3146,14 @@ namespace Infiniminer
                                 {
                                     SetBlock(i, j, k, BlockType.Mud, PlayerTeam.None);//magma cools down into dirt
                                     blockListContent[i, j, k, 0] = 480;//two minutes of mudout
+                                    if (randGen.Next(1, 10) == 5)
+                                    {
+                                        blockListContent[i, j, k, 1] = (byte)BlockType.Gold;//becomes this block
+                                    }
+                                    else
+                                    {
+                                        blockListContent[i, j, k, 1] = (byte)BlockType.Dirt;
+                                    }
                                 }
                                 //    }
                             }
@@ -3291,6 +3303,7 @@ namespace Infiniminer
 
                                             SetBlock(i, (ushort)(j - 1), k, BlockType.Mud, PlayerTeam.None);
                                             blockListContent[i, j - 1, k, 0] = 480;//two minutes @ 250ms 
+                                            blockListContent[i, j - 1, k, 1] = (byte)BlockType.Dirt;//becomes this
                                         }
                                     }
                                 }//actual water/liquid calculations
@@ -3688,11 +3701,13 @@ namespace Infiniminer
                                             if (blockList[i, j + 1, k] == BlockType.None)
                                             {
                                                 SetBlock(i, (ushort)(j + 1), k, (BlockType)(blockListContent[i, j, k, 1]), PlayerTeam.None);//places its contents in desired direction at a distance
+                                                blockListContent[i, (ushort)(j + 1), k, 1] = 120;
                                                 blockListContent[i, j, k, 2] -= 1;
                                                 continue;
                                             }
                                             else if (blockList[i, j + 1, k] == (BlockType)(blockListContent[i, j, k, 1]))//exit must be clear or same substance
                                             {
+                                                blockListContent[i, j + 1, k, 1] = 120;//refresh temperature
                                                 for (ushort m = 2; m < 10; m++)//multiply exit area to fake upward motion
                                                 {
                                                     if (j + m < MAPSIZE)
@@ -3700,12 +3715,17 @@ namespace Infiniminer
                                                         if (blockList[i, j + m, k] == BlockType.None)
                                                         {
                                                             SetBlock(i, (ushort)(j + m), k, (BlockType)(blockListContent[i, j, k, 1]), PlayerTeam.None);//places its contents in desired direction at a distance
+                                                            blockListContent[i, (ushort)(j + m), k, 1] = 120;
                                                             blockListContent[i, j, k, 2] -= 1;
                                                             break;//done with this pump
                                                         }
                                                         else if (blockList[i, j + m, k] != (BlockType)(blockListContent[i, j, k, 1]))// if (blockList[i + blockListContent[i, j, k, 5] * m, j + blockListContent[i, j, k, 6] * m, k + blockListContent[i, j, k, 7] * m] != pumpheld)//check that we're not going through walls to pump this
                                                         {
                                                             break;//pipe has run aground .. and dont refund the intake
+                                                        }
+                                                        else//must be the liquid in the way, refresh its temperature
+                                                        {
+                                                            blockListContent[i, j + m, k, 1] = 120;
                                                         }
                                                     }
 
@@ -3739,7 +3759,8 @@ namespace Infiniminer
                                     if (blockListContent[i, j, k, 0] < 1)
                                     {
                                         blockListContent[i, j, k, 0] = 0;
-                                        SetBlock(i, j, k, BlockType.Dirt, PlayerTeam.None);
+                                        SetBlock(i, j, k, (BlockType)blockListContent[i, j, k, 1], PlayerTeam.None);
+                                        blockListHP[i,j,k] = BlockInformation.GetHP((BlockType)blockListContent[i, j, k, 1]);
                                     }
                                     else
                                     {
@@ -4212,12 +4233,12 @@ namespace Infiniminer
                                 }
                             }
                         }
-                        else if (block == BlockType.ArtCase)
+                        else if (block == BlockType.ArtCaseR || block == BlockType.ArtCaseB)
                         {
                             if (y < MAPSIZE - 1)
-                                if (blockList[x, y + 1, z] == BlockType.Vacuum)
+                                if (blockList[x, y + 1, z] == BlockType.ForceR || blockList[x, y + 1, z] == BlockType.ForceB)
                                 {
-                                    blockList[x, y + 1, z] = BlockType.None;
+                                    SetBlock(x, (ushort)(y + 1), z, BlockType.None, PlayerTeam.None);
                                 }
 
                             if (blockListContent[x, y, z, 6] > 0)
@@ -4271,6 +4292,12 @@ namespace Infiniminer
                                 SetBlock(x, y, z, player.Team == PlayerTeam.Red ? BlockType.SolidRed2 : BlockType.SolidBlue2, player.Team);
                                 SendOreUpdate(player);
                                 PlaySoundForEveryoneElse(sound, player.Position, player);
+                            }
+                            else if (block == BlockType.ConstructionR && player.Team == PlayerTeam.Red || block == BlockType.ConstructionB && player.Team == PlayerTeam.Blue)//construction complete
+                            {
+                                SetBlock(x, (ushort)(y + 1), z, player.Team == PlayerTeam.Red ? BlockType.ForceR : BlockType.ForceB, player.Team);
+                                SetBlock(x, y, z, (BlockType)blockListContent[x,y,z,0], player.Team);
+                                blockListHP[x, y, z] = BlockInformation.GetMaxHP(blockList[x, y, z]);
                             }
                         }
                         else
@@ -4548,7 +4575,7 @@ namespace Infiniminer
         public void UseConstructionGun(Player player, Vector3 playerPosition, Vector3 playerHeading, BlockType blockType)
         {
             bool actionFailed = false;
-
+            bool constructionRequired = false;
             // If there's no surface within range, bail.
             Vector3 hitPoint = Vector3.Zero;
             Vector3 buildPoint = Vector3.Zero;
@@ -4585,16 +4612,17 @@ namespace Infiniminer
                 actionFailed = true;
 
             if(!actionFailed)
-            if (blockType == BlockType.ArtCase)
+                if (blockType == BlockType.ArtCaseR || blockType == BlockType.ArtCaseB)
             {//space above must be cleared
-                if (blockList[(ushort)hitPoint.X, (ushort)hitPoint.Y + 1, (ushort)hitPoint.Z] != BlockType.None)
-                {
-                    actionFailed = true;
-                }
-                else
-                {
-                    SetBlock(x, (ushort)(y+1), z, BlockType.Vacuum, player.Team);//space for artifact
-                }
+                constructionRequired = true;
+                //if (blockList[(ushort)hitPoint.X, (ushort)hitPoint.Y + 1, (ushort)hitPoint.Z] != BlockType.None)
+                //{
+                //    actionFailed = true;
+                //}
+                //else
+                //{
+                //    SetBlock(x, (ushort)(y+1), z, BlockType.Vacuum, player.Team);//space for artifact
+                //}
             }
 
             if (actionFailed)
@@ -4611,11 +4639,48 @@ namespace Infiniminer
                // if (blockType == BlockType.Lava)
                     //blockType = BlockType.Fire;
 
-                SetBlock(x, y, z, blockType, player.Team);
-
-                if(BlockInformation.GetMaxHP(blockType) > 0)
+                if (constructionRequired == true)//block changes into construction block with blocktype on content[0]
                 {
+                    if (blockType == BlockType.ArtCaseR || blockType == BlockType.ArtCaseB)
+                    {
+                        //check above for space
+                        if (blockList[x, y+1, z] == BlockType.None)
+                        {
+                            blockList[x, y+1, z] = BlockType.Vacuum;//player cant see, dont bother updating for client
+                        }
+                        else
+                        {
+                            return;//wasnt space for the glass
+                        }
+                    }
+
+                    if (player.Team == PlayerTeam.Red)
+                    {
+                        SetBlock(x, y, z, BlockType.ConstructionR, player.Team);
+                    }
+                    else if (player.Team == PlayerTeam.Blue)
+                    {
+                        SetBlock(x, y, z, BlockType.ConstructionB, player.Team);
+                    }
                     blockListHP[x, y, z] = BlockInformation.GetHP(blockType);//base block hp
+                    blockListContent[x, y, z, 0] = (byte)blockType;
+
+                    if (blockType == BlockType.ArtCaseR || blockType == BlockType.ArtCaseB)
+                    {
+                        blockListContent[x, y, z, 6] = 0;
+                    }
+                }
+                else
+                {
+                    if(blockType == BlockType.Metal)
+                        SetBlock(x, y, z, blockType, PlayerTeam.None);
+                    else
+                    SetBlock(x, y, z, blockType, player.Team);
+
+                    if (BlockInformation.GetMaxHP(blockType) > 0)
+                    {
+                        blockListHP[x, y, z] = BlockInformation.GetHP(blockType);//base block hp
+                    }
                 }
 
                 player.Ore -= blockCost;
@@ -4655,7 +4720,8 @@ namespace Infiniminer
                 blockType == BlockType.SolidRed2 ||
                 blockType == BlockType.BankBlue ||
                 blockType == BlockType.BankRed ||
-                blockType == BlockType.ArtCase ||
+                blockType == BlockType.ArtCaseR ||
+                blockType == BlockType.ArtCaseB ||
                 blockType == BlockType.Jump ||
                 blockType == BlockType.Ladder ||
                 blockType == BlockType.Road ||
@@ -4665,6 +4731,8 @@ namespace Infiniminer
                 blockType == BlockType.Water ||
                 blockType == BlockType.TransBlue ||
                 blockType == BlockType.TransRed ||
+                blockType == BlockType.GlassR ||
+                blockType == BlockType.GlassB ||
                 blockType == BlockType.Generator ||
                 blockType == BlockType.Pipe ||
                 blockType == BlockType.Pump ||
@@ -4720,12 +4788,22 @@ namespace Infiniminer
                         }
                     }
                 }
-                else if (blockType == BlockType.ArtCase)
+                else if (blockType == BlockType.ConstructionR || blockType == BlockType.ConstructionB)
                 {
-                    if(y < MAPSIZE-1)
-                        if (blockList[x, y + 1, z] == BlockType.Vacuum)
+                    if (blockListContent[x, y, z, 0] == (byte)BlockType.ArtCaseR || blockListContent[x, y, z, 0] == (byte)BlockType.ArtCaseB)
+                    {
+                        if (y < MAPSIZE - 1)
+                            if (blockList[x, y + 1, z] == BlockType.Vacuum)
+                                blockList[x, y + 1, z] = BlockType.None;//restore vacuum to normal
+                    }
+
+                }
+                else if (blockType == BlockType.ArtCaseR || blockType == BlockType.ArtCaseB)
+                {
+                    if (y < MAPSIZE - 1)
+                        if (blockList[x, y + 1, z] == BlockType.ForceR || blockList[x, y + 1, z] == BlockType.ForceB)
                         {
-                            blockList[x, y + 1, z] = BlockType.None;
+                            SetBlock(x, (ushort)(y + 1), z, BlockType.None, PlayerTeam.None);//remove field
                         }
 
                     if (blockListContent[x, y, z, 6] > 0)
@@ -4885,6 +4963,8 @@ namespace Infiniminer
                                 case BlockType.SolidRed:
                                 case BlockType.SolidBlue:
                                 case BlockType.TransRed:
+                                case BlockType.GlassR:
+                                case BlockType.GlassB:
                                 case BlockType.TransBlue:
                                 case BlockType.Water:
                                 case BlockType.Ladder:
@@ -4977,6 +5057,8 @@ namespace Infiniminer
                                     case BlockType.RadarBlue:
                                     case BlockType.TransRed:
                                     case BlockType.TransBlue:
+                                    case BlockType.GlassR:
+                                    case BlockType.GlassB:
                                     case BlockType.Water:
                                     case BlockType.Ladder:
                                     case BlockType.Shock:
@@ -5022,13 +5104,35 @@ namespace Infiniminer
             }
         }
 
+        public bool HingeBlockTypes(BlockType block, PlayerTeam team)
+        {
+            switch (block)
+            {
+                case BlockType.SolidRed:
+                case BlockType.SolidRed2:
+                    if (team == PlayerTeam.Red)
+                        return true;
+                    break;
+                case BlockType.SolidBlue2:
+                case BlockType.SolidBlue:
+                    if (team == PlayerTeam.Blue)
+                    return true;
+                    break;
+                default:
+                    break;
+            }
+            return false;
+        }
         public bool HingeBlockTypes(BlockType block)
         {
             switch (block)
             {
                 case BlockType.SolidRed:
+                case BlockType.SolidRed2:
+                case BlockType.SolidBlue2:
                 case BlockType.SolidBlue:
-                    return true;
+                        return true;
+                    break;
                 default:
                     break;
             }
@@ -5140,19 +5244,38 @@ namespace Infiniminer
             {
                 ConsoleWrite("Chain connected to src:" + blockListContent[x, y, z, 1] + " src: " + blockListContent[x, y, z, 2] + " dest: " + blockListContent[x, y, z, 4] + " Connections: " + blockListContent[x, y, z, 3]);
             }
-            else if (blockList[x, y, z] == BlockType.ArtCase)
+            else if (blockList[x, y, z] == BlockType.ArtCaseR || blockList[x, y, z] == BlockType.ArtCaseB)
             {
                 if (player != null)
                 {
-                    if (player.Content[10] > 0)
-                    {//place artifact
-                        uint arty = SetItem(ItemType.Artifact, new Vector3(x+0.5f, y+1.5f, z+0.5f), Vector3.Zero, Vector3.Zero, player.Team);
-                        itemList[arty].Content[6] = 1;//lock artifact in place
-                        blockListContent[x,y,z,6] = (int)(arty);
-                        player.Content[10] = 0;
-                        SendItemContentSpecificUpdate(itemList[arty], 6);//lock item
-                        SendContentSpecificUpdate(player, 10);//inform players
-                        SendPlayerContentUpdate(player, 10);//inform activator
+                    if (btn == 1)
+                    {
+                        if (player.Team == PlayerTeam.Red && blockList[x, y, z] == BlockType.ArtCaseR || player.Team == PlayerTeam.Blue && blockList[x, y, z] == BlockType.ArtCaseB)
+                            if (player.Content[10] > 0 && blockListContent[x, y, z, 6] == 0)
+                            {//place artifact
+                                uint arty = SetItem(ItemType.Artifact, new Vector3(x + 0.5f, y + 1.5f, z + 0.5f), Vector3.Zero, Vector3.Zero, player.Team);
+                                itemList[arty].Content[6] = 1;//lock artifact in place
+                                blockListContent[x, y, z, 6] = (int)(arty);
+                                player.Content[10] = 0;
+                                SendItemContentSpecificUpdate(itemList[arty], 6);//lock item
+                                SendContentSpecificUpdate(player, 10);//inform players
+                                SendPlayerContentUpdate(player, 10);//inform activator
+                            }
+                    }
+                    else if (btn == 2)
+                    {
+                        if (player.Team == PlayerTeam.Red && blockList[x, y, z] == BlockType.ArtCaseR || player.Team == PlayerTeam.Blue && blockList[x, y, z] == BlockType.ArtCaseB)
+                            if (player.Content[10] == 0 && blockListContent[x, y, z, 6] > 0)
+                            {//place artifact
+                                uint arty = (uint)(blockListContent[x, y, z, 6]);
+                                itemList[arty].Content[6] = 0;//unlock artifact in place
+                                blockListContent[x, y, z, 6] = 0;//artcase empty
+                                player.Content[10] = (int)arty;//player is holding the new artifact
+                                itemList[arty].Disposing = true;//item gets removed
+
+                                SendContentSpecificUpdate(player, 10);//inform players
+                                SendPlayerContentUpdate(player, 10);//inform activator
+                            }
                     }
                 }
                 return true;
@@ -5354,7 +5477,7 @@ namespace Infiniminer
                         //blockListContent[x, y, z, 2] = 0;
                         // blockListContent[x, y, z, 2] = 0;// +x
                         // blockListContent[x, y, z, 2] = 2;// -x
-
+                        
                         for (int a = 2; a < 7; a++)
                         {
                             //if (blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]] == (BlockType)(blockListContent[x, y, z, a * 6]))
@@ -5425,7 +5548,7 @@ namespace Infiniminer
 
                                     block = blockList[x, y, z - rely];
                                 }
-                                if (block != BlockType.None)
+                                if (block != BlockType.None && block != BlockType.Water && block != BlockType.Lava)
                                 {
                                     green = false;//obstruction
 
@@ -5546,6 +5669,16 @@ namespace Infiniminer
                                                     rely = by - y;
                                                     relz = 0;
 
+                                                    if (blockList[bx + rely, y, z] == BlockType.Water || blockList[bx + rely, y, z] == BlockType.Lava)
+                                                    {//water in our way
+                                                        if (blockList[bx + rely, y + 1, z] == BlockType.None)
+                                                        {//push water up one
+                                                            SetBlock((ushort)(bx + rely), (ushort)(y + 1), (ushort)(z), blockList[bx + rely, y, z], PlayerTeam.None);
+                                                            blockListContent[bx + rely, y + 1, z, 1] = blockListContent[bx + rely, y, z, 1];//copy temperature
+                                                            blockListContent[bx + rely, y + 1, z, 2] = blockListContent[bx + rely, y, z, 2];//copy blocks future type
+                                                        }
+                                                    }
+
                                                     SetBlock((ushort)(bx + rely), (ushort)(y), (ushort)(z), (BlockType)(blockListContent[x, y, z, a * 6]), blockCreatorTeam[bx, by, bz]);
                                                     blockListHP[bx + rely, y, z] = blockListHP[bx, by, bz];
 
@@ -5562,6 +5695,15 @@ namespace Infiniminer
                                                     rely = by - y;
                                                     relz = 0;
 
+                                                    if (blockList[x, y, bz + rely] == BlockType.Water || blockList[x, y, bz + rely] == BlockType.Lava)
+                                                    {//water in our way
+                                                        if (blockList[x, y + 1, bz + rely] == BlockType.None)
+                                                        {//push water up one
+                                                            SetBlock((ushort)(x), (ushort)(y + 1), (ushort)(bz + rely), blockList[x, y, bz + rely], PlayerTeam.None);
+                                                            blockListContent[x, y + 1, bz + rely, 1] = blockListContent[x, y, bz + rely, 1];//copy temperature
+                                                            blockListContent[x, y + 1, bz + rely, 2] = blockListContent[x, y, bz + rely, 2];//copy blocks future type
+                                                        }
+                                                    }
                                                     SetBlock((ushort)(x), (ushort)(y), (ushort)(bz + rely), (BlockType)(blockListContent[x, y, z, a * 6]), blockCreatorTeam[bx, by, bz]);
                                                     blockListHP[x, y, bz + rely] = blockListHP[bx, by, bz];
 
@@ -5578,6 +5720,16 @@ namespace Infiniminer
                                                     rely = by - y;
                                                     relz = 0;
 
+                                                    if (blockList[bx - rely, y, z] == BlockType.Water || blockList[bx - rely, y, z] == BlockType.Lava)
+                                                    {//water in our way
+                                                        if (blockList[bx - rely, y + 1, z] == BlockType.None)
+                                                        {//push water up one
+                                                            SetBlock((ushort)(bx - rely), (ushort)(y + 1), (ushort)(z), blockList[bx - rely, y, z], PlayerTeam.None);
+                                                            blockListContent[bx - rely, y + 1, z, 1] = blockListContent[bx - rely, y, z, 1];//copy temperature
+                                                            blockListContent[bx - rely, y + 1, z, 2] = blockListContent[bx - rely, y, z, 2];//copy blocks future type
+                                                        }
+                                                    }
+
                                                     SetBlock((ushort)(bx - rely), (ushort)(y), (ushort)(z), (BlockType)(blockListContent[x, y, z, a * 6]), blockCreatorTeam[bx, by, bz]);
                                                     blockListHP[bx - rely, y, z] = blockListHP[bx, by, bz];
 
@@ -5593,6 +5745,16 @@ namespace Infiniminer
                                                     relx = 0;
                                                     rely = by - y;
                                                     relz = 0;
+
+                                                    if (blockList[x, y, bz - rely] == BlockType.Water || blockList[x, y, bz - rely] == BlockType.Lava)
+                                                    {//water in our way
+                                                        if (blockList[x, y + 1, bz - rely] == BlockType.None)
+                                                        {//push water up one
+                                                            SetBlock((ushort)(x), (ushort)(y + 1), (ushort)(bz - rely), blockList[x, y, bz - rely], PlayerTeam.None);
+                                                            blockListContent[x, y + 1, bz - rely, 1] = blockListContent[x, y, bz - rely, 1];//copy temperature
+                                                            blockListContent[x, y + 1, bz - rely, 2] = blockListContent[x, y, bz - rely, 2];//copy blocks future type
+                                                        }
+                                                    }
 
                                                     SetBlock((ushort)(x), (ushort)(y), (ushort)(bz - rely), (BlockType)(blockListContent[x, y, z, a * 6]), blockCreatorTeam[bx, by, bz]);
                                                     blockListHP[x, y, bz - rely] = blockListHP[bx, by, bz];
@@ -5703,11 +5865,15 @@ namespace Infiniminer
                         SendServerMessageToPlayer("The hinge was rotated to face " + direction + ".", player.NetConn);
                     }
 
+                    PlayerTeam team = PlayerTeam.None;
+                    if (player != null)
+                        team = player.Team;
+
                     for (int a = 2; a < 7; a++)//7
                     {
                         if (blockListContent[x, y, z, 2] == 0)
                         {
-                            if (!HingeBlockTypes(blockList[x + a - 1, y, z]))
+                            if (!HingeBlockTypes(blockList[x + a - 1, y, z],team))
                                 break;
 
                             blockListContent[x, y, z, a * 6] = (byte)blockList[x + a - 1, y, z];
@@ -5722,7 +5888,7 @@ namespace Infiniminer
                         }
                         else if (blockListContent[x, y, z, 2] == 2)
                         {
-                            if (!HingeBlockTypes(blockList[x - (a - 1), y, z]))
+                            if (!HingeBlockTypes(blockList[x - (a - 1), y, z],team))
                                 break;
 
                             blockListContent[x, y, z, a * 6] = (byte)blockList[x - (a - 1), y, z];
@@ -5737,7 +5903,7 @@ namespace Infiniminer
                         }
                         else if (blockListContent[x, y, z, 2] == 3)
                         {
-                            if (!HingeBlockTypes(blockList[x, y, z + a - 1]))
+                            if (!HingeBlockTypes(blockList[x, y, z + a - 1],team))
                                 break;
 
                             blockListContent[x, y, z, a * 6] = (byte)blockList[x, y, z + a - 1];
@@ -5752,7 +5918,7 @@ namespace Infiniminer
                         }
                         else if (blockListContent[x, y, z, 2] == 4)
                         {
-                            if (!HingeBlockTypes(blockList[x, y, z - (a - 1)]))
+                            if (!HingeBlockTypes(blockList[x, y, z - (a - 1)], team))
                                 break;
 
                             blockListContent[x, y, z, a * 6] = (byte)blockList[x, y, z - (a - 1)];
@@ -6224,27 +6390,27 @@ namespace Infiniminer
             {
                 if(pt.ID == playerId)
                 {
-                    if (pt.Team != p.Team)
+                    if (pt.Team != p.Team && pt.Alive)
                     if(Distf(p.Position, pt.Position) < 4.0f)//slap in range
                     {
                         if (pt.Health > 10)
                         {
                             pt.Health -= 10;
+                            NetBuffer msgBuffer = netServer.CreateBuffer();
+                            msgBuffer.Write((byte)InfiniminerMessage.PlayerSlap);
+                            msgBuffer.Write(playerId);//getting slapped
+                            msgBuffer.Write(p.ID);//attacker
                             SendHealthUpdate(pt);
+
+                            foreach (NetConnection netConn in playerList.Keys)
+                                if (netConn.Status == NetConnectionStatus.Connected)
+                                    netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
                         }
                         else
                         {
                             Player_Dead(pt);//slapped to death
                         }
-                        
-                        NetBuffer msgBuffer = netServer.CreateBuffer();
-                        msgBuffer.Write((byte)InfiniminerMessage.PlayerSlap);
-                        msgBuffer.Write(playerId);//getting slapped
-                        msgBuffer.Write(p.ID);//attacker
 
-                        foreach (NetConnection netConn in playerList.Keys)
-                            if (netConn.Status == NetConnectionStatus.Connected)
-                                netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
                     }
                     break;
                 }
