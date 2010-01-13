@@ -5215,16 +5215,28 @@ namespace Infiniminer
                 {
                     if (x > 0 && x < MAPSIZE - 1 && y > 0 && y < MAPSIZE - 1 && z > 0 && z < MAPSIZE - 1)
                     {
-                        player.Content[5] = (int)btn;
-                        player.Content[6] = (int)x;
-                        player.Content[7] = (int)y;
-                        player.Content[8] = (int)z;
-                        player.Content[2] = 0;
-                        player.Content[3] = 0;
-                        player.Content[4] = 0;
-                        player.Content[5] = 0;
-                        SendServerMessageToPlayer("Linked remote to action " + btn + " on " + blockList[x, y, z] + ".", player.NetConn);
-                        player.Content[9] = 0;
+                        if (blockList[x, y, z] == BlockType.ArtCaseR || blockList[x, y, z] == BlockType.ArtCaseB || blockList[x, y, z] == BlockType.BankRed || blockList[x, y, z] == BlockType.BankBlue)
+                        {
+                            player.Content[2] = 0;
+                            player.Content[3] = 0;
+                            player.Content[4] = 0;
+                            player.Content[5] = 0;
+                            player.Content[9] = 0;
+                            SendServerMessageToPlayer("The remote cannot function on " + blockList[x, y, z] + ".", player.NetConn);                           
+                        }
+                        else
+                        {
+                            player.Content[5] = (int)btn;
+                            player.Content[6] = (int)x;
+                            player.Content[7] = (int)y;
+                            player.Content[8] = (int)z;
+                            player.Content[2] = 0;
+                            player.Content[3] = 0;
+                            player.Content[4] = 0;
+                            //player.Content[5] = 0;
+                            SendServerMessageToPlayer("Linked remote to action " + btn + " on " + blockList[x, y, z] + ".", player.NetConn);
+                            player.Content[9] = 0;
+                        }
                         return true;
                     }
                 }

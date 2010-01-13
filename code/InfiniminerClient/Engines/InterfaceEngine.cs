@@ -236,6 +236,21 @@ namespace Infiniminer
             spriteBatch.Draw(textureToUse, new Rectangle(screenWidth / 2 /*- 22 * 3*/, screenHeight - 77 * 3 + 14 * 3, 75 * 3, 77 * 3), Color.White);
         }
 
+        public void RenderRemote(GraphicsDevice graphicsDevice, SpriteBatch spriteBatch)
+        {
+            int screenWidth = graphicsDevice.Viewport.Width;
+            int screenHeight = graphicsDevice.Viewport.Height;
+            graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Point;
+
+            Texture2D textureToUse;
+            if (Mouse.GetState().RightButton == ButtonState.Pressed)
+                textureToUse = _P.playerTeam == PlayerTeam.Red ? texToolDetonatorDownRed : texToolDetonatorDownBlue;
+            else
+                textureToUse = _P.playerTeam == PlayerTeam.Red ? texToolDetonatorUpRed : texToolDetonatorUpBlue;
+
+            spriteBatch.Draw(textureToUse, new Rectangle(screenWidth / 2 /*- 22 * 3*/, screenHeight - 77 * 3 + 14 * 3, 75 * 3, 77 * 3), Color.White);
+        }
+
         public void RenderProspectron(GraphicsDevice graphicsDevice, SpriteBatch spriteBatch)
         {
             int screenWidth = graphicsDevice.Viewport.Width;
@@ -342,6 +357,10 @@ namespace Infiniminer
             {
                 case PlayerTools.Detonator:
                     RenderDetonator(graphicsDevice, spriteBatch);
+                    break;
+
+                case PlayerTools.Remote:
+                    RenderRemote(graphicsDevice, spriteBatch);
                     break;
 
                 case PlayerTools.ProspectingRadar:
