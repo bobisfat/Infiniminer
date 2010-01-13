@@ -1707,6 +1707,11 @@ namespace Infiniminer
                 blockListContent[x, y, z, 2] = 0;//amount
                 blockListContent[x, y, z, 3] = 0;
             }
+            else if (blockType == BlockType.Plate)
+            {
+                blockListContent[x, y, z, 1] = 0;
+                blockListContent[x, y, z, 2] = 6;
+            }
             else if (blockType == BlockType.Hinge)
             {
                 blockListContent[x, y, z, 1] = 0;//rotation state [0-1] 0: flat 1: vertical
@@ -2334,6 +2339,7 @@ namespace Infiniminer
                                                         UseStrongArm(player, playerPosition, playerHeading);
                                                         break;
                                                     case PlayerTools.Smash:
+                                                        if(player.Class == PlayerClass.Sapper)
                                                         UseSmash(player, playerPosition, playerHeading);
                                                         break;
                                                     case PlayerTools.ConstructionGun:
@@ -2347,6 +2353,14 @@ namespace Infiniminer
                                                         break;
                                                     case PlayerTools.Detonator:
                                                         UseDetonator(player);
+                                                        break;
+                                                    case PlayerTools.Remote:
+                                                        if (player.Class == PlayerClass.Engineer)
+                                                        UseRemote(player);
+                                                        break;
+                                                    case PlayerTools.SetRemote:
+                                                        if (player.Class == PlayerClass.Engineer)
+                                                        SetRemote(player);
                                                         break;
                                                     case PlayerTools.SpawnItem:
                                                         SpawnItem(player, playerPosition, playerHeading);
@@ -2363,6 +2377,7 @@ namespace Infiniminer
                                                 switch (playerClass)
                                                 {
                                                     case PlayerClass.Engineer:
+                                                        player.Class = playerClass;
                                                         player.OreMax = 350;
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
@@ -2373,6 +2388,7 @@ namespace Infiniminer
                                                         }
                                                         break;
                                                     case PlayerClass.Miner://strong arm/throws blocks
+                                                        player.Class = playerClass;
                                                         player.OreMax = 200;
                                                         player.WeightMax = 20;
                                                         player.HealthMax = 400;
@@ -2383,6 +2399,7 @@ namespace Infiniminer
                                                         }
                                                         break;
                                                     case PlayerClass.Prospector://profiteer/has prospectron/stealth/climb/traps
+                                                        player.Class = playerClass;
                                                         player.OreMax = 200;
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
@@ -2393,6 +2410,7 @@ namespace Infiniminer
                                                         }
                                                         break;
                                                     case PlayerClass.Sapper://berserker/charge that knocks people and blocks away/repairs block
+                                                        player.Class = playerClass;
                                                         player.OreMax = 200;
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
@@ -3897,6 +3915,20 @@ namespace Infiniminer
                                     }
                                 }
                             }
+                            else if (blockList[i, j, k] == BlockType.Plate && blockListContent[i, j, k, 1] > 0)
+                            {
+                                if (blockListContent[i, j, k, 1] == 1)
+                                {
+                                    blockListContent[i, j, k, 1] = 0;
+                                    //untrigger the plate
+                                    Trigger(i, j, k, i, j, k, 1, null);
+                                }
+                                else
+                                {
+                                    blockListContent[i, j, k, 1] -= 1;
+                                }
+
+                            }
                     }
         }
         public void Disturb(ushort i, ushort j, ushort k)
@@ -4741,6 +4773,7 @@ namespace Infiniminer
                 blockType == BlockType.Compressor ||
                 blockType == BlockType.Hinge ||
                 blockType == BlockType.Lever ||
+                blockType == BlockType.Plate ||
                 blockType == BlockType.Controller ||
                 blockType == BlockType.Water ||
                 blockType == BlockType.StealthBlockB ||
@@ -5104,6 +5137,39 @@ namespace Infiniminer
             }
         }
 
+        public void UseRemote(Player player)
+        {
+            if (player.Content[5] > 0)
+            {
+                PlayerInteract(player, (uint)(player.Content[5]), (uint)(player.Content[6]), (uint)(player.Content[7]), (uint)(player.Content[8]));
+            }
+            else
+            {
+                SendServerMessageToPlayer("Remote is not attached to anything.", player.NetConn);
+            }
+        }
+
+        public void SetRemote(Player player)
+        {
+            player.Content[2] = (int)player.Position.X;
+            player.Content[3] = (int)player.Position.Y;
+            player.Content[4] = (int)player.Position.Z;
+            player.Content[5] = 0;
+            player.Content[9] = 1;
+            SendServerMessageToPlayer("You are now linking an object to the remote.", player.NetConn);
+        }
+
+        public void SetRemote(Player player, uint btn, uint x, uint y, uint z)
+        {
+                if(x > 0 && x < MAPSIZE - 1 && y > 0 && y < MAPSIZE - 1 && z > 0 && z < MAPSIZE - 1)
+                {
+                    player.Content[5] = (int)btn;
+                    player.Content[6] = (int)x;
+                    player.Content[7] = (int)y;
+                    player.Content[8] = (int)z;
+                    SendServerMessageToPlayer("linked remote to action " + btn + " on " + blockList[x, y, z] + ".", player.NetConn);
+               }
+        }
         public bool HingeBlockTypes(BlockType block, PlayerTeam team)
         {
             switch (block)
@@ -5145,6 +5211,23 @@ namespace Infiniminer
             if (player != null)
             if (player.Content[2] > 0)//player is attempting to link something
             {
+                if (player.Content[9] == 1 && player.Class == PlayerClass.Engineer)
+                {
+                    if (x > 0 && x < MAPSIZE - 1 && y > 0 && y < MAPSIZE - 1 && z > 0 && z < MAPSIZE - 1)
+                    {
+                        player.Content[5] = (int)btn;
+                        player.Content[6] = (int)x;
+                        player.Content[7] = (int)y;
+                        player.Content[8] = (int)z;
+                        player.Content[2] = 0;
+                        player.Content[3] = 0;
+                        player.Content[4] = 0;
+                        player.Content[5] = 0;
+                        SendServerMessageToPlayer("Linked remote to action " + btn + " on " + blockList[x, y, z] + ".", player.NetConn);
+                        player.Content[9] = 0;
+                        return true;
+                    }
+                }
                 if (x == player.Content[2] && y == player.Content[3] && z == player.Content[4])
                 {
                     player.Content[2] = 0;
@@ -5350,6 +5433,102 @@ namespace Infiniminer
 
                         }
                     }
+                }
+                return true;
+            }
+            else if (blockList[x, y, z] == BlockType.Plate)
+            {
+                if (btn == 1)
+                {
+                   // if (player != null)
+                     //   SendServerMessageToPlayer("You stand on a pressure plate!", player.NetConn);
+
+                    if (blockListContent[x, y, z, 0] == 0 && blockListContent[x,y,z,1] < 1)//not falling and recharged
+                    {
+                        if(player != null)
+                            blockListContent[x, y, z, 1] = blockListContent[x, y, z, 2];//only players will trigger the timer
+
+                        for (int a = 2; a < 7; a++)
+                        {
+                            if (blockListContent[x, y, z, a * 6] > 0)
+                            {
+                                int bx = blockListContent[x, y, z, a * 6 + 1];
+                                int by = blockListContent[x, y, z, a * 6 + 2];
+                                int bz = blockListContent[x, y, z, a * 6 + 3];
+                                int bbtn = blockListContent[x, y, z, a * 6 + 4];
+
+                                if (Trigger(bx, by, bz, x, y, z, bbtn, null) == false)
+                                {
+                                    //trigger returned no result, delete the link
+                                    blockListContent[x, y, z, a * 6] = 0;
+                                    blockListContent[x, y, z, a * 6 + 1] = 0;
+                                    blockListContent[x, y, z, a * 6 + 2] = 0;
+                                    blockListContent[x, y, z, a * 6 + 3] = 0;
+                                    blockListContent[x, y, z, a * 6 + 4] = 0;
+                                }
+                            }
+                        }
+                    }
+
+                }
+                else if (btn == 2)
+                {
+                    if (player != null)//only a player can invoke this action
+                    {
+                        int nb = 0;
+                        for (nb = 2; nb < 7; nb++)
+                        {
+                            if (blockListContent[x, y, z, nb * 6] == 0)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (nb != 7)//didnt hit end of switch-link limit
+                        {
+
+                            SendServerMessageToPlayer("You are now linking objects.", player.NetConn);
+
+                            player.Content[2] = (int)(x);//player is creating a link to this switch
+                            player.Content[3] = (int)(y);
+                            player.Content[4] = (int)(z);
+                            SendContentSpecificUpdate(player, 2);
+                            SendContentSpecificUpdate(player, 3);
+                            SendContentSpecificUpdate(player, 4);
+                        }
+                        else
+                        {
+                            SendServerMessageToPlayer("This lever is overloaded, you are now unlinking objects.", player.NetConn);
+
+                            player.Content[2] = (int)(x);//player is creating a link to this switch
+                            player.Content[3] = (int)(y);
+                            player.Content[4] = (int)(z);
+                            SendContentSpecificUpdate(player, 2);
+                            SendContentSpecificUpdate(player, 3);
+                            SendContentSpecificUpdate(player, 4);
+
+                        }
+                    }
+                }
+                else if (btn == 3)
+                {
+                    if (blockListContent[x, y, z, 2] > 1)
+                    {
+                        blockListContent[x, y, z, 2] -= 1;//decrease retrigger timer
+                        if (player != null)
+                            SendServerMessageToPlayer("The pressure plate retrigger decreased to " + (blockListContent[x, y, z, 2] * 400) + " milliseconds.", player.NetConn);
+                    }
+                    else
+                    {
+                        blockListContent[x, y, z, 2] = 0;
+                        SendServerMessageToPlayer("The pressure plate now only retriggers when touched.", player.NetConn);
+                    }
+                }
+                else if (btn == 4)
+                {
+                    blockListContent[x, y, z, 2] += 1;//increase retrigger timer
+                    if (player != null)
+                        SendServerMessageToPlayer("The pressure plate retrigger increased to " + (blockListContent[x, y, z, 2] * 400)+ " milliseconds.", player.NetConn);
                 }
                 return true;
             }
@@ -5937,7 +6116,7 @@ namespace Infiniminer
                 return true;
             }
 
-            if (blockList[x, y, z] != BlockType.None && blockList[x, y, z] != BlockType.Water && blockList[x, y, z] != BlockType.Lava && blockList[x, y, z] != BlockType.Lever && player == null)
+            if (blockList[x, y, z] != BlockType.None && blockList[x, y, z] != BlockType.Water && blockList[x, y, z] != BlockType.Lava && blockList[x, y, z] != BlockType.Lever && blockList[x, y, z] != BlockType.Plate && player == null)
             {
                 //activated by a lever?
                 Vector3 originVector = new Vector3(x, y, z);
@@ -5954,6 +6133,19 @@ namespace Infiniminer
                 blockListContent[x, y, z, 16] = z * 100;
 
                 if (blockList[ox, oy, oz] == BlockType.Lever)
+                {
+                    for (int a = 1; a < 7; a++)
+                    {
+                        if (blockListContent[ox, oy, oz, a * 6] > 0)
+                        {
+                            if (blockListContent[ox, oy, oz, a * 6 + 1] == x && blockListContent[ox, oy, oz, a * 6 + 2] == y && blockListContent[ox, oy, oz, a * 6 + 3] == z)
+                            {
+                                return false;//this removes link from switch
+                            }
+                        }
+                    }
+                }
+                else if (blockList[ox, oy, oz] == BlockType.Plate)
                 {
                     for (int a = 1; a < 7; a++)
                     {

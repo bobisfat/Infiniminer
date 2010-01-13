@@ -24,8 +24,10 @@ R = BlockUp
 
 #Misc
 Q = Ping
-D8 = Deposit
-D9 = Withdraw
+D8 = Interact1
+D9 = Interact2
+D0 = Interact3
+OemMinus = Interact4
 Y = SayAll
 U = SayTeam
 M = ChangeClass

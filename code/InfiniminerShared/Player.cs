@@ -33,6 +33,8 @@ namespace Infiniminer
         DeconstructionGun,
         ProspectingRadar,
         Detonator,
+        Remote,
+        SetRemote,
         SpawnItem,
         LeftHand,
         RightHand,
@@ -70,6 +72,7 @@ namespace Infiniminer
                 return false;
             }
         }
+        public PlayerClass Class;
         public bool AltColours = false;
         public Color redTeam = new Color();
         public Color blueTeam = new Color();
@@ -243,6 +246,7 @@ namespace Infiniminer
             {
                 case PlayerTools.Pickaxe: return 0.1f;// 0.55f;
                 case PlayerTools.Detonator: return 0.01f;
+                case PlayerTools.Remote: return 0.01f;
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;
                 case PlayerTools.ProspectingRadar: return 0.5f;
@@ -290,6 +294,9 @@ namespace Infiniminer
                     textureName += "construction";
                     break;
                 case PlayerTools.Detonator:
+                    textureName += "detonator";
+                    break;
+                case PlayerTools.Remote:
                     textureName += "detonator";
                     break;
                 case PlayerTools.Pickaxe:

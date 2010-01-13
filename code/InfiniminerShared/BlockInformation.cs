@@ -62,6 +62,7 @@ namespace Infiniminer
         StealthBlockB,
         Magma,
         Lever,
+        Plate,
         RadarRed,
         RadarBlue,
         Hinge,
@@ -146,6 +147,7 @@ namespace Infiniminer
         StealthBlockR,
         StealthBlockB,
         Lever,
+        Plate,
         TransRed,   // THESE MUST BE THE LAST TWO TEXTURES
         TransBlue,
         RadarRed,
@@ -301,6 +303,7 @@ namespace Infiniminer
                 case BlockType.BeaconRed:
                 case BlockType.BeaconBlue:
                 case BlockType.Lever:
+                case BlockType.Plate:
                 case BlockType.Hinge:
                 case BlockType.SolidRed:
                 case BlockType.SolidBlue:
@@ -391,6 +394,8 @@ namespace Infiniminer
                 case BlockType.Diamond:
                     return BlockTexture.Diamond;
                 case BlockType.Lever:
+                    return BlockTexture.Lever;
+                case BlockType.Plate:
                     return BlockTexture.Lever;
                 case BlockType.DirtSign:
                     return BlockTexture.DirtSign;

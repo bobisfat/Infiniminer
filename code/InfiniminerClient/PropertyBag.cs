@@ -31,6 +31,7 @@ namespace Infiniminer
         public bool[,] mapLoadProgress = null;
         public string serverName = "";
 
+        public DateTime retrigger;//prevents constant triggering of interactives
         public float colorPulse = 1.0f;//color fading
         bool colorDirection = true;//increases when true
         //Input stuff.
@@ -61,7 +62,7 @@ namespace Infiniminer
         public float forceStrength = 0.0f;
         public AudioListener listenPos = new AudioListener();
         public int[] Content = new Int32[50];
-
+        public BlockType interact = BlockType.None;
         public uint playerWeightMax = 0;
         public float playerHoldBreath = 20;
         public DateTime lastBreath = DateTime.Now;
@@ -558,11 +559,11 @@ namespace Infiniminer
                 PlayerTools.ConstructionGun,
                 PlayerTools.DeconstructionGun,
                 PlayerTools.ProspectingRadar,
-                PlayerTools.SpawnItem,
+                PlayerTools.Remote,
                 PlayerTools.Detonator
                 };
 
-                playerBlocks = new BlockType[21] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[22] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
@@ -579,6 +580,7 @@ namespace Infiniminer
                                              BlockType.Hinge,
                                              BlockType.Metal,
                                              BlockType.Lever,
+                                             BlockType.Plate,
                                              BlockType.Pump,
                                              BlockType.Compressor,
                                              playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
@@ -612,9 +614,10 @@ namespace Infiniminer
                         break;
 
                     case PlayerClass.Engineer:
-                        playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
+                        playerTools = new PlayerTools[4] {  PlayerTools.Pickaxe,
                                                             PlayerTools.ConstructionGun,     
-                                                            PlayerTools.DeconstructionGun };
+                                                            PlayerTools.DeconstructionGun,
+                                                            PlayerTools.Remote };
 
                         playerBlocks = new BlockType[10] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
@@ -1017,6 +1020,39 @@ namespace Infiniminer
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
+        public void FireRemote()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+            playerToolCooldown = GetToolCooldown(PlayerTools.Remote);
+
+            // Send the message.
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+            msgBuffer.Write(playerPosition);
+            msgBuffer.Write(playerCamera.GetLookVector());
+            msgBuffer.Write((byte)PlayerTools.Remote);
+            msgBuffer.Write((byte)BlockType.None);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
+
+        public void FireSetRemote()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+            playerToolCooldown = GetToolCooldown(PlayerTools.SetRemote);
+
+            // Send the message.
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+            msgBuffer.Write(playerPosition);
+            msgBuffer.Write(playerCamera.GetLookVector());
+            msgBuffer.Write((byte)PlayerTools.SetRemote);
+            msgBuffer.Write((byte)BlockType.None);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
         public void ToggleRadar()
         {
             playerRadarMute = !playerRadarMute;
@@ -1062,51 +1098,70 @@ namespace Infiniminer
         {
             Vector3 hitPoint = Vector3.Zero;
             Vector3 buildPoint = Vector3.Zero;
+            interact = BlockType.None;
+
             if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2.5f, 25, ref hitPoint, ref buildPoint))
+            {
                 return "";
+            }
 
             // If it's a valid bank object, we're good!
             BlockType blockType = blockEngine.BlockAtPoint(hitPoint);
-
+            
             if (blockType == BlockType.BankRed && playerTeam == PlayerTeam.Red)
             {
-                return "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE";
+                interact = blockType;
+                return "1: DEPOSIT 50 ORE  2: WITHDRAW 50 ORE";
             }
             else if (blockType == BlockType.ArtCaseR && playerTeam == PlayerTeam.Red)
             {
-                return "8: PLACE ARTIFACT  9: RETRIEVE ARTIFACT";
+                interact = blockType;
+                return "1: PLACE ARTIFACT  2: RETRIEVE ARTIFACT";
             }
             else if (blockType == BlockType.ArtCaseB && playerTeam == PlayerTeam.Blue)
             {
-                return "8: PLACE ARTIFACT  9: RETRIEVE ARTIFACT";
+                interact = blockType;
+                return "1: PLACE ARTIFACT  2: RETRIEVE ARTIFACT";
             }
             else if (blockType == BlockType.BankBlue && playerTeam == PlayerTeam.Blue)
             {
-                return "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE";
+                interact = blockType;
+                return "1: DEPOSIT 50 ORE  2: WITHDRAW 50 ORE";
             }
             else if (blockType == BlockType.Generator)
             {
-                return "8: Generator On  9: Generator Off";
+                interact = blockType;
+                return "1: Generator On  2: Generator Off";
             }
             else if (blockType == BlockType.Pipe)
             {
-                return "8: Rotate Left 9: Rotate Right";
+                interact = blockType;
+                return "1: Rotate Left 2: Rotate Right";
             }
             else if (blockType == BlockType.Pump)
             {
-                return "8: On/Off 9: Change direction";
+                interact = blockType;
+                return "1: On/Off 2: Change direction";
             }
             else if (blockType == BlockType.Compressor)
             {
-                return "8: Compress/Decompress";
+                interact = blockType;
+                return "1: Compress/Decompress";
             }
             else if (blockType == BlockType.Hinge)
             {
-                return "8: Set 9: Rotate";
+                interact = blockType;
+                return "1: Set 2: Rotate";
             }
             else if (blockType == BlockType.Lever)
             {
-                return "8: Pull Lever 9: Link";
+                interact = blockType;
+                return "1: Pull Lever 2: Link";
+            }
+            else if (blockType == BlockType.Plate)
+            {
+                interact = blockType;
+                return "1: Press 2: Link 3: Decrease retrigger time 4: Increase retrigger time";
             }
             return "";
         }
@@ -1185,7 +1240,8 @@ namespace Infiniminer
             switch (tool)
             {
                 case PlayerTools.Pickaxe: return 0.4f;// 0.55f;
-                case PlayerTools.Detonator: return 0.01f;
+                case PlayerTools.Detonator: return 0.1f;
+                case PlayerTools.Remote: return 0.01f;
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;
                 case PlayerTools.ProspectingRadar: return 0.5f;

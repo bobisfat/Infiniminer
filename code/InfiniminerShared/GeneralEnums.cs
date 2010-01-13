@@ -21,9 +21,10 @@ namespace Infiniminer
         Crouch,
 
         Ping,
-        Deposit,
-        Withdraw,
-
+        Interact1,
+        Interact2,
+        Interact3,
+        Interact4,
         //All buttons past this point will never be sent to the server
         SayAll,
         SayTeam,
