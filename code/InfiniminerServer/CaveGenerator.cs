@@ -35,6 +35,7 @@ namespace Infiniminer
             // Add minerals.
             AddGold(ref caveData, size);
             AddDiamond(ref caveData, size);
+            AddDiamond(ref caveData, size);
 
             // Level off everything above ground level, replacing it with mountains.
             float[, ,] mountainNoise = CaveGenerator.GeneratePerlinNoise(32);

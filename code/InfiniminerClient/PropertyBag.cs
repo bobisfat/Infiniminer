@@ -546,7 +546,7 @@ namespace Infiniminer
             }
         }
 
-        public bool allWeps = true; //Needs to be true on sandbox servers, though that requires a server mod
+        public bool allWeps = false; //Needs to be true on sandbox servers, though that requires a server mod
 
         public void equipWeps()
         {
@@ -559,7 +559,7 @@ namespace Infiniminer
                 PlayerTools.ConstructionGun,
                 PlayerTools.DeconstructionGun,
                 PlayerTools.ProspectingRadar,
-                PlayerTools.Remote,
+                PlayerTools.SpawnItem,
                 PlayerTools.Detonator
                 };
 
@@ -575,7 +575,6 @@ namespace Infiniminer
                                              playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
                                              playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
                                              BlockType.Explosive,
-                                              //BlockType.Lava,
                                              BlockType.Pipe, 
                                              BlockType.Hinge,
                                              BlockType.Metal,
@@ -596,11 +595,14 @@ namespace Infiniminer
                                                             PlayerTools.ConstructionGun,
                                                             PlayerTools.ProspectingRadar };
 
-                        playerBlocks = new BlockType[5] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                        playerBlocks = new BlockType[8] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                             playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                                             playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
                                                             playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
-                                                            BlockType.Shock
+                                                            BlockType.Shock,
+                                                            BlockType.Plate,
+                                                            BlockType.Metal,
+                                                            BlockType.Jump
                                                         };
                         break;
 
@@ -609,8 +611,9 @@ namespace Infiniminer
                                                             PlayerTools.ConstructionGun,
                                                             PlayerTools.StrongArm };
 
-                        playerBlocks = new BlockType[2] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
-                                                            BlockType.Ladder };
+                        playerBlocks = new BlockType[3] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                            BlockType.Ladder,
+                                                            BlockType.Metal};
                         break;
 
                     case PlayerClass.Engineer:
@@ -619,23 +622,29 @@ namespace Infiniminer
                                                             PlayerTools.DeconstructionGun,
                                                             PlayerTools.Remote };
 
-                        playerBlocks = new BlockType[10] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                        playerBlocks = new BlockType[13] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
                                                         BlockType.Ladder,
-                                                        BlockType.Jump,
-                                                        BlockType.Pump,
                                                         BlockType.Pipe,
                                                         BlockType.Lever,
+                                                        BlockType.Compressor,
+                                                        BlockType.Plate,
+                                                        BlockType.Metal,
+                                                        BlockType.Hinge,
+                                                        playerTeam == PlayerTeam.Red ? BlockType.GlassR : BlockType.GlassB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.ArtCaseR : BlockType.ArtCaseB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue  };
                         break;
 
                     case PlayerClass.Sapper:
-                        playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
+                        playerTools = new PlayerTools[4] {  PlayerTools.Pickaxe,
                                                             PlayerTools.ConstructionGun,
+                                                            PlayerTools.Detonator,
                                                             PlayerTools.Smash};
-                        playerBlocks = new BlockType[1] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                        playerBlocks = new BlockType[3] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                            BlockType.Explosive,
+                                                            BlockType.Metal
                                                             };
                         break;
                 }
@@ -778,7 +787,7 @@ namespace Infiniminer
                     break;
 
                 case BlockType.Diamond:
-                    removeBlock = true;
+                    //removeBlock = true;
                     sound = InfiniminerSound.DigMetal;
                     break;
 
@@ -1113,6 +1122,30 @@ namespace Infiniminer
                 interact = blockType;
                 return "1: DEPOSIT 50 ORE  2: WITHDRAW 50 ORE";
             }
+            else if (blockType == BlockType.BaseRed && playerTeam == PlayerTeam.Red)
+            {
+                interact = blockType;
+                if (Content[11] > 0)
+                {
+                    return "1: FORGE ARTIFACT USING DIAMOND";
+                }
+                else
+                {
+                    return "THE FORGE REQUIRES A DIAMOND TO OPERATE";
+                }
+            }
+            else if (blockType == BlockType.BaseBlue && playerTeam == PlayerTeam.Blue)
+            {
+                interact = blockType;
+                if (Content[11] > 0)
+                {
+                    return "1: FORGE ARTIFACT USING DIAMOND";
+                }
+                else
+                {
+                    return "THE FORGE REQUIRES A DIAMOND TO OPERATE";
+                }
+            }
             else if (blockType == BlockType.ArtCaseR && playerTeam == PlayerTeam.Red)
             {
                 interact = blockType;
@@ -1151,17 +1184,17 @@ namespace Infiniminer
             else if (blockType == BlockType.Hinge)
             {
                 interact = blockType;
-                return "1: Set 2: Rotate";
+                return "1: Activate 2: Rotate/Connect";
             }
             else if (blockType == BlockType.Lever)
             {
                 interact = blockType;
-                return "1: Pull Lever 2: Link";
+                return "1: Activate 2: Link";
             }
             else if (blockType == BlockType.Plate)
             {
                 interact = blockType;
-                return "1: Press 2: Link 3: Decrease retrigger time 4: Increase retrigger time";
+                return "1: Activate 2: Link 3: Decrease timer 4: Increase timer";
             }
             return "";
         }

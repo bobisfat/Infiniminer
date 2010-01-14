@@ -71,7 +71,7 @@ namespace Infiniminer
                         if (Type == ItemType.Artifact)
                         {
                             //SpriteModel.
-                            //SpriteModel.SetPassiveAnimation("0,0.5 ; 1,0.5 ; 2,0.5 ; 1,0.5");
+                            SpriteModel.SetPassiveAnimation("0,0.2;1,0.2;2,0.2;3,0.2"); //("0,0.5 ; 1,0.5 ; 2,0.5 ; 3,0.5");
                             //SpriteModel.StartActiveAnimation("3,0.15");
                             //SpriteModel.
                         }
@@ -101,6 +101,9 @@ namespace Infiniminer
                     break;
                 case ItemType.Artifact:
                     textureName = "sprites/tex_sprite_artifact";
+                    break;
+                case ItemType.Diamond:
+                    textureName = "sprites/tex_sprite_diamond";
                     break;
                 default:
                     textureName = "sprites/tex_sprite_lemonorgoldnum";

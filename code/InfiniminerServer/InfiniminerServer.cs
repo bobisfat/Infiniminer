@@ -107,6 +107,11 @@ namespace Infiniminer
                 SendContentSpecificUpdate(player, 10);//tell player he has no artifact now
             }
 
+            while (player.Content[11] > 0)
+            {
+                uint it = SetItem(ItemType.Diamond, player.Position, Vector3.Zero, new Vector3((float)(randGen.NextDouble() - 0.5) * 2, (float)(randGen.NextDouble() * 1.5), (float)(randGen.NextDouble() - 0.5) * 2), PlayerTeam.None);
+                player.Content[11]--;
+            }
             player.Ore = 0;
             player.Cash = 0;//gold
             player.Weight = 0;
@@ -116,6 +121,8 @@ namespace Infiniminer
             player.Content[3] = 0;
             player.Content[4] = 0;
             player.Content[5] = 0;//ability slot
+            player.Content[11] = 0;//diamond slots
+            SendContentSpecificUpdate(player, 11);
            
 
             player.rSpeedCount = 0;
@@ -919,7 +926,7 @@ namespace Infiniminer
                         if (authority >= 1 && args.Length == 2)
                         {
                             if (sender != null)
-                                ConsoleWrite("SERVER: " + sender.Handle + " has bannec " + args[1]);
+                                ConsoleWrite("SERVER: " + sender.Handle + " has banned " + args[1]);
                             BanPlayer(args[1], true);
                             KickPlayer(args[1], true);
                         }
@@ -1918,6 +1925,10 @@ namespace Infiniminer
                         {
                             blockListHP[i, (ushort)(MAPSIZE - 1 - k), j] = 40;
                         }
+                        else if (blockList[i, (ushort)(MAPSIZE - 1 - k), j] == BlockType.Diamond)
+                        {
+                            blockListHP[i, (ushort)(MAPSIZE - 1 - k), j] = 120;
+                        }
                         blockCreatorTeam[i, j, k] = PlayerTeam.None;
 
                         if (i < 1 || j < 1 || k < 1 || i > MAPSIZE - 2 || j > MAPSIZE - 2 || k > MAPSIZE - 2)
@@ -2336,6 +2347,7 @@ namespace Infiniminer
                                                         UsePickaxe(player, playerPosition, playerHeading);
                                                         break;
                                                     case PlayerTools.StrongArm:
+                                                        if (player.Class == PlayerClass.Miner)
                                                         UseStrongArm(player, playerPosition, playerHeading);
                                                         break;
                                                     case PlayerTools.Smash:
@@ -2352,6 +2364,7 @@ namespace Infiniminer
                                                         UseSignPainter(player, playerPosition, playerHeading);
                                                         break;
                                                     case PlayerTools.Detonator:
+                                                        if (player.Class == PlayerClass.Sapper)
                                                         UseDetonator(player);
                                                         break;
                                                     case PlayerTools.Remote:
@@ -3929,6 +3942,54 @@ namespace Infiniminer
                                 }
 
                             }
+                            else if (blockList[i, j, k] == BlockType.BaseBlue || blockList[i, j, k] == BlockType.BaseRed)
+                            {
+                                if (blockListContent[i, j, k, 1] > 0)
+                                {
+                                    if (teamCashBlue > 4 && blockList[i, j, k] == BlockType.BaseBlue)
+                                    {
+                                        blockListContent[i, j, k, 1]--;
+                                        teamCashBlue -= 5;
+
+                                        NetBuffer msgBuffer = netServer.CreateBuffer();
+                                        foreach (NetConnection netConn in playerList.Keys)
+                                            if (netConn.Status == NetConnectionStatus.Connected)
+                                                SendTeamCashUpdate(playerList[netConn]); 
+                                        
+                                    }
+                                    else if (teamCashRed > 4 && blockList[i, j, k] == BlockType.BaseRed)
+                                    {
+                                        blockListContent[i, j, k, 1]--;
+                                        teamCashRed -= 5;
+
+                                        NetBuffer msgBuffer = netServer.CreateBuffer();
+                                        foreach (NetConnection netConn in playerList.Keys)
+                                            if (netConn.Status == NetConnectionStatus.Connected)
+                                                SendTeamCashUpdate(playerList[netConn]);
+                                    }
+
+                                    if (blockListContent[i, j, k, 1] == 0)
+                                    {
+                                        uint arty = SetItem(ItemType.Artifact, new Vector3(i + 0.5f, j + 1.5f, k + 0.5f), Vector3.Zero, Vector3.Zero, PlayerTeam.None);
+
+                                        NetBuffer msgBuffer = netServer.CreateBuffer();
+                                        msgBuffer = netServer.CreateBuffer();
+                                        msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
+
+                                        if (blockList[i, j, k] == BlockType.BaseRed)
+                                            msgBuffer.Write((byte)ChatMessageType.SayRedTeam);
+                                        else if (blockList[i, j, k] == BlockType.BaseBlue)
+                                            msgBuffer.Write((byte)ChatMessageType.SayBlueTeam);
+
+                                        msgBuffer.Write(Defines.Sanitize("The artifact is complete!"));
+
+                                        foreach (NetConnection netConn in playerList.Keys)
+                                            if (netConn.Status == NetConnectionStatus.Connected)
+                                                netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered); 
+                                    }
+                                }
+                            }
+
                     }
         }
         public void Disturb(ushort i, ushort j, ushort k)
@@ -4167,9 +4228,9 @@ namespace Infiniminer
                     break;
 
                 case BlockType.Diamond:
-                    removeBlock = true;
-                    giveWeight = 1;
-                    giveCash = 1000;
+                    //removeBlock = true;
+                    //giveWeight = 1;
+                    //giveCash = 1000;
                     sound = InfiniminerSound.DigMetal;
                     break;
 
@@ -4279,8 +4340,35 @@ namespace Infiniminer
                                 itemList[arty].Content[6] = 0;//unlock arty
                                 SendItemContentSpecificUpdate(itemList[(uint)(blockListContent[x, y, z, 6])], 6);
                             }
+
+                            NetBuffer msgBuffer = netServer.CreateBuffer();
+                            msgBuffer = netServer.CreateBuffer();
+                            msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
+
+                            if(block == BlockType.ArtCaseB)
+                                msgBuffer.Write((byte)ChatMessageType.SayBlueTeam);
+                            else if(block == BlockType.ArtCaseR)
+                                msgBuffer.Write((byte)ChatMessageType.SayRedTeam);
+                       
+                            msgBuffer.Write(Defines.Sanitize("The enemy team has destroyed one of our artifact safehouses!"));
+
+                            foreach (NetConnection netConn in playerList.Keys)
+                                if (netConn.Status == NetConnectionStatus.Connected)
+                                    if (playerList[netConn].Team == PlayerTeam.Red && block == BlockType.ArtCaseR)
+                                    {
+                                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+                                    }
+                                    else if (playerList[netConn].Team == PlayerTeam.Blue && block == BlockType.ArtCaseB)
+                                    {
+                                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+                                    }
+
                         }
-                        
+                        else if (block == BlockType.Diamond)
+                        {
+                            uint piece = SetItem(ItemType.Diamond, new Vector3(x + 0.5f, y + 0.5f, z + 0.5f), Vector3.Zero, Vector3.Zero, PlayerTeam.None);
+                        }
+
                         SetBlockDebris(x, y, z, BlockType.None, PlayerTeam.None);//blockset + adds debris for all players
                         
                         blockListHP[x, y, z] = 0;
@@ -4594,7 +4682,7 @@ namespace Infiniminer
 
                 exactPoint.Y = exactPoint.Y + (float)1.0;//0.25 = items height
 
-                SetItem(ItemType.Artifact, exactPoint, playerHeading, playerHeading*3, player.Team);
+                SetItem(ItemType.Diamond, exactPoint, playerHeading, playerHeading*3, player.Team);
                // player.Ore -= blockCost;
                // SendResourceUpdate(player);
 
@@ -5215,7 +5303,7 @@ namespace Infiniminer
                 {
                     if (x > 0 && x < MAPSIZE - 1 && y > 0 && y < MAPSIZE - 1 && z > 0 && z < MAPSIZE - 1)
                     {
-                        if (blockList[x, y, z] == BlockType.ArtCaseR || blockList[x, y, z] == BlockType.ArtCaseB || blockList[x, y, z] == BlockType.BankRed || blockList[x, y, z] == BlockType.BankBlue)
+                        if (blockList[x, y, z] == BlockType.BaseBlue || blockList[x, y, z] == BlockType.BaseRed || blockList[x, y, z] == BlockType.ArtCaseR || blockList[x, y, z] == BlockType.ArtCaseB || blockList[x, y, z] == BlockType.BankRed || blockList[x, y, z] == BlockType.BankBlue)
                         {
                             player.Content[2] = 0;
                             player.Content[3] = 0;
@@ -5371,6 +5459,44 @@ namespace Infiniminer
                                 SendContentSpecificUpdate(player, 10);//inform players
                                 SendPlayerContentUpdate(player, 10);//inform activator
                             }
+                    }
+                }
+                return true;
+            }
+            else if (blockList[x, y, z] == BlockType.BaseBlue || blockList[x, y, z] == BlockType.BaseRed)
+            {
+                if (player != null)
+                {
+                    if (btn == 1)
+                    {
+                        if (player.Team == PlayerTeam.Red && blockList[x, y, z] == BlockType.BaseRed || player.Team == PlayerTeam.Blue && blockList[x, y, z] == BlockType.BaseBlue)
+                            if (player.Content[11] > 0 && blockListContent[x, y, z, 1] == 0)
+                            {//begin forge
+                                player.Content[11]--;
+                                player.Weight--;
+
+                                SendWeightUpdate(player);
+                                
+                                blockListContent[x, y, z, 1] = 120;
+                                NetBuffer msgBuffer = netServer.CreateBuffer();
+                                msgBuffer = netServer.CreateBuffer();
+                                msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
+
+                                if(player.Team == PlayerTeam.Red)
+                                    msgBuffer.Write((byte)ChatMessageType.SayRedTeam);
+                                else if (player.Team == PlayerTeam.Blue)
+                                    msgBuffer.Write((byte)ChatMessageType.SayBlueTeam);
+
+                                msgBuffer.Write(Defines.Sanitize("The " + player.Team + " has begun forging an artifact!"));
+
+                                foreach (NetConnection netConn in playerList.Keys)
+                                    if (netConn.Status == NetConnectionStatus.Connected)
+                                            netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+                            }
+                    }
+                    else if (btn == 2)
+                    {
+                     
                     }
                 }
                 return true;
@@ -6315,6 +6441,23 @@ namespace Infiniminer
                                     itemIDList.Remove(ID);
                                 }
                             }
+                            else if (bPair.Value.Type == ItemType.Diamond)
+                            {
+                                if (player.Weight < player.WeightMax)
+                                { 
+                                    player.Weight += 1;   
+                                    SendWeightUpdate(player);
+                                    player.Content[11] += 1;//shardcount
+                                    SendContentSpecificUpdate(player, 11);//tell player 
+                                    SendPlayerContentUpdate(player, 11);//tell everyone else
+                                    itemList[ID].Disposing = true;
+                                    SendSetItem(ID);
+                                    itemList.Remove(ID);
+                                    itemIDList.Remove(ID);
+
+                                    SendServerMessageToPlayer("You now possess a diamond to fuel the forge!", player.NetConn);
+                                }
+                            }
                             else
                             {
                                 //just remove this unknown item
@@ -6344,14 +6487,14 @@ namespace Infiniminer
                     teamCashRed += player.Cash;
                 else
                     teamCashBlue += player.Cash;
-                SendServerMessage("SERVER: " + player.Handle + " HAS EARNED $" + player.Cash + " FOR THE " + GetTeamName(player.Team) + " TEAM!");
+               // SendServerMessage("SERVER: " + player.Handle + " HAS EARNED $" + player.Cash + " FOR THE " + GetTeamName(player.Team) + " TEAM!");
             }
 
             PlaySound(InfiniminerSound.CashDeposit, player.Position);
             ConsoleWrite("DEPOSIT_CASH: " + player.Handle + ", " + player.Cash);
             
             player.Cash = 0;
-            player.Weight = 0;
+            player.Weight = (uint)(player.Content[11]);//weight is now only diamonds on hand
 
             foreach (Player p in playerList.Values)
                 SendResourceUpdate(p);
@@ -6418,6 +6561,18 @@ namespace Infiniminer
             netServer.SendMessage(msgBuffer, player.NetConn, NetChannel.ReliableInOrder1);
         }
 
+        public void SendTeamCashUpdate(Player player)
+        {
+            if (player.NetConn.Status != NetConnectionStatus.Connected)
+                return;
+
+            // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash, all uint
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.TeamCashUpdate);
+            msgBuffer.Write((uint)teamCashRed);
+            msgBuffer.Write((uint)teamCashBlue);
+            netServer.SendMessage(msgBuffer, player.NetConn, NetChannel.ReliableInOrder1);
+        }
         public void SendContentUpdate(Player player)
         {
             if (player.NetConn.Status != NetConnectionStatus.Connected)

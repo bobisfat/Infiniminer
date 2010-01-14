@@ -11,6 +11,7 @@ namespace Infiniminer
         Gold,
         Ore,
         Artifact,
+        Diamond,
         MAXIMUM
     }
 
@@ -210,6 +211,10 @@ namespace Infiniminer
 
             blockHP[(byte)BlockType.Gold] = 80;
             blockMaxHP[(byte)BlockType.Gold] = 80;
+
+            blockHP[(byte)BlockType.Diamond] = 200;
+            blockMaxHP[(byte)BlockType.Diamond] = 200;
+
             blockHP[(byte)BlockType.Metal] = 50;
             blockMaxHP[(byte)BlockType.Metal] = 1;//non-repairable
 

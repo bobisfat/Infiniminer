@@ -87,6 +87,11 @@ namespace Infiniminer
                     float goldtwinkle = 0.75f + (this.gameInstance.propertyBag.colorPulse * 0.25f);
                     color = new Vector4((float)(i.Value.Content[1]) / 100 * goldtwinkle, (float)(i.Value.Content[2]) / 100 * goldtwinkle, (float)(i.Value.Content[3]) / 100 * goldtwinkle, 1.0f);
                 }
+                else if (i.Value.Type == ItemType.Diamond)//twinkle
+                {
+                    float goldtwinkle = 0.75f + (this.gameInstance.propertyBag.colorPulse * 0.25f);
+                    color = new Vector4((float)(i.Value.Content[1]) / 100 * goldtwinkle, (float)(i.Value.Content[2]) / 100 * goldtwinkle, (float)(i.Value.Content[3]) / 100 * goldtwinkle, 1.0f);
+                }
                 else if (i.Value.Type == ItemType.None)//debug
                 {//item is simply set to its content color
                     color = new Vector4(i.Value.Content[1], i.Value.Content[2], i.Value.Content[3], 1.0f);

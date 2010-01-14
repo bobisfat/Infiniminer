@@ -346,7 +346,13 @@ namespace Infiniminer
                                             propertyBag.playerHealthMax = msgBuffer.ReadUInt32();
                                         }
                                         break;
-
+                                    case InfiniminerMessage.TeamCashUpdate:
+                                        {
+                                            // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash, all uint
+                                            propertyBag.teamRedCash = msgBuffer.ReadUInt32();
+                                            propertyBag.teamBlueCash = msgBuffer.ReadUInt32();
+                                        }
+                                        break;
                                     case InfiniminerMessage.HealthUpdate:
                                         {
                                             propertyBag.playerHealth = msgBuffer.ReadUInt32();

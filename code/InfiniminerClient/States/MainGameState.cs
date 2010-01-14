@@ -455,6 +455,10 @@ namespace Infiniminer.States
                         {
                             _P.GetItem(bPair.Value.ID);
                         }
+                        else if (bPair.Value.Type == ItemType.Diamond && _P.playerWeight < _P.playerWeightMax)
+                        {
+                            _P.GetItem(bPair.Value.ID);
+                        }
                         else if (bPair.Value.Type == ItemType.Artifact && _P.Content[10] == 0 && bPair.Value.Content[6] == 0)//[10] artifact slot, [6] locked item
                         {
                             _P.GetItem(bPair.Value.ID);
