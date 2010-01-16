@@ -330,7 +330,12 @@ namespace Infiniminer
                                                 propertyBag.PlaySound(InfiniminerSound.RadarSwitch);
                                         }
                                         break;
-
+                                    case InfiniminerMessage.ScoreUpdate:
+                                        {
+                                            propertyBag.teamArtifactsRed = msgBuffer.ReadUInt32();
+                                            propertyBag.teamArtifactsBlue = msgBuffer.ReadUInt32();
+                                            break;
+                                        }
                                     case InfiniminerMessage.ResourceUpdate:
                                         {
                                             // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash, all uint
@@ -342,6 +347,9 @@ namespace Infiniminer
                                             propertyBag.teamOre = msgBuffer.ReadUInt32();
                                             propertyBag.teamRedCash = msgBuffer.ReadUInt32();
                                             propertyBag.teamBlueCash = msgBuffer.ReadUInt32();
+                                            propertyBag.teamArtifactsRed = msgBuffer.ReadUInt32();
+                                            propertyBag.teamArtifactsBlue = msgBuffer.ReadUInt32();
+                                            propertyBag.winningCashAmount = msgBuffer.ReadUInt32();
                                             propertyBag.playerHealth = msgBuffer.ReadUInt32();
                                             propertyBag.playerHealthMax = msgBuffer.ReadUInt32();
                                         }
@@ -371,7 +379,7 @@ namespace Infiniminer
                                                 propertyBag.forceVector = propertyBag.playerList[aID].Heading;
                                                 propertyBag.forceVector.Y = 0;
                                                 //propertyBag.forceVector.Normalize();
-                                                propertyBag.forceStrength = 2.0f;
+                                                propertyBag.forceStrength = 4.0f;
                                             }
                                             else
                                             {
@@ -892,9 +900,9 @@ namespace Infiniminer
             // Play the title music.
             if (!NoSound)
             {
-                songTitle = Content.Load<Song>("tmp");
-                MediaPlayer.Play(songTitle);
-                MediaPlayer.Volume = propertyBag.volumeLevel;
+                //songTitle = Content.Load<Song>("tmp");
+                //MediaPlayer.Play(songTitle);
+                //MediaPlayer.Volume = propertyBag.volumeLevel;
             }
         }
     }

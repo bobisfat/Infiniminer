@@ -203,9 +203,11 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.Controller] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_controller"));
             blockTextures[(byte)BlockTexture.Pipe] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_pipe"));
             blockTextures[(byte)BlockTexture.Pump] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_pump"));
-            blockTextures[(byte)BlockTexture.Compressor] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_compressor"));
+            blockTextures[(byte)BlockTexture.Barrel] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_barrel_side"));
+            blockTextures[(byte)BlockTexture.BarrelTop] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_barrel_top"));
             blockTextures[(byte)BlockTexture.Spring] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_spring"));
             blockTextures[(byte)BlockTexture.MagmaVent] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_magmavent"));
+            blockTextures[(byte)BlockTexture.MagmaBurst] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_magma"));
             blockTextures[(byte)BlockTexture.Fire] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_fire"));
             blockTextures[(byte)BlockTexture.StealthBlockR] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_dirt_trans"));
             blockTextures[(byte)BlockTexture.StealthBlockB] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_dirt_trans"));
@@ -215,8 +217,8 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.TrapVis] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_trapVis"));
             blockTextures[(byte)BlockTexture.Magma] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_magma"));
             blockTextures[(byte)BlockTexture.Lever] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism"));
-            blockTextures[(byte)BlockTexture.Plate] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism"));
-            blockTextures[(byte)BlockTexture.Hinge] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism"));
+            blockTextures[(byte)BlockTexture.Plate] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_metal"));
+            blockTextures[(byte)BlockTexture.Hinge] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_hinge"));
             blockTextures[(byte)BlockTexture.Construction] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_construction"));
            
             // Load our effects.

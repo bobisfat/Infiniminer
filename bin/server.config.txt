@@ -6,7 +6,7 @@ maxplayers = 16
 public = false
 
 # This value specifies the amount of cash required for a team to win the game.
-winningcash = 99999
+winningcash = 6
 
 # This flag specifies whether or not generated levels will include lava.
 includelava = true

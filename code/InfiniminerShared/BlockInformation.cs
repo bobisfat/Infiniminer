@@ -35,6 +35,8 @@ namespace Infiniminer
         BankBlue,
         BaseRed,
         BaseBlue,
+        ResearchR,
+        ResearchB,
         BeaconRed,
         BeaconBlue,
         Road,
@@ -48,13 +50,14 @@ namespace Infiniminer
         Generator,
         Controller,
         Pump,
-        Compressor,
+        Barrel,
         Pipe,
         TransRed,
         TransBlue,
         Water,
         Spring,
         MagmaVent,
+        MagmaBurst,
         Fire,
         Vacuum,
         TrapB,
@@ -129,7 +132,8 @@ namespace Infiniminer
         Generator,
         Controller,
         Pump,
-        Compressor,
+        Barrel,
+        BarrelTop,
         Pipe,
         Road,
         RoadTop,
@@ -138,6 +142,7 @@ namespace Infiniminer
         BeaconBlue,
         Spring,
         MagmaVent,
+        MagmaBurst,
         Fire,
         Water,
         Magma,
@@ -162,6 +167,76 @@ namespace Infiniminer
         ForceR,
         ForceB,
         MAXIMUM
+    }
+
+    public enum Research : byte
+    {
+        None,
+        ImpHealth,
+        Strength,
+        Regen,
+        MAXIMUM,
+        Range,
+        Blockcost,
+        Acro,
+        OreEfficiency
+        //MAXIMUM
+    }
+
+    public class ResearchInformation
+    {
+        static int[] researchCost = new int[10];
+        
+        static ResearchInformation()
+        {
+            for (int a = 0; a < 10; a++)
+            {
+                researchCost[a] = 50;
+            }
+
+            researchCost[(byte)Research.None] = 0;
+            researchCost[(byte)Research.ImpHealth] = 30;
+            researchCost[(byte)Research.Strength] = 50;
+            researchCost[(byte)Research.Regen] = 50;
+        }
+        
+        public static int GetCost(Research res)
+        {
+            return researchCost[(byte)res];
+        }
+
+        public static string GetName(Research res)
+        {
+            switch (res)
+            {
+                case Research.None:
+                    return "Nothing";
+                    break;
+                case Research.ImpHealth:
+                    return "Improved health";
+                    break;
+                case Research.Strength:
+                    return "Strength";
+                    break;
+                case Research.Regen:
+                    return "Health regeneration";
+                    break;
+             /*   case Research.Range:
+                    return "Increased swing range";
+                    break;
+                case Research.Blockcost:
+                    return "Lower block cost";
+                    break;
+                case Research.Acro:
+                    return "Higher jumping";
+                    break;
+                case Research.OreEfficiency:
+                    return "Doubles gain from each ore block";
+                    break;*/
+            }
+            return "";
+        }
+
     }
 
     public enum BlockFaceDirection : byte
@@ -192,6 +267,7 @@ namespace Infiniminer
             blockMaxHP[(byte)BlockType.Lava] = 0;
             blockMaxHP[(byte)BlockType.Spring] = 0;
             blockMaxHP[(byte)BlockType.MagmaVent] = 0;
+            blockMaxHP[(byte)BlockType.MagmaBurst] = 0;
             blockMaxHP[(byte)BlockType.Magma] = 0;
             blockMaxHP[(byte)BlockType.Fire] = 0;
             blockMaxHP[(byte)BlockType.BaseBlue] = 0;
@@ -203,6 +279,8 @@ namespace Infiniminer
             blockMaxHP[(byte)BlockType.Rock] = 0;
             blockMaxHP[(byte)BlockType.ForceR] = 0;
             blockMaxHP[(byte)BlockType.ForceB] = 0;
+            blockMaxHP[(byte)BlockType.TransRed] = 0;
+            blockMaxHP[(byte)BlockType.TransBlue] = 0;
 
             blockHP[(byte)BlockType.ConstructionR] = 100;
             blockMaxHP[(byte)BlockType.ConstructionR] = 200;
@@ -238,9 +316,8 @@ namespace Infiniminer
 
             blockHP[(byte)BlockType.SolidBlue2] = 50;
             blockMaxHP[(byte)BlockType.SolidBlue2] = 100;
-
         }
-
+        
         public static int GetHP(BlockType blockType)
         {
             return blockHP[(byte)blockType];
@@ -264,7 +341,7 @@ namespace Infiniminer
         //        case BlockType.Generator:
         //        case BlockType.Controller:
         //        case BlockType.Pump:
-        //        case BlockType.Compressor:
+        //        case BlockType.Barrel:
         //        case BlockType.Lava:
         //        case BlockType.Dirt:
         //        case BlockType.Pipe:
@@ -304,20 +381,23 @@ namespace Infiniminer
                 case BlockType.ArtCaseB:
                 case BlockType.BankRed:
                 case BlockType.BankBlue:
+                case BlockType.ResearchR:
+                case BlockType.ResearchB:
+                case BlockType.Barrel:
                     return 200;
                 case BlockType.BeaconRed:
                 case BlockType.BeaconBlue:
+                    return 100;
                 case BlockType.Lever:
                 case BlockType.Plate:
                 case BlockType.Hinge:
                 case BlockType.SolidRed:
                 case BlockType.SolidBlue:
-                    return 50;
+                    return 10;
                 case BlockType.Water:
                 case BlockType.Generator:
                 case BlockType.Controller:
                 case BlockType.Pump:
-                case BlockType.Compressor:
                 case BlockType.Lava:
                 case BlockType.Dirt:
                 case BlockType.Pipe:
@@ -332,12 +412,12 @@ namespace Infiniminer
                 case BlockType.Metal:
                 case BlockType.TransRed:
                 case BlockType.TransBlue:
-                    return 25;
+                    return 10;
 
                 case BlockType.Road:
                     return 10;
                 case BlockType.Jump:
-                    return 25;
+                    return 100;
                 case BlockType.Ladder:
                     return 25;
                 case BlockType.Shock:
@@ -366,8 +446,16 @@ namespace Infiniminer
                     return BlockTexture.Controller;
                 case BlockType.Pump:
                     return BlockTexture.Pump;
-                case BlockType.Compressor:
-                    return BlockTexture.Compressor;
+                case BlockType.Barrel:
+                    switch (faceDir)
+                    {
+                        case BlockFaceDirection.XIncreasing: return BlockTexture.Barrel;
+                        case BlockFaceDirection.XDecreasing: return BlockTexture.Barrel;
+                        case BlockFaceDirection.ZIncreasing: return BlockTexture.Barrel;
+                        case BlockFaceDirection.ZDecreasing: return BlockTexture.Barrel;
+                        case BlockFaceDirection.YDecreasing: return BlockTexture.LadderTop;
+                        default: return BlockTexture.BarrelTop;
+                    }
                 case BlockType.Hinge:
                     return BlockTexture.Hinge;
                 case BlockType.Pipe:
@@ -390,6 +478,8 @@ namespace Infiniminer
                     return BlockTexture.Spring;
                 case BlockType.MagmaVent:
                     return BlockTexture.MagmaVent;
+                case BlockType.MagmaBurst:
+                    return BlockTexture.MagmaBurst;
                 case BlockType.Fire:
                     return BlockTexture.Fire;
                 case BlockType.Ore:
@@ -491,6 +581,23 @@ namespace Infiniminer
                             return BlockTexture.LadderTop;
                         case BlockFaceDirection.YIncreasing:
                             return blockType == BlockType.RadarRed ? BlockTexture.BeaconRed : BlockTexture.BeaconBlue;
+                        case BlockFaceDirection.XDecreasing:
+                        case BlockFaceDirection.XIncreasing:
+                            return BlockTexture.TeleSideA;
+                        case BlockFaceDirection.ZDecreasing:
+                        case BlockFaceDirection.ZIncreasing:
+                            return BlockTexture.TeleSideB;
+                    }
+                    break;
+
+                case BlockType.ResearchR:
+                case BlockType.ResearchB:
+                    switch (faceDir)
+                    {
+                        case BlockFaceDirection.YDecreasing:
+                            return BlockTexture.LadderTop;
+                        case BlockFaceDirection.YIncreasing:
+                            return blockType == BlockType.ResearchR ? BlockTexture.BeaconRed : BlockTexture.BeaconBlue;
                         case BlockFaceDirection.XDecreasing:
                         case BlockFaceDirection.XIncreasing:
                             return BlockTexture.TeleSideA;

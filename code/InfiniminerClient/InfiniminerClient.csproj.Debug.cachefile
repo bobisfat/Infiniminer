@@ -170,8 +170,11 @@ Content\sounds\radar-high.xnb
 Content\sounds\radar-low.xnb
 Content\sounds\rockfall.xnb
 Content\song_title.xnb
-Content\tmp.xnb
 Content\models\basketball.xnb
 Content\sprites\tex_sprite_diamond.xnb
+Content\icons\tex_icon_plate.xnb
+Content\blocks\tex_block_hinge.xnb
+Content\icons\tex_icon_research.xnb
+Content\blocks\tex_block_barrel_side.xnb
+Content\blocks\tex_block_barrel_top.xnb
 Content\song_title.wma
-Content\tmp.wma

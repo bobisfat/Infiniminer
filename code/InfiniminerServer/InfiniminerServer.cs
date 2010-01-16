@@ -15,6 +15,10 @@ namespace Infiniminer
         public BlockType[, ,] blockList = null;    // In game coordinates, where Y points up.
         public Int32[, , ,] blockListContent = null;
         public Int32[, ,] blockListHP = null;
+        public bool[,,] allowBlock = null;
+        public Int32[,] ResearchComplete = null;
+        public Int32[,] ResearchProgress = null;
+
         PlayerTeam[, ,] blockCreatorTeam = null;
         Dictionary<PlayerTeam, PlayerBase> basePosition = new Dictionary<PlayerTeam, PlayerBase>();
         PlayerBase RedBase;
@@ -60,8 +64,11 @@ namespace Infiniminer
         uint teamCashBlue = 0;
         uint teamOreRed = 0;
         uint teamOreBlue = 0;
+        uint teamArtifactsRed = 0;
+        uint teamArtifactsBlue = 0;
+        int[] teamRegeneration = { 0, 0, 0 };
+        uint winningCashAmount = 6;
 
-        uint winningCashAmount = 10000;
         PlayerTeam winningTeam = PlayerTeam.None;
 
         bool[, ,] flowSleep = new bool[64, 64, 64]; //if true, do not calculate this turn
@@ -1697,7 +1704,14 @@ namespace Infiniminer
                 beaconList[new Vector3(x, y, z)] = newBeacon;
                 SendSetBeacon(new Vector3(x, y+1, z), newBeacon.ID, newBeacon.Team);
             }
-            else if(blockType == BlockType.Pipe)
+            else if (blockType == BlockType.ResearchR || blockType == BlockType.ResearchB)
+            {
+                blockListContent[x, y, z, 1] = 0;//activated
+                blockListContent[x, y, z, 2] = 0;//topic
+                blockListContent[x, y, z, 3] = 0;//progress points
+                blockListContent[x, y, z, 4] = 0;//timer between updates
+            }
+            else if (blockType == BlockType.Pipe)
             {
                 blockListContent[x, y, z, 1] = 0;//Is pipe connected? [0-1]
                 blockListContent[x, y, z, 2] = 0;//Is pipe a source? [0-1]
@@ -1708,7 +1722,7 @@ namespace Infiniminer
                 blockListContent[x, y, z, 7] = 0;//src z
                 blockListContent[x, y, z, 8] = 0;//pipe must not contain liquid
             }
-            else if (blockType == BlockType.Compressor)
+            else if (blockType == BlockType.Barrel)
             {
                 blockListContent[x, y, z, 1] = 0;//containtype
                 blockListContent[x, y, z, 2] = 0;//amount
@@ -1810,7 +1824,7 @@ namespace Infiniminer
                 blockListContent[x, y, z, 7] = 0;//src z
                 blockListContent[x, y, z, 8] = 0;//pipe must not contain liquid
             }
-            else if (blockType == BlockType.Compressor)
+            else if (blockType == BlockType.Barrel)
             {
                 blockListContent[x, y, z, 1] = 0;//containtype
                 blockListContent[x, y, z, 2] = 0;//amount
@@ -1872,27 +1886,114 @@ namespace Infiniminer
         public void createBase(PlayerTeam team)
         {
             int pos = randGen.Next(10, 50);
+            int posy = 61 - randGen.Next(10, 20);
+
             if(team == PlayerTeam.Red)
             {
+                for (int a = -10; a < 10; a++)
+                    for (int b = -3; b < 3; b++)
+                        for (int c = -10; c < 10; c++)//clear rock
+                        {
+                            if (blockList[pos + a, posy + b, 50 + c] == BlockType.Rock)
+                            {
+                                blockList[pos + a, posy + b, 50 + c] = BlockType.Dirt;
+                            }
+                        }
+
+                for (int a = -3; a < 3; a++)
+                    for (int b = -2; b < 3; b++)
+                        for (int c = -3; c < 3; c++)//place outer shell
+                        {
+                            blockList[pos + a, posy + b, 50 + c] = BlockType.SolidRed2;
+                            blockListHP[pos + a, posy + b, 50 + c] = 400;
+                            blockCreatorTeam[pos + a, posy + b, 50 + c] = PlayerTeam.None;
+                        }
+
+                for (int a = -2; a < 2; a++)
+                    for (int b = -1; b < 2; b++)
+                        for (int c = -2; c < 2; c++)//prevent players from adding stuff to it
+                        {
+                            blockList[pos + a, posy + b, 50 + c] = BlockType.Vacuum;
+                        }
+
+                blockList[pos, posy - 1, 50 - 3] = BlockType.TransRed;
+                blockList[pos, posy, 50 - 3] = BlockType.TransRed;
+                blockList[pos-1, posy - 1, 50 - 3] = BlockType.TransRed;
+                blockList[pos-1, posy, 50 - 3] = BlockType.TransRed;
+
+                blockList[pos, posy - 1, 50 - 4] = BlockType.None;
+                blockList[pos, posy, 50 - 4] = BlockType.None;
+                blockList[pos - 1, posy - 1, 50 - 4] = BlockType.None;
+                blockList[pos - 1, posy, 50 - 4] = BlockType.None;
+
                 RedBase = new PlayerBase();
                 basePosition.Add(PlayerTeam.Red,RedBase);
                 basePosition[PlayerTeam.Red].team = PlayerTeam.Red;
                 basePosition[PlayerTeam.Red].X = pos;
-                basePosition[PlayerTeam.Red].Y = 61;
+                basePosition[PlayerTeam.Red].Y = posy;
                 basePosition[PlayerTeam.Red].Z = 50;
-                blockList[pos, 61, 50] = BlockType.BaseRed;
-                blockCreatorTeam[pos, 61, 50] = PlayerTeam.Red;
+                blockList[pos - 2, posy - 1, 51] = BlockType.BaseRed;
+                //SetBlock((ushort)(pos - 2), (ushort)(posy - 1), 50, BlockType.BeaconRed, PlayerTeam.Red);
+                blockList[pos - 2, posy - 1, 49] = BlockType.BankRed;
+
+                Beacon newBeacon = new Beacon();
+                newBeacon.ID = "HOME";
+                newBeacon.Team = PlayerTeam.Red;
+                beaconList[new Vector3(pos - 2, posy - 1, 50)] = newBeacon;
+                SendSetBeacon(new Vector3(pos - 2, posy, 50), newBeacon.ID, newBeacon.Team);
             }
             else
             {
+                for (int a = -10; a < 10; a++)
+                    for (int b = -3; b < 3; b++)
+                        for (int c = -10; c < 10; c++)
+                        {
+                            if (blockList[pos + a, posy + b, 14 + c] == BlockType.Rock)
+                            {
+                                blockList[pos + a, posy + b, 14 + c] = BlockType.Dirt;
+                            }
+                        }
+
+                for (int a = -3; a < 3; a++)
+                    for (int b = -3; b < 3; b++)
+                        for (int c = -3; c < 3; c++)
+                        {
+                            blockList[pos + a, posy + b, 14 + c] = BlockType.SolidBlue2;
+                            blockListHP[pos + a, posy + b, 14 + c] = 400;
+                            blockCreatorTeam[pos + a, posy + b, 14 + c] = PlayerTeam.None;
+                        }
+
+                for (int a = -2; a < 2; a++)
+                    for (int b = -1; b < 2; b++)
+                        for (int c = -2; c < 2; c++)
+                        {
+                            blockList[pos + a, posy + b, 14 + c] = BlockType.Vacuum;
+                        }
+
+                blockList[pos, posy - 1, 14 + 2] = BlockType.TransBlue;
+                blockList[pos, posy, 14 + 2] = BlockType.TransBlue;
+                blockList[pos - 1, posy - 1, 14 + 2] = BlockType.TransBlue;
+                blockList[pos - 1, posy, 14 + 2] = BlockType.TransBlue;
+
+                blockList[pos, posy - 1, 14 + 3] = BlockType.None;
+                blockList[pos, posy, 14 + 3] = BlockType.None;
+                blockList[pos - 1, posy - 1, 14 + 3] = BlockType.None;
+                blockList[pos - 1, posy, 14 + 3] = BlockType.None;
+
                 BlueBase = new PlayerBase();
                 basePosition.Add(PlayerTeam.Blue,BlueBase);
                 basePosition[PlayerTeam.Blue].team = PlayerTeam.Blue;
                 basePosition[PlayerTeam.Blue].X = pos;
-                basePosition[PlayerTeam.Blue].Y = 61;
+                basePosition[PlayerTeam.Blue].Y = posy;
                 basePosition[PlayerTeam.Blue].Z = 14;
-                blockList[pos, 61, 14] = BlockType.BaseBlue;
-                blockCreatorTeam[pos, 61, 14] = PlayerTeam.Blue;
+                blockList[pos-2, posy-1, 13] = BlockType.BaseBlue;
+                blockList[pos-2, posy-1, 15] = BlockType.BankBlue;
+                //SetBlock((ushort)(pos - 2), (ushort)(posy - 1), 14, BlockType.BeaconBlue, PlayerTeam.Blue);
+                Beacon newBeacon = new Beacon();
+                newBeacon.ID = "HOME";
+                newBeacon.Team = PlayerTeam.Blue;
+                beaconList[new Vector3(pos - 2, posy - 1, 14)] = newBeacon;
+                SendSetBeacon(new Vector3(pos - 2, posy, 14), newBeacon.ID, newBeacon.Team);
             }
         }
         public int newMap()
@@ -1906,6 +2007,114 @@ namespace Infiniminer
             blockListContent = new Int32[MAPSIZE, MAPSIZE, MAPSIZE, 50];
             blockListHP = new Int32[MAPSIZE, MAPSIZE, MAPSIZE];
             blockCreatorTeam = new PlayerTeam[MAPSIZE, MAPSIZE, MAPSIZE];
+
+            ResearchComplete = new Int32[3,20];
+            ResearchProgress = new Int32[3,20];
+            allowBlock = new bool[3, 6, (byte)BlockType.MAXIMUM];
+
+            for (ushort ct = 0; ct < 3; ct++)
+            {
+                for (ushort ca = 0; ca < 6; ca++)
+                {
+                    for (ushort cb = 0; cb < (byte)BlockType.MAXIMUM; cb++)
+                    {
+                        allowBlock[ct, ca, cb] = false;
+                    }
+                }
+            }
+
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.SolidRed] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.ArtCaseR] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.BankRed] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.BeaconRed] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Barrel] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.GlassR] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Hinge] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Jump] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Ladder] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Lever] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Metal] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Pipe] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Pump] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.RadarRed] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.ResearchR] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Shock] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.StealthBlockR] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.TrapR] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Engineer, (byte)BlockType.Plate] = true;
+
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.SolidBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.ArtCaseB] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.BankBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.BeaconBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Barrel] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.GlassB] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Hinge] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Jump] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Ladder] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Lever] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Metal] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Pipe] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Pump] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.RadarBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.ResearchB] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Shock] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.StealthBlockB] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.TrapR] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Engineer, (byte)BlockType.Plate] = true;
+
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Miner, (byte)BlockType.SolidRed] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Miner, (byte)BlockType.BeaconRed] = true; 
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Miner, (byte)BlockType.Hinge] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Miner, (byte)BlockType.Lever] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Miner, (byte)BlockType.Shock] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Miner, (byte)BlockType.Plate] = true;
+
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Miner, (byte)BlockType.SolidBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Miner, (byte)BlockType.BeaconBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Miner, (byte)BlockType.Hinge] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Miner, (byte)BlockType.Lever] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Miner, (byte)BlockType.Shock] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Miner, (byte)BlockType.Plate] = true;
+
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Prospector, (byte)BlockType.SolidRed] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Prospector, (byte)BlockType.BeaconRed] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Prospector, (byte)BlockType.Hinge] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Prospector, (byte)BlockType.Lever] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Prospector, (byte)BlockType.Shock] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Prospector, (byte)BlockType.Plate] = true;
+
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Prospector, (byte)BlockType.SolidBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Prospector, (byte)BlockType.BeaconBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Prospector, (byte)BlockType.Hinge] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Prospector, (byte)BlockType.Lever] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Prospector, (byte)BlockType.Shock] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Prospector, (byte)BlockType.Plate] = true;
+
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Sapper, (byte)BlockType.SolidRed] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Sapper, (byte)BlockType.BeaconRed] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Sapper, (byte)BlockType.Hinge] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Sapper, (byte)BlockType.Lever] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Sapper, (byte)BlockType.Shock] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Sapper, (byte)BlockType.Explosive] = true;
+            allowBlock[(byte)PlayerTeam.Red, (byte)PlayerClass.Sapper, (byte)BlockType.Plate] = true;
+
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Sapper, (byte)BlockType.SolidBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Sapper, (byte)BlockType.BeaconBlue] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Sapper, (byte)BlockType.Hinge] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Sapper, (byte)BlockType.Lever] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Sapper, (byte)BlockType.Shock] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Sapper, (byte)BlockType.Explosive] = true;
+            allowBlock[(byte)PlayerTeam.Blue, (byte)PlayerClass.Sapper, (byte)BlockType.Plate] = true;
+
+            for (ushort c = 0; c < 5; c++)
+            {
+                ResearchComplete[1, c] = 0;
+                ResearchProgress[1, c] = ResearchInformation.GetCost((Research)c);
+                ResearchComplete[2, c] = 0;
+                ResearchProgress[2, c] = ResearchInformation.GetCost((Research)c);
+            }
+
             for (ushort i = 0; i < MAPSIZE; i++)
                 for (ushort j = 0; j < MAPSIZE; j++)
                     for (ushort k = 0; k < MAPSIZE; k++)
@@ -1929,6 +2138,11 @@ namespace Infiniminer
                         {
                             blockListHP[i, (ushort)(MAPSIZE - 1 - k), j] = 120;
                         }
+                        else
+                        {
+                           
+                        }
+
                         blockCreatorTeam[i, j, k] = PlayerTeam.None;
 
                         if (i < 1 || j < 1 || k < 1 || i > MAPSIZE - 2 || j > MAPSIZE - 2 || k > MAPSIZE - 2)
@@ -1937,6 +2151,28 @@ namespace Infiniminer
                         }                        
                     }
 
+            for (ushort i = 0; i < MAPSIZE; i++)
+                for (ushort j = 0; j < MAPSIZE; j++)
+                    for (ushort k = 0; k < MAPSIZE; k++)
+                    {
+                        if (blockList[i, (ushort)(MAPSIZE - 1 - k), j] != BlockType.MagmaVent && blockList[i, (ushort)(MAPSIZE - 1 - k), j] != BlockType.Spring)
+                            if (randGen.Next(500) == 1)
+                            {
+                                if (i < 1 || j < 1 || k < 1 || i > MAPSIZE - 2 || j > MAPSIZE - 2 || k > MAPSIZE - 2)
+                                {
+                                }
+                                else
+                                {
+                                    if (blockList[i - 1, (ushort)(MAPSIZE - 1 - k), j] != BlockType.None)
+                                        if (blockList[i + 1, (ushort)(MAPSIZE - 1 - k), j] != BlockType.None)
+                                            if (blockList[i, (ushort)(MAPSIZE - k), j] != BlockType.None)
+                                                if (blockList[i, (ushort)(MAPSIZE + 1 - k), j] != BlockType.None)
+                                                    if (blockList[i, (ushort)(MAPSIZE - 1 - k), j - 1] != BlockType.None)
+                                                        if (blockList[i, (ushort)(MAPSIZE - 1 - k), j + 1] != BlockType.None)
+                                                            blockList[i, (ushort)(MAPSIZE - 1 - k), j] = BlockType.MagmaBurst;
+                                }
+                            }
+                    }
             //add bases
             createBase(PlayerTeam.Red);
             createBase(PlayerTeam.Blue);
@@ -2106,6 +2342,7 @@ namespace Infiniminer
 
                 lavaBlockCount = 0;
                 waterBlockCount = 0;
+                int burstBlockCount = 0;
 
                 for (ushort i = 0; i < MAPSIZE; i++)
                     for (ushort j = 0; j < MAPSIZE; j++)
@@ -2119,9 +2356,13 @@ namespace Infiniminer
                             {
                                 waterBlockCount += 1;
                             }
+                            else if (blockList[i, j, k] == BlockType.MagmaBurst)
+                            {
+                                burstBlockCount += 1;
+                            }
                         }
 
-                ConsoleWrite(waterBlockCount + " water blocks, " + lavaBlockCount + " lava blocks."); 
+                ConsoleWrite(waterBlockCount + " water blocks, " + lavaBlockCount + " lava blocks, " + burstBlockCount + " possible bursts." ); 
             }
             else
             {
@@ -2131,7 +2372,7 @@ namespace Infiniminer
 
                 lavaBlockCount = 0;
                 waterBlockCount = 0;
-
+                int burstBlockCount = 0;
                 for (ushort i = 0; i < MAPSIZE; i++)
                     for (ushort j = 0; j < MAPSIZE; j++)
                         for (ushort k = 0; k < MAPSIZE; k++)
@@ -2144,9 +2385,13 @@ namespace Infiniminer
                             {
                                 waterBlockCount += 1;
                             }
+                            else if (blockList[i, j, k] == BlockType.MagmaBurst)
+                            {
+                                burstBlockCount += 1;
+                            }
                         }
 
-                ConsoleWrite(waterBlockCount + " water blocks, " + lavaBlockCount + " lava blocks.");           
+                ConsoleWrite(waterBlockCount + " water blocks, " + lavaBlockCount + " lava blocks, " + burstBlockCount + " possible bursts.");        
             }
             
             //Caculate the shape of spherical tnt explosions
@@ -2376,7 +2621,7 @@ namespace Infiniminer
                                                         SetRemote(player);
                                                         break;
                                                     case PlayerTools.SpawnItem:
-                                                        SpawnItem(player, playerPosition, playerHeading);
+                                                        //SpawnItem(player, playerPosition, playerHeading);
                                                         break;
                                                 }
                                             }
@@ -2391,9 +2636,9 @@ namespace Infiniminer
                                                 {
                                                     case PlayerClass.Engineer:
                                                         player.Class = playerClass;
-                                                        player.OreMax = 350;
-                                                        player.WeightMax = 4;
-                                                        player.HealthMax = 400;
+                                                        player.OreMax = 200 + (uint)(ResearchComplete[(byte)player.Team, 2] * 20);
+                                                        player.WeightMax = 4 + (uint)(ResearchComplete[(byte)player.Team, 2]);
+                                                        player.HealthMax = 100 + (uint)(ResearchComplete[(byte)player.Team,1]*20);
                                                         player.Health = player.HealthMax;
                                                         for (int a = 0; a < 100; a++)
                                                         {
@@ -2402,9 +2647,9 @@ namespace Infiniminer
                                                         break;
                                                     case PlayerClass.Miner://strong arm/throws blocks
                                                         player.Class = playerClass;
-                                                        player.OreMax = 200;
-                                                        player.WeightMax = 20;
-                                                        player.HealthMax = 400;
+                                                        player.OreMax = 100 + (uint)(ResearchComplete[(byte)player.Team, 2] * 20);
+                                                        player.WeightMax = 10 + (uint)(ResearchComplete[(byte)player.Team, 2]);
+                                                        player.HealthMax = 100 + (uint)(ResearchComplete[(byte)player.Team, 1] * 20);
                                                         player.Health = player.HealthMax;
                                                         for (int a = 0; a < 100; a++)
                                                         {
@@ -2413,9 +2658,9 @@ namespace Infiniminer
                                                         break;
                                                     case PlayerClass.Prospector://profiteer/has prospectron/stealth/climb/traps
                                                         player.Class = playerClass;
-                                                        player.OreMax = 200;
-                                                        player.WeightMax = 4;
-                                                        player.HealthMax = 400;
+                                                        player.OreMax = 100 + (uint)(ResearchComplete[(byte)player.Team, 2] * 20);
+                                                        player.WeightMax = 6 + (uint)(ResearchComplete[(byte)player.Team, 2]);
+                                                        player.HealthMax = 100 + (uint)(ResearchComplete[(byte)player.Team, 1] * 20);
                                                         player.Health = player.HealthMax;
                                                         for (int a = 0; a < 100; a++)
                                                         {
@@ -2424,9 +2669,9 @@ namespace Infiniminer
                                                         break;
                                                     case PlayerClass.Sapper://berserker/charge that knocks people and blocks away/repairs block
                                                         player.Class = playerClass;
-                                                        player.OreMax = 200;
-                                                        player.WeightMax = 4;
-                                                        player.HealthMax = 400;
+                                                        player.OreMax = 100 + (uint)(ResearchComplete[(byte)player.Team, 2] * 20);
+                                                        player.WeightMax = 4 + (uint)(ResearchComplete[(byte)player.Team, 2]);
+                                                        player.HealthMax = 100 + (uint)(ResearchComplete[(byte)player.Team, 1] * 20);
                                                         player.Health = player.HealthMax;
                                                         for (int a = 0; a < 100; a++)
                                                         {
@@ -2589,7 +2834,7 @@ namespace Infiniminer
                                                 uint btny = msgBuffer.ReadUInt32();
                                                 uint btnz = msgBuffer.ReadUInt32();
 
-                                                //if (blockList[btnx, btny, btnz] == BlockType.Pump || blockList[btnx, btny, btnz] == BlockType.Pipe || blockList[btnx, btny, btnz] == BlockType.Generator || blockList[btnx, btny, btnz] == BlockType.Compressor || blockList[btnx, btny, btnz] == BlockType.Switch)
+                                                //if (blockList[btnx, btny, btnz] == BlockType.Pump || blockList[btnx, btny, btnz] == BlockType.Pipe || blockList[btnx, btny, btnz] == BlockType.Generator || blockList[btnx, btny, btnz] == BlockType.Barrel || blockList[btnx, btny, btnz] == BlockType.Switch)
                                                 //{
                                                     if (Get3DDistance((int)btnx, (int)btny, (int)btnz, (int)player.Position.X, (int)player.Position.Y, (int)player.Position.Z) < 4)
                                                     {
@@ -2616,7 +2861,11 @@ namespace Infiniminer
 
                                         case InfiniminerMessage.PlayerPing:
                                             {
-                                                SendPlayerPing((uint)msgBuffer.ReadInt32());
+                                                if (player.Ping == 0)
+                                                {
+                                                    SendPlayerPing((uint)msgBuffer.ReadInt32());
+                                                    player.Ping = 2;
+                                                }
                                             }
                                             break;
 
@@ -2659,11 +2908,11 @@ namespace Infiniminer
                 TerminateFinishedThreads();
 
                 // Check for players who are in the zone to deposit.
-                DepositForPlayers();
+                VictoryCheck();
                     
                 // Is it time to do a lava calculation? If so, do it!
                 TimeSpan timeSpan = DateTime.Now - sysTimer;
-                if (timeSpan.TotalMilliseconds > 250)
+                if (timeSpan.TotalMilliseconds > 2000)
                 {
                     //ConsoleWrite("" + delta);
                     sysTimer = DateTime.Now;
@@ -2678,16 +2927,45 @@ namespace Infiniminer
 
                     foreach (Player p in playerList.Values)//regeneration
                     {
+                        if (p.Ping > 0)
+                            p.Ping--;
+
                         if (p.Alive)
+                        {
                             if (p.Health >= p.HealthMax)
                             {
                                 p.Health = p.HealthMax;
                             }
                             else
                             {
-                                p.Health = p.Health + 1;
+                                p.Health = (uint)(p.Health + teamRegeneration[(byte)p.Team]);
                                 SendHealthUpdate(p);
                             }
+
+                            //if (p.Class == PlayerClass.Prospector)//temperature data//giving everyone
+                            //{
+                            //    p.Content[6] = 0;
+                            //    for(int a = -5;a < 6;a++)
+                            //        for(int b = -5;b < 6;b++)
+                            //            for (int c = -5; c < 6; c++)
+                            //            {
+                            //                int nx = a + (int)p.Position.X;
+                            //                int ny = b + (int)p.Position.Y;
+                            //                int nz = c + (int)p.Position.Z;
+                            //                if (nx < MAPSIZE - 1 && ny < MAPSIZE - 1 && nz < MAPSIZE - 1 && nx > 0 && ny > 0 && nz > 0)
+                            //                {
+                            //                    BlockType block = blockList[nx,ny,nz];
+                            //                    if (block == BlockType.Lava || block == BlockType.MagmaBurst || block == BlockType.MagmaVent)
+                            //                    {
+                            //                        p.Content[6] += 5 - Math.Abs(a) + 5 - Math.Abs(b) + 5 - Math.Abs(c);
+                            //                    }
+                            //                }
+                            //            }
+
+                            //    if (p.Content[6] > 0)
+                            //        SendContentSpecificUpdate(p, 6);
+                            //}
+                        }
                     }
                 }
 
@@ -2769,19 +3047,19 @@ namespace Infiniminer
             return false;
         }
 
-        public void DepositForPlayers()
+        public void VictoryCheck()
         {
-            foreach (Player p in playerList.Values)
-            {
-                if (p.Position.Y > 64 - Defines.GROUND_LEVEL)
-                    DepositCash(p);
-            }
+            //foreach (Player p in playerList.Values)
+            //{
+              //  if (p.Position.Y > 64 - Defines.GROUND_LEVEL)
+             //       DepositCash(p);
+           // }
 
             if (varGetB("sandbox"))
                 return;
-            if (teamCashBlue >= winningCashAmount && winningTeam == PlayerTeam.None)
+            if (teamArtifactsBlue >= winningCashAmount && winningTeam == PlayerTeam.None)
                 winningTeam = PlayerTeam.Blue;
-            if (teamCashRed >= winningCashAmount && winningTeam == PlayerTeam.None)
+            if (teamArtifactsRed >= winningCashAmount && winningTeam == PlayerTeam.None)
                 winningTeam = PlayerTeam.Red;
         }
 
@@ -3111,6 +3389,7 @@ namespace Infiniminer
                                                     }
                                                 }
                                             }
+                                            
                                             SetBlock(i, j, k, oldblock, PlayerTeam.None);
                                         }
                                         else
@@ -3214,27 +3493,27 @@ namespace Infiniminer
                                     }
                                 }
 
-                                if (liquid == BlockType.Lava && blockListContent[i, j, k, 0] > 0)//upcoming volcano
-                                {
-                                    if (i - 1 > 0 && i + 1 < MAPSIZE - 1 && k - 1 > 0 && k + 1 < MAPSIZE - 1 )
-                                    if (blockList[i + 1, j, k] == BlockType.None || blockList[i - 1, j, k] == BlockType.None || blockList[i, j, k + 1] == BlockType.None || blockList[i, j, k - 1] == BlockType.None || blockList[i + 1, j, k] == BlockType.Lava || blockList[i - 1, j, k] == BlockType.Lava || blockList[i, j, k + 1] == BlockType.Lava || blockList[i, j, k - 1] == BlockType.Lava)
-                                    {//if air surrounds the magma, then decrease volcanos power
-                                        blockListContent[i, j, k, 0] = blockListContent[i, j, k, 0] - 1;
-                                        blockListContent[i, j, k, 1] = 240 + blockListContent[i, j, k, 0] * 4;//temperature lowers as volcano gets further from its source
-                                    }
+                                //if (liquid == BlockType.Lava && blockListContent[i, j, k, 0] > 0)//upcoming volcano
+                                //{
+                                //    if (i - 1 > 0 && i + 1 < MAPSIZE - 1 && k - 1 > 0 && k + 1 < MAPSIZE - 1 )
+                                //    if (blockList[i + 1, j, k] == BlockType.None || blockList[i - 1, j, k] == BlockType.None || blockList[i, j, k + 1] == BlockType.None || blockList[i, j, k - 1] == BlockType.None || blockList[i + 1, j, k] == BlockType.Lava || blockList[i - 1, j, k] == BlockType.Lava || blockList[i, j, k + 1] == BlockType.Lava || blockList[i, j, k - 1] == BlockType.Lava)
+                                //    {//if air surrounds the magma, then decrease volcanos power
+                                //        blockListContent[i, j, k, 0] = blockListContent[i, j, k, 0] - 1;
+                                //        blockListContent[i, j, k, 1] = 240 + blockListContent[i, j, k, 0] * 4;//temperature lowers as volcano gets further from its source
+                                //    }
 
-                                    int x = randGen.Next(-1, 1);
-                                    int z = randGen.Next(-1, 1);
+                                //    int x = randGen.Next(-1, 1);
+                                //    int z = randGen.Next(-1, 1);
 
-                                    if (i + x > 0 && i + x < MAPSIZE - 1 && k + z > 0 && k + z < MAPSIZE - 1 && j + 1 < MAPSIZE - 1)
-                                        if (blockList[i + x, j + 1, k + z] != BlockType.Rock)
-                                        {
-                                            SetBlock((ushort)(i + x), (ushort)(j + 1), (ushort)(k + z), liquid, PlayerTeam.None);
-                                            blockListContent[i + x, j + 1, k + z, 0] = blockListContent[i, j, k, 0] - 1;//volcano strength decreases every upblock
-                                            blockListContent[i + x, j + 1, k + z, 1] = randGen.Next(blockListContent[i, j, k, 0]*3, blockListContent[i, j, k, 0]*4);//give it temperature
-                                        }
+                                //    if (i + x > 0 && i + x < MAPSIZE - 1 && k + z > 0 && k + z < MAPSIZE - 1 && j + 1 < MAPSIZE - 1)
+                                //        if (blockList[i + x, j + 1, k + z] != BlockType.Rock)
+                                //        {
+                                //            SetBlock((ushort)(i + x), (ushort)(j + 1), (ushort)(k + z), liquid, PlayerTeam.None);
+                                //            blockListContent[i + x, j + 1, k + z, 0] = blockListContent[i, j, k, 0] - 1;//volcano strength decreases every upblock
+                                //            blockListContent[i + x, j + 1, k + z, 1] = randGen.Next(blockListContent[i, j, k, 0]*3, blockListContent[i, j, k, 0]*4);//give it temperature
+                                //        }
 
-                                }
+                                //}
 
                                 if (typeBelow != liquid && varGetB("insane") || liquid == BlockType.Fire)
                                 {
@@ -3690,10 +3969,12 @@ namespace Infiniminer
                                 }
                                 */
                             }
-                            else if (blockList[i, j, k] == BlockType.Compressor)
+                            else if (blockList[i, j, k] == BlockType.Barrel)
                             {//docompressorstuff
-                                if (blockListContent[i, j, k, 0] == 1)//active
+
+                                if (blockListContent[i, j, k, 0] == 1)
                                 {
+                                    if (blockListContent[i, j, k, 2] < 20)//not full
                                     for (ushort a = (ushort)(-1 + i); a < 2 + i; a++)
                                     {
                                         for (ushort b = (ushort)(-1 + j); b < 2 + j; b++)
@@ -3769,6 +4050,20 @@ namespace Infiniminer
                                         blockListContent[i, j, k, 1] = 0;
                                     }
                                 }
+
+                                if (j + 1 < MAPSIZE && j - 1 > 0 && i - 1 > 0 && i + 1 < MAPSIZE && k - 1 > 0 && k + 1 < MAPSIZE)
+                                    if (blockList[i, j - 1, k] == BlockType.None)
+                                    {//no block above or below, so fall
+                                        blockListContent[i, j, k, 10] = frameid;
+                                        blockListContent[i, j, k, 11] = 0;
+                                        blockListContent[i, j, k, 12] = -100;
+                                        blockListContent[i, j, k, 13] = 0;
+                                        blockListContent[i, j, k, 14] = i * 100;
+                                        blockListContent[i, j, k, 15] = j * 100;
+                                        blockListContent[i, j, k, 16] = k * 100;
+                                        blockListContent[i, j, k, 0] = 0;//empty
+                                        continue;
+                                    }
                             }
                             else if (blockList[i, j, k] == BlockType.Spring)
                             {//dospringstuff
@@ -3782,6 +4077,98 @@ namespace Infiniminer
                                 if (blockList[i, j - 1, k] == BlockType.None)
                                 {
                                     SetBlock(i, (ushort)(j - 1), k, BlockType.Lava, PlayerTeam.None);
+                                }
+                            }
+                            else if (blockList[i, j, k] == BlockType.MagmaBurst)
+                            {//dospringstuff
+                                if (blockListContent[i, j, k, 0] < 10 && blockListContent[i, j, k, 1] > 0)
+                                {
+                                    blockListContent[i, j, k, 0]++;
+
+                                    if (j > 0)
+                                        if (blockList[i, j - 1, k] == BlockType.None)
+                                        {
+                                            SetBlock(i, (ushort)(j - 1), k, BlockType.Lava, PlayerTeam.None);
+                                            blockListContent[i, j - 1, k, 1] = 40;
+                                        }
+
+                                    if (j < MAPSIZE - 1)
+                                        if (blockList[i, j + 1, k] == BlockType.None)
+                                        {
+                                            SetBlock(i, (ushort)(j + 1), k, BlockType.Lava, PlayerTeam.None);
+                                            blockListContent[i, j + 1, k, 1] = 40;
+                                        }
+
+                                    if (i > 0)
+                                        if (blockList[i - 1, j, k] == BlockType.None)
+                                        {
+                                            SetBlock((ushort)(i - 1), j, k, BlockType.Lava, PlayerTeam.None);
+                                            blockListContent[i - 1, j, k, 1] = 40;
+                                        }
+
+                                    if (i < MAPSIZE - 1)
+                                        if (blockList[i + 1, j, k] == BlockType.None)
+                                        {
+                                            SetBlock((ushort)(i + 1), j, k, BlockType.Lava, PlayerTeam.None);
+                                            blockListContent[i + 1, j, k, 1] = 40;
+                                        }
+
+                                    if (k > 0)
+                                        if (blockList[i, j, k - 1] == BlockType.None)
+                                        {
+                                            SetBlock(i, j, (ushort)(k - 1), BlockType.Lava, PlayerTeam.None);
+                                            blockListContent[i, j, k - 1, 0] = 40;
+                                        }
+
+                                    if (k < MAPSIZE - 1)
+                                        if (blockList[i, j, k + 1] == BlockType.None)
+                                        {
+                                            SetBlock(i, j, (ushort)(k + 1), BlockType.Lava, PlayerTeam.None);
+                                            blockListContent[i, j, k + 1, 0] = 40;
+                                        }
+                                }
+                                else if (blockListContent[i, j, k, 1] < 1)//priming time / 400ms
+                                {
+                                    if (j > 0)
+                                        if (blockList[i, j - 1, k] == BlockType.None)
+                                        {
+                                            blockListContent[i, j, k, 1]++;
+                                        }
+
+                                    if (j < MAPSIZE - 1)
+                                        if (blockList[i, j + 1, k] == BlockType.None)
+                                        {
+                                            blockListContent[i, j, k, 1]++;
+                                        }
+
+                                    if (i > 0)
+                                        if (blockList[i - 1, j, k] == BlockType.None)
+                                        {
+                                            blockListContent[i, j, k, 1]++;
+                                        }
+
+                                    if (i < MAPSIZE - 1)
+                                        if (blockList[i + 1, j, k] == BlockType.None)
+                                        {
+                                            blockListContent[i, j, k, 1]++;
+                                        }
+
+                                    if (k > 0)
+                                        if (blockList[i, j, k - 1] == BlockType.None)
+                                        {
+                                            blockListContent[i, j, k, 1]++;
+                                        }
+
+                                    if (k < MAPSIZE - 1)
+                                        if (blockList[i, j, k + 1] == BlockType.None)
+                                        {
+                                            blockListContent[i, j, k, 1]++;
+                                        }
+                                }
+                                else//run out of magma
+                                {
+                                    SetBlock(i, j, k, BlockType.Gold, PlayerTeam.None);
+                                    blockListHP[i, j, k] = BlockInformation.GetHP(BlockType.Gold);
                                 }
                             }
                             else if (blockList[i, j, k] == BlockType.Mud)//mud dries out
@@ -3942,30 +4329,289 @@ namespace Infiniminer
                                 }
 
                             }
-                            else if (blockList[i, j, k] == BlockType.BaseBlue || blockList[i, j, k] == BlockType.BaseRed)
+                            else if (blockList[i, j, k] == BlockType.ResearchB && blockListContent[i, j, k, 0] > 0)
                             {
                                 if (blockListContent[i, j, k, 1] > 0)
                                 {
-                                    if (teamCashBlue > 4 && blockList[i, j, k] == BlockType.BaseBlue)
+                                    if (teamCashBlue > 0 && ResearchProgress[(byte)PlayerTeam.Blue, blockListContent[i, j, k, 1]] > 0 && blockListContent[i, j, k, 4] == 0)
                                     {
-                                        blockListContent[i, j, k, 1]--;
-                                        teamCashBlue -= 5;
+                                        ResearchProgress[(byte)PlayerTeam.Blue, blockListContent[i, j, k, 1]]--;
 
-                                        NetBuffer msgBuffer = netServer.CreateBuffer();
-                                        foreach (NetConnection netConn in playerList.Keys)
-                                            if (netConn.Status == NetConnectionStatus.Connected)
-                                                SendTeamCashUpdate(playerList[netConn]); 
-                                        
-                                    }
-                                    else if (teamCashRed > 4 && blockList[i, j, k] == BlockType.BaseRed)
-                                    {
-                                        blockListContent[i, j, k, 1]--;
-                                        teamCashRed -= 5;
+                                        blockListContent[i, j, k, 4] = 3;//timer
+                                        blockListContent[i, j, k, 3] = 0;//message warnings
+                                        teamCashBlue -= 1;
 
                                         NetBuffer msgBuffer = netServer.CreateBuffer();
                                         foreach (NetConnection netConn in playerList.Keys)
                                             if (netConn.Status == NetConnectionStatus.Connected)
                                                 SendTeamCashUpdate(playerList[netConn]);
+
+                                        if (ResearchProgress[(byte)PlayerTeam.Blue, blockListContent[i, j, k, 1]] == 0)//research complete
+                                        {
+                                            ResearchComplete[(byte)PlayerTeam.Blue, blockListContent[i, j, k, 1]]++;//increase rank
+                                            ResearchProgress[(byte)PlayerTeam.Blue, blockListContent[i, j, k, 1]] = ResearchInformation.GetCost((Research)blockListContent[i, j, k, 1]) * (ResearchComplete[(byte)PlayerTeam.Blue, blockListContent[i, j, k, 1]] + 1);
+                                            NetBuffer msgBufferr = netServer.CreateBuffer();
+                                            msgBufferr = netServer.CreateBuffer();
+                                            msgBufferr.Write((byte)InfiniminerMessage.ChatMessage);
+
+                                            msgBufferr.Write((byte)ChatMessageType.SayBlueTeam);
+                                            if (ResearchComplete[(byte)PlayerTeam.Blue, blockListContent[i, j, k, 1]] == 1)//first rank
+                                                msgBufferr.Write(Defines.Sanitize(ResearchInformation.GetName((Research)blockListContent[i, j, k, 1]) + " research was completed!"));
+                                            else
+                                                msgBufferr.Write(Defines.Sanitize(ResearchInformation.GetName((Research)blockListContent[i, j, k, 1]) + " rank " + ResearchComplete[(byte)PlayerTeam.Blue, blockListContent[i, j, k, 1]] + " research was completed!"));
+                                            foreach (NetConnection netConn in playerList.Keys)
+                                                if (netConn.Status == NetConnectionStatus.Connected)
+                                                    if (playerList[netConn].Team == PlayerTeam.Blue)
+                                                        netServer.SendMessage(msgBufferr, netConn, NetChannel.ReliableUnordered); 
+
+                                            //recalculate player statistics/buffs
+                                            ResearchRecalculate(PlayerTeam.Blue, blockListContent[i, j, k, 1]);
+                                            //
+                                            blockListContent[i, j, k, 1] = 0;
+                                            blockListContent[i, j, k, 0] = 0;
+                                        }
+                                    }
+                                    else if (blockListContent[i, j, k, 4] > 0)
+                                    {
+                                        blockListContent[i, j, k, 4]--;
+                                    }
+                                    else
+                                    {
+                                        if (blockListContent[i, j, k, 3] == 0)
+                                        {
+                                            blockListContent[i, j, k, 3] = 1;
+                                            NetBuffer msgBuffer = netServer.CreateBuffer();
+                                            msgBuffer = netServer.CreateBuffer();
+                                            msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
+
+                                            msgBuffer.Write((byte)ChatMessageType.SayBlueTeam);
+                                            msgBuffer.Write(Defines.Sanitize("Research requires more gold!"));
+                                            foreach (NetConnection netConn in playerList.Keys)
+                                                if (netConn.Status == NetConnectionStatus.Connected)
+                                                    if (playerList[netConn].Team == PlayerTeam.Blue)
+                                                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if (blockListContent[i, j, k, 3] == 0)
+                                    {
+                                        blockListContent[i, j, k, 3] = 1;
+                                        NetBuffer msgBuffer = netServer.CreateBuffer();
+                                        msgBuffer = netServer.CreateBuffer();
+                                        msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
+
+                                        msgBuffer.Write((byte)ChatMessageType.SayBlueTeam);
+                                        msgBuffer.Write(Defines.Sanitize("Research has halted!"));
+                                        foreach (NetConnection netConn in playerList.Keys)
+                                            if (netConn.Status == NetConnectionStatus.Connected)
+                                                if (playerList[netConn].Team == PlayerTeam.Blue)
+                                                    netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered); 
+                                           
+                                    }
+                                   
+                                  //no longer has research topic
+                                }
+                            }
+                            else if (blockList[i, j, k] == BlockType.ResearchR && blockListContent[i, j, k, 0] > 0)
+                            {
+                                if (blockListContent[i, j, k, 1] > 0)
+                                {
+                                    if (teamCashRed > 0 && ResearchProgress[(byte)PlayerTeam.Red, blockListContent[i, j, k, 1]] > 0 && blockListContent[i, j, k, 4] == 0)
+                                    {
+                                        ResearchProgress[(byte)PlayerTeam.Red, blockListContent[i, j, k, 1]]--;
+
+                                        blockListContent[i, j, k, 4] = 3;//timer
+                                        blockListContent[i, j, k, 3] = 0;//message warnings
+                                        teamCashRed -= 1;
+
+                                        NetBuffer msgBuffer = netServer.CreateBuffer();
+                                        foreach (NetConnection netConn in playerList.Keys)
+                                            if (netConn.Status == NetConnectionStatus.Connected)
+                                                SendTeamCashUpdate(playerList[netConn]);
+
+                                        if (ResearchProgress[(byte)PlayerTeam.Red, blockListContent[i, j, k, 1]] == 0)//research complete
+                                        {
+                                            ResearchComplete[(byte)PlayerTeam.Red, blockListContent[i, j, k, 1]]++;//increase rank
+                                            ResearchProgress[(byte)PlayerTeam.Red, blockListContent[i, j, k, 1]] = ResearchInformation.GetCost((Research)blockListContent[i, j, k, 1]) * (ResearchComplete[(byte)PlayerTeam.Red, blockListContent[i, j, k, 1]] + 1);
+                                            NetBuffer msgBufferr = netServer.CreateBuffer();
+                                            msgBufferr = netServer.CreateBuffer();
+                                            msgBufferr.Write((byte)InfiniminerMessage.ChatMessage);
+
+                                            msgBufferr.Write((byte)ChatMessageType.SayRedTeam);
+                                            if (ResearchComplete[(byte)PlayerTeam.Red, blockListContent[i, j, k, 1]] == 1)//first rank
+                                                msgBufferr.Write(Defines.Sanitize(ResearchInformation.GetName((Research)blockListContent[i, j, k, 1]) + " research was completed!"));
+                                            else
+                                                msgBufferr.Write(Defines.Sanitize(ResearchInformation.GetName((Research)blockListContent[i, j, k, 1]) + " rank " + ResearchComplete[(byte)PlayerTeam.Red, blockListContent[i, j, k, 1]] + " research was completed!"));
+                                            foreach (NetConnection netConn in playerList.Keys)
+                                                if (netConn.Status == NetConnectionStatus.Connected)
+                                                    if (playerList[netConn].Team == PlayerTeam.Red)
+                                                        netServer.SendMessage(msgBufferr, netConn, NetChannel.ReliableUnordered);
+
+                                            //recalculate player statistics/buffs
+                                            ResearchRecalculate(PlayerTeam.Red, blockListContent[i, j, k, 1]);
+                                            //
+                                            blockListContent[i, j, k, 1] = 0;
+                                            blockListContent[i, j, k, 0] = 0;
+                                        }
+                                    }
+                                    else if (blockListContent[i, j, k, 4] > 0)
+                                    {
+                                        blockListContent[i, j, k, 4]--;
+                                    }
+                                    else
+                                    {
+                                        if (blockListContent[i, j, k, 3] == 0)
+                                        {
+                                            blockListContent[i, j, k, 3] = 1;
+                                            NetBuffer msgBuffer = netServer.CreateBuffer();
+                                            msgBuffer = netServer.CreateBuffer();
+                                            msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
+
+                                            msgBuffer.Write((byte)ChatMessageType.SayRedTeam);
+                                            msgBuffer.Write(Defines.Sanitize("Research requires more gold!"));
+                                            foreach (NetConnection netConn in playerList.Keys)
+                                                if (netConn.Status == NetConnectionStatus.Connected)
+                                                    if (playerList[netConn].Team == PlayerTeam.Red)
+                                                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if (blockListContent[i, j, k, 3] == 0)
+                                    {
+                                        blockListContent[i, j, k, 3] = 1;
+                                        NetBuffer msgBuffer = netServer.CreateBuffer();
+                                        msgBuffer = netServer.CreateBuffer();
+                                        msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
+
+                                        msgBuffer.Write((byte)ChatMessageType.SayRedTeam);
+                                        msgBuffer.Write(Defines.Sanitize("Research has halted!"));
+                                        foreach (NetConnection netConn in playerList.Keys)
+                                            if (netConn.Status == NetConnectionStatus.Connected)
+                                                if (playerList[netConn].Team == PlayerTeam.Red)
+                                                    netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+
+                                    }
+
+                                    //no longer has research topic
+                                }
+                            }
+                            else if (blockList[i, j, k] == BlockType.ResearchR && blockListContent[i, j, k, 0] > 0)
+                            {
+
+                            }
+                            else if (blockList[i, j, k] == BlockType.BaseBlue || blockList[i, j, k] == BlockType.BaseRed)
+                            {
+                                foreach (Player p in playerList.Values)
+                                {
+                                    if (p.Team == PlayerTeam.Blue && blockList[i, j, k] == BlockType.BaseBlue)
+                                    {
+                                        float distfromBase = (p.Position - new Vector3(i, j + 2, k - 1)).Length();
+                                        if (distfromBase < 3)
+                                        {
+                                            DepositCash(p);
+                                            //apply block damage buff to prevent walling players in
+                                        }
+                                        else if (distfromBase < 10)
+                                        {
+                                            //apply block damage buff to prevent walling players in
+                                        }
+                                    }
+                                    else if (p.Team == PlayerTeam.Red && blockList[i, j, k] == BlockType.BaseRed)
+                                    {
+                                        float distfromBase = (p.Position - new Vector3(i, j + 2, k + 1)).Length();
+                                        if (distfromBase < 3)
+                                        {
+                                            DepositCash(p);
+                                            //apply block damage buff to prevent walling players in
+                                        }
+                                        else if (distfromBase < 10)
+                                        {
+                                            //apply block damage buff to prevent walling players in
+                                        }
+                                    }
+                                }
+                                
+                                if (blockListContent[i, j, k, 1] > 0)
+                                {
+                                    if (blockList[i, j, k] == BlockType.BaseBlue)
+                                    {
+                                        if (teamCashBlue > 4 && blockListContent[i, j, k, 4] == 0)
+                                        {
+                                            blockListContent[i, j, k, 4] = 3;
+                                            blockListContent[i, j, k, 1]--;
+                                            blockListContent[i, j, k, 2] = 0;
+                                            teamCashBlue -= 5;
+
+                                            NetBuffer msgBuffer = netServer.CreateBuffer();
+                                            foreach (NetConnection netConn in playerList.Keys)
+                                                if (netConn.Status == NetConnectionStatus.Connected)
+                                                    SendTeamCashUpdate(playerList[netConn]);
+                                        }
+                                        else if (blockListContent[i, j, k, 4] > 0)
+                                        {
+                                            blockListContent[i, j, k, 4]--;
+                                        }
+                                        else
+                                        {
+                                            if (blockListContent[i, j, k, 2] == 0)//warning message
+                                            {
+                                                blockListContent[i, j, k, 2] = 1;
+
+                                                NetBuffer msgBuffer = netServer.CreateBuffer();
+                                                msgBuffer = netServer.CreateBuffer();
+                                                msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
+
+                                                msgBuffer.Write((byte)ChatMessageType.SayBlueTeam);
+                                                msgBuffer.Write(Defines.Sanitize("The forge requires " + blockListContent[i, j, k, 1]*5 + " more gold!"));
+                                                foreach (NetConnection netConn in playerList.Keys)
+                                                    if (netConn.Status == NetConnectionStatus.Connected)
+                                                        if (playerList[netConn].Team == PlayerTeam.Blue)
+                                                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered); 
+                                                
+                                            }
+                                        }
+                                    }
+                                    else if (blockList[i, j, k] == BlockType.BaseRed)
+                                    {
+                                        if (teamCashRed > 4 && blockListContent[i, j, k, 4] == 0)
+                                        {
+                                            blockListContent[i, j, k, 4] = 3;
+                                            blockListContent[i, j, k, 1]--;
+                                            blockListContent[i, j, k, 2] = 0;
+                                            teamCashRed -= 5;
+
+                                            NetBuffer msgBuffer = netServer.CreateBuffer();
+                                            foreach (NetConnection netConn in playerList.Keys)
+                                                if (netConn.Status == NetConnectionStatus.Connected)
+                                                    SendTeamCashUpdate(playerList[netConn]);
+                                        }
+                                        else if (blockListContent[i, j, k, 4] > 0)
+                                        {
+                                            blockListContent[i, j, k, 4]--;
+                                        }
+                                        else
+                                        {
+                                            if (blockListContent[i, j, k, 2] == 0)//warning message
+                                            {
+                                                blockListContent[i, j, k, 2] = 1;
+
+                                                NetBuffer msgBuffer = netServer.CreateBuffer();
+                                                msgBuffer = netServer.CreateBuffer();
+                                                msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
+
+
+                                                msgBuffer.Write((byte)ChatMessageType.SayRedTeam);
+                                                msgBuffer.Write(Defines.Sanitize("The forge requires " + blockListContent[i, j, k, 1] * 5 + " more gold!"));
+                                                foreach (NetConnection netConn in playerList.Keys)
+                                                    if (netConn.Status == NetConnectionStatus.Connected)
+                                                        if (playerList[netConn].Team == PlayerTeam.Red)
+                                                            netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+                                            }
+                                        }
                                     }
 
                                     if (blockListContent[i, j, k, 1] == 0)
@@ -3989,7 +4635,6 @@ namespace Infiniminer
                                     }
                                 }
                             }
-
                     }
         }
         public void Disturb(ushort i, ushort j, ushort k)
@@ -4339,6 +4984,17 @@ namespace Infiniminer
                                 uint arty = (uint)(blockListContent[x, y, z, 6]);
                                 itemList[arty].Content[6] = 0;//unlock arty
                                 SendItemContentSpecificUpdate(itemList[(uint)(blockListContent[x, y, z, 6])], 6);
+
+                                if (blockList[x, y, z] == BlockType.ArtCaseB)
+                                {
+                                    teamArtifactsBlue--;
+                                    SendScoreUpdate();
+                                }
+                                else if (blockList[x, y, z] == BlockType.ArtCaseR)
+                                {
+                                    teamArtifactsRed--;
+                                    SendScoreUpdate();
+                                }
                             }
 
                             NetBuffer msgBuffer = netServer.CreateBuffer();
@@ -4389,6 +5045,15 @@ namespace Infiniminer
                             {
                                 SetBlock(x, y, z, blockCreatorTeam[x, y, z] == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue, blockCreatorTeam[x, y, z]);
                             }
+                        }
+                        else if (block == BlockType.Gold)
+                        {
+                            PlaySoundForEveryoneElse(InfiniminerSound.RadarLow, new Vector3(x + 0.5f, y + 0.5f, z + 0.5f), player);
+                            //InfiniminerSound.RadarHigh
+                        }
+                        else if (block == BlockType.Diamond)
+                        {
+                            PlaySoundForEveryoneElse(InfiniminerSound.RadarHigh, new Vector3(x + 0.5f, y + 0.5f, z + 0.5f), player);
                         }
                     }
 
@@ -4490,11 +5155,9 @@ namespace Infiniminer
 
                     case BlockType.Dirt:
                     case BlockType.Pump:
-                    case BlockType.Compressor:
+                    case BlockType.Barrel:
                     case BlockType.Pipe:
                     case BlockType.Rock:
-                    case BlockType.Spring:
-                    case BlockType.MagmaVent:
                     case BlockType.Mud:
                     case BlockType.Sand:
                     case BlockType.DirtSign:
@@ -4704,11 +5367,13 @@ namespace Infiniminer
 
             // If the block is too expensive, bail.
             uint blockCost = BlockInformation.GetCost(blockType);
+            
             if (varGetB("sandbox") && blockCost <= player.OreMax)
                 blockCost = 0;
             if (blockCost > player.Ore)
                 actionFailed = true;
-
+            if (!allowBlock[(byte)player.Team, (byte)player.Class, (byte)blockType])
+                actionFailed = true;
             // If there's someone there currently, bail.
             ushort x = (ushort)buildPoint.X;
             ushort y = (ushort)buildPoint.Y;
@@ -4846,6 +5511,8 @@ namespace Infiniminer
                 blockType == BlockType.Ladder ||
                 blockType == BlockType.Road ||
                 blockType == BlockType.Shock ||
+                blockType == BlockType.ResearchR ||
+                blockType == BlockType.ResearchB ||
                 blockType == BlockType.BeaconRed ||
                 blockType == BlockType.BeaconBlue ||
                 blockType == BlockType.Water ||
@@ -4858,7 +5525,7 @@ namespace Infiniminer
                 blockType == BlockType.Pump ||
                 blockType == BlockType.RadarBlue ||
                 blockType == BlockType.RadarRed ||
-                blockType == BlockType.Compressor ||
+                blockType == BlockType.Barrel ||
                 blockType == BlockType.Hinge ||
                 blockType == BlockType.Lever ||
                 blockType == BlockType.Plate ||
@@ -4932,6 +5599,17 @@ namespace Infiniminer
                         uint arty = (uint)(blockListContent[x, y, z, 6]);
                         itemList[arty].Content[6] = 0;//unlock arty
                         SendItemContentSpecificUpdate(itemList[(uint)(blockListContent[x, y, z, 6])], 6);
+
+                        if (blockList[x, y, z] == BlockType.ArtCaseB)
+                        {
+                            teamArtifactsBlue--;
+                            SendScoreUpdate();
+                        }
+                        else if (blockList[x, y, z] == BlockType.ArtCaseR)
+                        {
+                            teamArtifactsRed--;
+                            SendScoreUpdate();
+                        }
                     }
                 }
                 // Remove the block.
@@ -5303,7 +5981,7 @@ namespace Infiniminer
                 {
                     if (x > 0 && x < MAPSIZE - 1 && y > 0 && y < MAPSIZE - 1 && z > 0 && z < MAPSIZE - 1)
                     {
-                        if (blockList[x, y, z] == BlockType.BaseBlue || blockList[x, y, z] == BlockType.BaseRed || blockList[x, y, z] == BlockType.ArtCaseR || blockList[x, y, z] == BlockType.ArtCaseB || blockList[x, y, z] == BlockType.BankRed || blockList[x, y, z] == BlockType.BankBlue)
+                        if (blockList[x, y, z] == BlockType.ResearchB || blockList[x, y, z] == BlockType.ResearchR || blockList[x, y, z] == BlockType.BaseBlue || blockList[x, y, z] == BlockType.BaseRed || blockList[x, y, z] == BlockType.ArtCaseR || blockList[x, y, z] == BlockType.ArtCaseB || blockList[x, y, z] == BlockType.BankRed || blockList[x, y, z] == BlockType.BankBlue)
                         {
                             player.Content[2] = 0;
                             player.Content[3] = 0;
@@ -5427,6 +6105,61 @@ namespace Infiniminer
             {
                 ConsoleWrite("Chain connected to src:" + blockListContent[x, y, z, 1] + " src: " + blockListContent[x, y, z, 2] + " dest: " + blockListContent[x, y, z, 4] + " Connections: " + blockListContent[x, y, z, 3]);
             }
+            else if (blockList[x, y, z] == BlockType.BeaconRed || blockList[x, y, z] == BlockType.BeaconBlue)
+            {
+                if (player != null)
+                {
+                    if (btn == 1)
+                    {
+                        if (player.Team == PlayerTeam.Red && blockList[x, y, z] == BlockType.BeaconRed || player.Team == PlayerTeam.Blue && blockList[x, y, z] == BlockType.BeaconBlue)
+                        {
+                            
+                        }
+                    }
+                }
+            }
+            else if (blockList[x, y, z] == BlockType.ResearchR || blockList[x, y, z] == BlockType.ResearchB)
+            {
+                if (player != null)
+                {
+                    if (btn == 1)
+                    {
+                        if (player.Team == PlayerTeam.Red && blockList[x, y, z] == BlockType.ResearchR || player.Team == PlayerTeam.Blue && blockList[x, y, z] == BlockType.ResearchB)
+                        {
+                            if (blockListContent[x, y, z, 0] == 0)
+                            {
+                                blockListContent[x, y, z, 0]++;
+                                SendServerMessageToPlayer("Research has begun.", player.NetConn);
+                              
+                            }
+                            else
+                            {
+                                blockListContent[x, y, z, 0]--;
+                                SendServerMessageToPlayer("Research paused.", player.NetConn);
+                            }
+                        }
+                    }
+                    else if (btn == 2)
+                    {
+                        if (player.Team == PlayerTeam.Red && blockList[x, y, z] == BlockType.ResearchR || player.Team == PlayerTeam.Blue && blockList[x, y, z] == BlockType.ResearchB)
+                        {
+                            if (blockListContent[x, y, z, 1] < (byte)Research.MAXIMUM-1)
+                            {
+                                blockListContent[x, y, z, 0] = 0;
+                                blockListContent[x, y, z, 1]++;
+                                SendServerMessageToPlayer("Research topic:" + ResearchInformation.GetName((Research)blockListContent[x, y, z, 1]) + "(" + ResearchComplete[(byte)player.Team, blockListContent[x, y, z, 1]] + ") (" + ResearchProgress[(byte)player.Team, blockListContent[x, y, z, 1]] + " gold)", player.NetConn);
+                               // blockListContent[x, y, z, 2] = ResearchInformation.GetCost((Research)blockListContent[x, y, z, 1]);
+                            }
+                            else
+                            {
+                                blockListContent[x, y, z, 0] = 0;
+                                blockListContent[x, y, z, 1] = 1;
+                                SendServerMessageToPlayer("Research topic:" + ResearchInformation.GetName((Research)blockListContent[x, y, z, 1]) + "(" + ResearchComplete[(byte)player.Team, blockListContent[x, y, z, 1]] + ") (" + ResearchProgress[(byte)player.Team, blockListContent[x, y, z, 1]] + " gold)", player.NetConn);
+                            }
+                        }
+                    }
+                }
+            }
             else if (blockList[x, y, z] == BlockType.ArtCaseR || blockList[x, y, z] == BlockType.ArtCaseB)
             {
                 if (player != null)
@@ -5443,6 +6176,17 @@ namespace Infiniminer
                                 SendItemContentSpecificUpdate(itemList[arty], 6);//lock item
                                 SendContentSpecificUpdate(player, 10);//inform players
                                 SendPlayerContentUpdate(player, 10);//inform activator
+
+                                if (blockList[x, y, z] == BlockType.ArtCaseB)
+                                {
+                                    teamArtifactsBlue++;
+                                    SendScoreUpdate();
+                                }
+                                else if (blockList[x, y, z] == BlockType.ArtCaseR)
+                                {
+                                    teamArtifactsRed++;
+                                    SendScoreUpdate();
+                                }
                             }
                     }
                     else if (btn == 2)
@@ -5458,6 +6202,17 @@ namespace Infiniminer
 
                                 SendContentSpecificUpdate(player, 10);//inform players
                                 SendPlayerContentUpdate(player, 10);//inform activator
+
+                                if (blockList[x, y, z] == BlockType.ArtCaseB)
+                                {
+                                    teamArtifactsBlue--;
+                                    SendScoreUpdate();
+                                }
+                                else if (blockList[x, y, z] == BlockType.ArtCaseR)
+                                {
+                                    teamArtifactsRed--;
+                                    SendScoreUpdate();
+                                }
                             }
                     }
                 }
@@ -5476,13 +6231,14 @@ namespace Infiniminer
                                 player.Weight--;
 
                                 SendWeightUpdate(player);
-                                
+                                SendContentSpecificUpdate(player, 11);
+
                                 blockListContent[x, y, z, 1] = 120;
                                 NetBuffer msgBuffer = netServer.CreateBuffer();
                                 msgBuffer = netServer.CreateBuffer();
                                 msgBuffer.Write((byte)InfiniminerMessage.ChatMessage);
 
-                                if(player.Team == PlayerTeam.Red)
+                                if (player.Team == PlayerTeam.Red)
                                     msgBuffer.Write((byte)ChatMessageType.SayRedTeam);
                                 else if (player.Team == PlayerTeam.Blue)
                                     msgBuffer.Write((byte)ChatMessageType.SayBlueTeam);
@@ -5491,12 +6247,12 @@ namespace Infiniminer
 
                                 foreach (NetConnection netConn in playerList.Keys)
                                     if (netConn.Status == NetConnectionStatus.Connected)
-                                            netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
+                                        netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
                             }
                     }
                     else if (btn == 2)
                     {
-                     
+
                     }
                 }
                 return true;
@@ -5578,12 +6334,12 @@ namespace Infiniminer
             {
                 if (btn == 1)
                 {
-                   // if (player != null)
-                     //   SendServerMessageToPlayer("You stand on a pressure plate!", player.NetConn);
+                    // if (player != null)
+                    //   SendServerMessageToPlayer("You stand on a pressure plate!", player.NetConn);
 
-                    if (blockListContent[x, y, z, 0] == 0 && blockListContent[x,y,z,1] < 1)//not falling and recharged
+                    if (blockListContent[x, y, z, 0] == 0 && blockListContent[x, y, z, 1] < 1)//not falling and recharged
                     {
-                        if(player != null)
+                        if (player != null)
                             blockListContent[x, y, z, 1] = blockListContent[x, y, z, 2];//only players will trigger the timer
 
                         for (int a = 2; a < 7; a++)
@@ -5666,7 +6422,7 @@ namespace Infiniminer
                 {
                     blockListContent[x, y, z, 2] += 1;//increase retrigger timer
                     if (player != null)
-                        SendServerMessageToPlayer("The pressure plate retrigger increased to " + (blockListContent[x, y, z, 2] * 400)+ " milliseconds.", player.NetConn);
+                        SendServerMessageToPlayer("The pressure plate retrigger increased to " + (blockListContent[x, y, z, 2] * 400) + " milliseconds.", player.NetConn);
                 }
                 return true;
             }
@@ -5758,24 +6514,28 @@ namespace Infiniminer
                 }
                 return true;
             }
-            else if (blockList[x, y, z] == BlockType.Compressor)
+            else if (blockList[x, y, z] == BlockType.Barrel)
             {
                 if (btn == 1)
                 {
                     if (blockListContent[x, y, z, 0] == 0)
                     {
                         if (player != null)
-                            SendServerMessageToPlayer("Compressing!", player.NetConn);
+                            SendServerMessageToPlayer("Filling..", player.NetConn);
 
                         blockListContent[x, y, z, 0] = 1;
                     }
                     else
                     {
                         if (player != null)
-                            SendServerMessageToPlayer("Decompressing!", player.NetConn);
+                            SendServerMessageToPlayer("Emptying..", player.NetConn);
 
                         blockListContent[x, y, z, 0] = 0;
                     }
+                }
+                else if (btn == 2)
+                {
+                  
                 }
                 return true;
             }
@@ -5794,7 +6554,7 @@ namespace Infiniminer
                         //blockListContent[x, y, z, 2] = 0;
                         // blockListContent[x, y, z, 2] = 0;// +x
                         // blockListContent[x, y, z, 2] = 2;// -x
-                        
+
                         for (int a = 2; a < 7; a++)
                         {
                             //if (blockList[blockListContent[x, y, z, a * 6 + 1], blockListContent[x, y, z, a * 6 + 2], blockListContent[x, y, z, a * 6 + 3]] == (BlockType)(blockListContent[x, y, z, a * 6]))
@@ -6190,7 +6950,7 @@ namespace Infiniminer
                     {
                         if (blockListContent[x, y, z, 2] == 0)
                         {
-                            if (!HingeBlockTypes(blockList[x + a - 1, y, z],team))
+                            if (!HingeBlockTypes(blockList[x + a - 1, y, z], team))
                                 break;
 
                             blockListContent[x, y, z, a * 6] = (byte)blockList[x + a - 1, y, z];
@@ -6205,7 +6965,7 @@ namespace Infiniminer
                         }
                         else if (blockListContent[x, y, z, 2] == 2)
                         {
-                            if (!HingeBlockTypes(blockList[x - (a - 1), y, z],team))
+                            if (!HingeBlockTypes(blockList[x - (a - 1), y, z], team))
                                 break;
 
                             blockListContent[x, y, z, a * 6] = (byte)blockList[x - (a - 1), y, z];
@@ -6220,7 +6980,7 @@ namespace Infiniminer
                         }
                         else if (blockListContent[x, y, z, 2] == 3)
                         {
-                            if (!HingeBlockTypes(blockList[x, y, z + a - 1],team))
+                            if (!HingeBlockTypes(blockList[x, y, z + a - 1], team))
                                 break;
 
                             blockListContent[x, y, z, a * 6] = (byte)blockList[x, y, z + a - 1];
@@ -6298,6 +7058,35 @@ namespace Infiniminer
                 }
             }
             return false;
+        }
+
+        public void ResearchRecalculate(PlayerTeam team, int cc)
+        {
+            if (cc == 1)//modifying maximum hp
+            {
+                foreach (Player p in playerList.Values)
+                    if (p.Team == team)
+                    {
+                        p.HealthMax += 20;// (uint)(ResearchComplete[(byte)team, cc] * 20);
+                        SendResourceUpdate(p);
+                    }
+            }
+            else if (cc == 2)
+            {
+                foreach (Player p in playerList.Values)
+                    if (p.Team == team)
+                    {
+                        p.WeightMax += 1;// (uint)(ResearchComplete[(byte)team, cc]);
+                        p.OreMax += 20;// (uint)(ResearchComplete[(byte)team, cc] * 20);
+                        SendResourceUpdate(p);
+                    }
+            }
+            else if (cc == 3)
+            {
+                teamRegeneration[(byte)team]++;
+            }
+
+           // SendResourceUpdate(p);
         }
 
         public void PlayerInteract(Player player, uint btn, uint x, uint y, uint z)
@@ -6396,7 +7185,7 @@ namespace Infiniminer
                                     if (bPair.Value.Content[5] > 0)
                                     {
                                         player.Weight += 1;
-                                        player.Cash += 5;
+                                        player.Cash += 10;
                                         bPair.Value.Content[5] -= 1;
 
                                         if(player.Weight >= player.WeightMax)
@@ -6455,7 +7244,7 @@ namespace Infiniminer
                                     itemList.Remove(ID);
                                     itemIDList.Remove(ID);
 
-                                    SendServerMessageToPlayer("You now possess a diamond to fuel the forge!", player.NetConn);
+                                    SendServerMessageToPlayer("You now possess a diamond to fuel our forge!", player.NetConn);
                                 }
                             }
                             else
@@ -6466,8 +7255,8 @@ namespace Infiniminer
                                 itemList.Remove(ID);
                                 itemIDList.Remove(ID);
                             }
-                            
-                            
+
+                            PlaySound(InfiniminerSound.CashDeposit, player.Position);
                         }
                         return;
                     }
@@ -6555,6 +7344,9 @@ namespace Infiniminer
             msgBuffer.Write((uint)(player.Team == PlayerTeam.Red ? teamOreRed : teamOreBlue));
             msgBuffer.Write((uint)teamCashRed);
             msgBuffer.Write((uint)teamCashBlue);
+            msgBuffer.Write((uint)teamArtifactsRed);
+            msgBuffer.Write((uint)teamArtifactsBlue);
+            msgBuffer.Write((uint)winningCashAmount);
             msgBuffer.Write((uint)player.Health);
             msgBuffer.Write((uint)player.HealthMax);
            // msgBuffer.Write((int)player.Content[5]);
@@ -6651,6 +7443,19 @@ namespace Infiniminer
                if (netConn.Status == NetConnectionStatus.Connected)
                    netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableInOrder1);
         }
+
+        public void SendScoreUpdate()
+        {
+            NetBuffer msgBuffer = netServer.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.ScoreUpdate);
+            msgBuffer.Write(teamArtifactsRed);
+            msgBuffer.Write(teamArtifactsBlue);
+
+            foreach (NetConnection netConn in playerList.Keys)
+                if (netConn.Status == NetConnectionStatus.Connected)
+                    netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableInOrder1);
+        }
+
         public void SendItemContentSpecificUpdate(Item i, int cc)
         {
             NetBuffer msgBuffer = netServer.CreateBuffer();
@@ -7010,35 +7815,35 @@ namespace Infiniminer
                 bool positionFound = false;
 
                 // Try 20 times; use a potentially invalid position if we fail.
-                for (int i = 0; i < 20; i++)
+                for (int i = 0; i < 30; i++)
                 {
                     // Pick a random starting point.
 
-                Vector3 startPos = new Vector3(randGen.Next(basePosition[player.Team].X - 10, basePosition[player.Team].X + 10), basePosition[player.Team].Y, randGen.Next(basePosition[player.Team].Z - 10, basePosition[player.Team].Z + 10));
+                    Vector3 startPos = new Vector3(randGen.Next(basePosition[player.Team].X - 2, basePosition[player.Team].X + 2), randGen.Next(basePosition[player.Team].Y - 1, basePosition[player.Team].Y + 1), randGen.Next(basePosition[player.Team].Z - 2, basePosition[player.Team].Z + 2));
 
                     // See if this is a safe place to drop.
-                    for (startPos.Y = 63; startPos.Y >= 54; startPos.Y--)
-                    {
+                    //for (startPos.Y = 63; startPos.Y >= 54; startPos.Y--)
+                    //{
                         BlockType blockType = BlockAtPoint(startPos);
-                        if (blockType == BlockType.Lava)
-                            break;
-                        else if (blockType != BlockType.None)
+                        if (blockType == BlockType.Vacuum && BlockAtPoint(startPos - Vector3.UnitY*1.0f) == BlockType.Vacuum)
                         {
                             // We have found a valid place to spawn, so spawn a few above it.
-                            player.Position = startPos + Vector3.UnitY * 5;
+                            player.Position = startPos;// +Vector3.UnitY * 5;
                             positionFound = true;
                             break;
                         }
-                    }
+                   // }
 
                     // If we found a position, no need to try anymore!
                     if (positionFound)
                         break;
                 }
-
                 // If we failed to find a spawn point, drop randomly.
                 if (!positionFound)
+                {
                     player.Position = new Vector3(randGen.Next(2, 62), 66, randGen.Next(2, 62));
+                    ConsoleWrite("player had no space to spawn");
+                }
 
                 // Drop the player on the middle of the block, not at the corner.
                 player.Position += new Vector3(0.5f, 0, 0.5f);

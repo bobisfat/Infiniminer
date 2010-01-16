@@ -120,6 +120,27 @@ namespace Infiniminer.States
 
         private void UpdatePlayerPosition(GameTime gameTime, KeyboardState keyState)
         {
+            //temperature data
+            
+                _P.temperature = 0;
+                for (int a = -5; a < 6; a++)
+                    for (int b = -5; b < 6; b++)
+                        for (int c = -5; c < 6; c++)
+                        {
+                            int nx = a + (int)_P.playerPosition.X;
+                            int ny = b + (int)_P.playerPosition.Y;
+                            int nz = c + (int)_P.playerPosition.Z;
+                            if (nx < 63 && ny < 63 && nz < 63 && nx > 0 && ny > 0 && nz > 0)
+                            {
+                                BlockType block = _P.blockEngine.blockList[nx, ny, nz];
+                                if (block == BlockType.Lava || block == BlockType.MagmaBurst || block == BlockType.MagmaVent)
+                                {
+                                    _P.temperature += 5 - Math.Abs(a) + 5 - Math.Abs(b) + 5 - Math.Abs(c);
+                                }
+                            }
+                        }
+
+            
             // Double-speed move flag, set if we're on road.
             _P.moveVector = Vector3.Zero;
             bool movingOnRoad = false;

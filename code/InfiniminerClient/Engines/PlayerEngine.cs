@@ -32,7 +32,7 @@ namespace Infiniminer
             {
                 p.StepInterpolation(gameTime.TotalGameTime.TotalSeconds);
 
-                p.Ping -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                p.Ping -= (float)gameTime.ElapsedGameTime.TotalSeconds/4;
                 if (p.Ping < 0)
                     p.Ping = 0;
 

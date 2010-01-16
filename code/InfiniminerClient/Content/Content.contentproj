@@ -911,13 +911,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="tmp.mp3">
-      <Name>tmp</Name>
-      <Importer>Mp3Importer</Importer>
-      <Processor>SongProcessor</Processor>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="icons\tex_icon_diamond.png">
       <Name>tex_icon_diamond</Name>
       <Importer>TextureImporter</Importer>
@@ -1113,6 +1106,39 @@
   <ItemGroup>
     <Compile Include="sprites\tex_sprite_diamond.png">
       <Name>tex_sprite_diamond</Name>
+      <Importer>TextureImporter</Importer>
+      <Processor>TextureProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="icons\tex_icon_plate.png">
+      <Name>tex_icon_plate</Name>
+      <Importer>TextureImporter</Importer>
+      <Processor>TextureProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="blocks\tex_block_hinge.png">
+      <Name>tex_block_hinge</Name>
+      <Importer>TextureImporter</Importer>
+      <Processor>TextureProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="icons\tex_icon_research.png">
+      <Name>tex_icon_research</Name>
+      <Importer>TextureImporter</Importer>
+      <Processor>TextureProcessor</Processor>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="blocks\tex_block_barrel_side.png">
+      <Name>tex_block_barrel_side</Name>
+      <Importer>TextureImporter</Importer>
+      <Processor>TextureProcessor</Processor>
+    </Compile>
+    <Compile Include="blocks\tex_block_barrel_top.png">
+      <Name>tex_block_barrel_top</Name>
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
     </Compile>

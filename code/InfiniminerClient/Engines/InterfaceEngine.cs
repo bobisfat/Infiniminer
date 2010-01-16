@@ -99,9 +99,9 @@ namespace Infiniminer
             blockIcons[BlockType.TrapR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
             blockIcons[BlockType.Dirt] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_dirt");
             blockIcons[BlockType.Pump] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pump");
-            blockIcons[BlockType.Compressor] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_compressor");
+            blockIcons[BlockType.Barrel] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_compressor");
             blockIcons[BlockType.Lever] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_lever");
-            blockIcons[BlockType.Plate] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_lever");
+            blockIcons[BlockType.Plate] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_plate");
             blockIcons[BlockType.RadarRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_radar");
             blockIcons[BlockType.RadarBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_radar");
             blockIcons[BlockType.Hinge] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_hinge");
@@ -109,6 +109,8 @@ namespace Infiniminer
             blockIcons[BlockType.ArtCaseB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_artcaseb");
             blockIcons[BlockType.ConstructionR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
             blockIcons[BlockType.ConstructionB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
+            blockIcons[BlockType.ResearchR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_research");
+            blockIcons[BlockType.ResearchB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_research");
             //held icons
             blockIcons[BlockType.Diamond] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_diamond");
             blockIcons[BlockType.MagmaVent] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
@@ -219,6 +221,15 @@ namespace Infiniminer
                     spriteBatch.DrawString(radarFont, text, new Vector2(10 + 99 + relativePosition.X - textSize.X / 2, 30 + 99 + relativePosition.Z - textSize.Y / 2), color);
                 }
             }
+            //if (_P.playerClass == PlayerClass.Prospector)
+            //{
+            if (_P.temperature < 30)
+                    spriteBatch.DrawString(uiFont, "temp: " + _P.temperature, new Vector2(200, 200), Color.Blue);
+            else if (_P.temperature > 30 && _P.temperature < 71)
+                    spriteBatch.DrawString(uiFont, "temp: " + _P.temperature, new Vector2(200, 200), Color.Yellow);
+            else if (_P.temperature > 70)
+                    spriteBatch.DrawString(uiFont, "temp: " + _P.temperature, new Vector2(200, 200), Color.Red);
+            //}
         }
 
         public void RenderDetonator(GraphicsDevice graphicsDevice, SpriteBatch spriteBatch)
@@ -295,6 +306,8 @@ namespace Infiniminer
                 gunSprite = texToolBuildSmoke;
             spriteBatch.Draw(gunSprite, new Rectangle(drawX, drawY, 120 * 3, 126 * 3), Color.White);
             spriteBatch.Draw(blockIcons[blockType], new Rectangle(drawX + 37 * 3, drawY + 50 * 3, 117, 63), Color.White);
+            if(BlockInformation.GetCost(blockType) < 1000)
+            spriteBatch.DrawString(uiFont, ""+BlockInformation.GetCost(blockType), new Vector2(drawX + 180, drawY + 186), Color.White);
         }
 
         public void drawChat(List<ChatMessage>messages, GraphicsDevice graphicsDevice)
@@ -423,6 +436,10 @@ namespace Infiniminer
             spriteBatch.DrawString(uiFont, "TEAM ORE: " + _P.teamOre, new Vector2(textStart + 515, 2), Color.White);
             spriteBatch.DrawString(uiFont, _P.redName + ": $" + _P.teamRedCash, new Vector2(textStart + 700, 2), _P.red);// Defines.IM_RED);
             spriteBatch.DrawString(uiFont, _P.blueName + ": $" + _P.teamBlueCash, new Vector2(textStart + 860, 2), _P.blue);// Defines.IM_BLUE);
+            spriteBatch.DrawString(uiFont, _P.teamArtifactsRed + "/" +_P.winningCashAmount, new Vector2(textStart + 700, 22), _P.red);
+            spriteBatch.DrawString(uiFont, _P.teamArtifactsBlue + "/" + _P.winningCashAmount, new Vector2(textStart + 860, 22), _P.blue);
+            spriteBatch.DrawString(uiFont, "Artifacts", new Vector2(textStart + 700, 42), _P.red);
+            spriteBatch.DrawString(uiFont, "Artifacts", new Vector2(textStart + 860, 42), _P.blue);
 
             // Draw player information.
             if ((Keyboard.GetState().IsKeyDown(Keys.Tab) && _P.screenEffect == ScreenEffect.None) || _P.teamWinners != PlayerTeam.None)

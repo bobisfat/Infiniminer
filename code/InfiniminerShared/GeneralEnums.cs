@@ -98,6 +98,7 @@ namespace Infiniminer
         WeightUpdate,
         OreUpdate,
         CashUpdate,
+        ScoreUpdate,
         TeamCashUpdate,
         ItemUpdate,             // send its new x/y
         ItemScaleUpdate,

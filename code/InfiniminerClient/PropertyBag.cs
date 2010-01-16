@@ -58,6 +58,7 @@ namespace Infiniminer
         public uint playerCash = 0;
         public uint playerWeight = 0;
         public uint playerOreMax = 0;
+        public int temperature = 0;
         public Vector3 forceVector = Vector3.Zero;
         public float forceStrength = 0.0f;
         public AudioListener listenPos = new AudioListener();
@@ -79,9 +80,12 @@ namespace Infiniminer
         public float mouseSensitivity = 0.005f;
 
         // Team variables.
+        public uint teamArtifactsBlue = 0;
+        public uint teamArtifactsRed = 0;
         public uint teamOre = 0;
         public uint teamRedCash = 0;
         public uint teamBlueCash = 0;
+        public uint winningCashAmount = 8;
         public PlayerTeam teamWinners = PlayerTeam.None;
         public Dictionary<Vector3, Beacon> beaconList = new Dictionary<Vector3, Beacon>();
         public Dictionary<uint, Item> itemList = new Dictionary<uint, Item>();
@@ -581,7 +585,7 @@ namespace Infiniminer
                                              BlockType.Lever,
                                              BlockType.Plate,
                                              BlockType.Pump,
-                                             BlockType.Compressor,
+                                             BlockType.Barrel,
                                              playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
                                              BlockType.Water,
                                              BlockType.GlassR };
@@ -595,25 +599,25 @@ namespace Infiniminer
                                                             PlayerTools.ConstructionGun,
                                                             PlayerTools.ProspectingRadar };
 
-                        playerBlocks = new BlockType[8] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                        playerBlocks = new BlockType[6] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                             playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
-                                                            playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
-                                                            playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
                                                             BlockType.Shock,
                                                             BlockType.Plate,
-                                                            BlockType.Metal,
-                                                            BlockType.Jump
+                                                            BlockType.Lever,
+                                                            BlockType.Hinge
                                                         };
                         break;
 
                     case PlayerClass.Miner:
-                        playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
-                                                            PlayerTools.ConstructionGun,
-                                                            PlayerTools.StrongArm };
+                        playerTools = new PlayerTools[2] {  PlayerTools.Pickaxe,
+                                                            PlayerTools.ConstructionGun };
 
-                        playerBlocks = new BlockType[3] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
-                                                            BlockType.Ladder,
-                                                            BlockType.Metal};
+                        playerBlocks = new BlockType[6] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                            playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
+                                                            BlockType.Shock,
+                                                            BlockType.Plate,
+                                                            BlockType.Lever,
+                                                            BlockType.Hinge};
                         break;
 
                     case PlayerClass.Engineer:
@@ -622,30 +626,36 @@ namespace Infiniminer
                                                             PlayerTools.DeconstructionGun,
                                                             PlayerTools.Remote };
 
-                        playerBlocks = new BlockType[13] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                        playerBlocks = new BlockType[16] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
                                                         BlockType.Ladder,
                                                         BlockType.Pipe,
                                                         BlockType.Lever,
-                                                        BlockType.Compressor,
+                                                        BlockType.Barrel,
                                                         BlockType.Plate,
                                                         BlockType.Metal,
                                                         BlockType.Hinge,
+                                                        playerTeam == PlayerTeam.Red ? BlockType.ResearchR : BlockType.ResearchB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.GlassR : BlockType.GlassB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.ArtCaseR : BlockType.ArtCaseB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
-                                                        playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue  };
+                                                        playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue,  
+                                                        playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
+                                                        playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB};
                         break;
 
                     case PlayerClass.Sapper:
-                        playerTools = new PlayerTools[4] {  PlayerTools.Pickaxe,
+                        playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
                                                             PlayerTools.ConstructionGun,
-                                                            PlayerTools.Detonator,
-                                                            PlayerTools.Smash};
-                        playerBlocks = new BlockType[3] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
-                                                            BlockType.Explosive,
-                                                            BlockType.Metal
-                                                            };
+                                                            PlayerTools.Detonator };
+                        playerBlocks = new BlockType[7] {   BlockType.Explosive,
+                                                            playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                            playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
+                                                            BlockType.Shock,
+                                                            BlockType.Plate,
+                                                            BlockType.Lever,
+                                                            BlockType.Hinge};
+
                         break;
                 }
             }
@@ -783,12 +793,12 @@ namespace Infiniminer
 
                 case BlockType.Gold:
                     //removeBlock = true;
-                    sound = InfiniminerSound.DigMetal;
+                    sound = InfiniminerSound.RadarLow;
                     break;
 
                 case BlockType.Diamond:
                     //removeBlock = true;
-                    sound = InfiniminerSound.DigMetal;
+                    sound = InfiniminerSound.RadarHigh;
                     break;
 
                 case BlockType.SolidRed:
@@ -1122,6 +1132,26 @@ namespace Infiniminer
                 interact = blockType;
                 return "1: DEPOSIT 50 ORE  2: WITHDRAW 50 ORE";
             }
+            else if (blockType == BlockType.BeaconRed && playerTeam == PlayerTeam.Red)
+            {
+               // interact = blockType;
+               // return "1: RENAME BEACON";
+            }
+            else if (blockType == BlockType.BeaconBlue && playerTeam == PlayerTeam.Blue)
+            {
+               // interact = blockType;
+               // return "1: RENAME BEACON";
+            }
+            else if (blockType == BlockType.ResearchR && playerTeam == PlayerTeam.Red)
+            {
+                 interact = blockType;
+                 return "1: TOGGLE 2: CHANGE TOPIC";
+            }
+            else if (blockType == BlockType.ResearchB && playerTeam == PlayerTeam.Blue)
+            {
+                 interact = blockType;
+                 return "1: TOGGLE 2: CHANGE TOPIC";
+            }
             else if (blockType == BlockType.BaseRed && playerTeam == PlayerTeam.Red)
             {
                 interact = blockType;
@@ -1176,10 +1206,10 @@ namespace Infiniminer
                 interact = blockType;
                 return "1: On/Off 2: Change direction";
             }
-            else if (blockType == BlockType.Compressor)
+            else if (blockType == BlockType.Barrel)
             {
                 interact = blockType;
-                return "1: Compress/Decompress";
+                return "1: Fill/Empty";
             }
             else if (blockType == BlockType.Hinge)
             {
