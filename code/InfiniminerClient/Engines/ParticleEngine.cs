@@ -610,6 +610,25 @@ namespace Infiniminer
             }
         }
 
+        public void CreateTrail(Vector3 Position, Color color)
+        {
+            for (int i = 0; i < 1; i++)
+            {
+                Particle p = new Particle();
+                p.Color = color.ToVector4();
+                
+                p.Size = 0.15f;
+                p.Position = Position;
+                p.Gravity = -2.0f;
+                //p.Position.Y += (float)randGen.NextDouble();
+                p.Velocity = new Vector3((float)randGen.NextDouble() * 2 - 1.0f, 0.0f, (float)randGen.NextDouble() * 2 - 1.0f);
+                p.Lifetime = DateTime.Now;
+                p.Bounce = 0.5f;
+                p.SizeChange = 0.2f;
+                particleList.Add(p);
+            }
+        }
+
         public void Render(GraphicsDevice graphicsDevice)
         {
             // If we don't have _P, grab it from the current gameInstance.

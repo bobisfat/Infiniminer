@@ -90,7 +90,7 @@ namespace Infiniminer.States
                 _P.FirePickaxe();
                //_P.playerToolCooldown = _P.GetToolCooldown(PlayerTools.Pickaxe);//(_P.playerClass == PlayerClass.Miner ? 0.4f : 1.0f);
             }
-            if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.SpawnItem)
+            if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.ThrowBomb)
             {
                 _P.FireSpawnItem();
             }
@@ -204,7 +204,7 @@ namespace Infiniminer.States
                 if(_P.blockEngine.BlockAtPoint(footPosition) == BlockType.Water || _P.blockEngine.BlockAtPoint(headPosition) == BlockType.Water || _P.blockEngine.BlockAtPoint(midPosition) == BlockType.Water) 
                 {
                     swimming = true;
-                    if (_P.blockEngine.BlockAtPoint(headPosition) == BlockType.Water)
+                    if (_P.blockEngine.BlockAtPoint(midPosition) == BlockType.Water)
                     {
                         if (_P.playerHoldBreath == 20)
                         {
@@ -765,7 +765,7 @@ namespace Infiniminer.States
                                 _P.FireRadar();
                                 break;
 
-                            case PlayerTools.SpawnItem:
+                            case PlayerTools.ThrowBomb:
                                 _P.FireSpawnItem();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
                                 break;
                         }
@@ -1067,7 +1067,12 @@ namespace Infiniminer.States
                     _P.chatMode = ChatMessageType.None;
                 }
                 return;
-            }else if (!_P.playerDead)
+            }
+            else if (key == Keys.Enter)
+            {
+                _P.chatMode = _P.playerTeam == PlayerTeam.Red ? ChatMessageType.SayRedTeam : ChatMessageType.SayBlueTeam;
+            }
+            else if (!_P.playerDead)
                 HandleInput((_SM as InfiniminerGame).keyBinds.GetBound(key));
             
         }

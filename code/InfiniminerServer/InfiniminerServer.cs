@@ -735,12 +735,12 @@ namespace Infiniminer
 
         public bool ProcessCommand(string input, short authority, Player sender)
         {
-            if (authority == 0)
-                return false;
-            if (sender != null)
+            //if (authority == 0)
+             //   return false;
+            if (sender != null && authority > 0)
                 sender.admin = GetAdmin(sender.IP);
             string[] args = input.Split(' '.ToString().ToCharArray(),2);
-            if (args[0].StartsWith("\\") && args[0].Length > 1)
+            if (args[0].StartsWith("/") && args[0].Length > 2)
                 args[0] = args[0].Substring(1);
             switch (args[0].ToLower())
             {
@@ -796,6 +796,64 @@ namespace Infiniminer
                         }
                     }
                     break;
+                case "rename":
+                    {
+                        if (sender != null)
+                        if (args.Length == 2 && sender.Alive)
+                        {
+                            if (sender != null && args[1].Length < 11)
+                            {
+                                int px = (int)sender.Position.X;
+                                int py = (int)sender.Position.Y;
+                                int pz = (int)sender.Position.Z;
+
+                                for (int x = -1+px; x < 2+px; x++)
+                                    for (int y = -1+py; y < 2+py; y++)
+                                        for (int z = -1+pz; z < 2+pz; z++)
+                                        {
+                                            if (x < 1 || y < 1 || z < 1 || x > MAPSIZE - 2 || y > MAPSIZE - 2 || z > MAPSIZE - 2)
+                                            if (blockList[x, y, z] == BlockType.BeaconRed && sender.Team == PlayerTeam.Red)
+                                            {
+                                                SendServerMessageToPlayer("You renamed " + beaconList[new Vector3(x, y, z)].ID + " to " + args[1].ToUpper() + ".", sender.NetConn);
+                                                if (beaconList.ContainsKey(new Vector3(x, y, z)))
+                                                    beaconList.Remove(new Vector3(x, y, z));
+                                                SendSetBeacon(new Vector3(x, y + 1, z), "", PlayerTeam.None);
+
+                                                Beacon newBeacon = new Beacon();
+                                                newBeacon.ID = args[1].ToUpper();
+                                                newBeacon.Team = PlayerTeam.Red;
+                                                beaconList[new Vector3(x, y, z)] = newBeacon;
+                                                SendSetBeacon(new Vector3(x, y + 1, z), newBeacon.ID, newBeacon.Team);
+
+                                                return true;
+                                            }
+                                            else if (blockList[x, y, z] == BlockType.BeaconBlue && sender.Team == PlayerTeam.Blue)
+                                            {
+                                                SendServerMessageToPlayer("You renamed " + beaconList[new Vector3(x, y, z)].ID + " to " + args[1].ToUpper() + ".", sender.NetConn);
+                                                if (beaconList.ContainsKey(new Vector3(x, y, z)))
+                                                    beaconList.Remove(new Vector3(x, y, z));
+                                                SendSetBeacon(new Vector3(x, y + 1, z), "", PlayerTeam.None);
+
+                                                Beacon newBeacon = new Beacon();
+                                                newBeacon.ID = args[1].ToUpper();
+                                                newBeacon.Team = PlayerTeam.Blue;
+                                                beaconList[new Vector3(x, y, z)] = newBeacon;
+                                                SendSetBeacon(new Vector3(x, y + 1, z), newBeacon.ID, newBeacon.Team);
+
+                                                return true;
+                                            }
+                                        }
+
+                                SendServerMessageToPlayer("You must be closer to the beacon.", sender.NetConn);
+                               
+                            }
+                            else
+                            {
+                                SendServerMessageToPlayer("Beacons are restricted to 10 characters.", sender.NetConn);
+                            }
+                        }
+                    }
+                    break;
                 case "fps":
                     {
                         ConsoleWrite("Server FPS:"+frameCount );
@@ -803,77 +861,95 @@ namespace Infiniminer
                     break;
                 case "physics":
                     {
-                        physicsEnabled = !physicsEnabled;
-                        ConsoleWrite("Physics state is now: " + physicsEnabled);
+                        if (authority > 0)
+                        {
+                            physicsEnabled = !physicsEnabled;
+                            ConsoleWrite("Physics state is now: " + physicsEnabled);
+                        }
                     }
                     break;
                 case "liquid":
                     {
-                        lavaBlockCount = 0;
-                        waterBlockCount = 0;
-                        int tempBlockCount = 0;
+                        if (authority > 0)
+                        {
+                            lavaBlockCount = 0;
+                            waterBlockCount = 0;
+                            int tempBlockCount = 0;
 
-                        for (ushort i = 0; i < MAPSIZE; i++)
-                            for (ushort j = 0; j < MAPSIZE; j++)
-                                for (ushort k = 0; k < MAPSIZE; k++)
-                                {
-                                    if (blockList[i,j,k] == BlockType.Lava)
+                            for (ushort i = 0; i < MAPSIZE; i++)
+                                for (ushort j = 0; j < MAPSIZE; j++)
+                                    for (ushort k = 0; k < MAPSIZE; k++)
                                     {
-                                        lavaBlockCount += 1;
-                                        if (blockListContent[i, j, k, 1] > 0)
+                                        if (blockList[i, j, k] == BlockType.Lava)
                                         {
-                                            tempBlockCount += 1;
+                                            lavaBlockCount += 1;
+                                            if (blockListContent[i, j, k, 1] > 0)
+                                            {
+                                                tempBlockCount += 1;
+                                            }
+                                        }
+                                        else if (blockList[i, j, k] == BlockType.Water)
+                                        {
+                                            waterBlockCount += 1;
                                         }
                                     }
-                                    else if (blockList[i, j, k] == BlockType.Water)
-                                    {
-                                        waterBlockCount += 1;
-                                    } 
-                                }
 
-                        ConsoleWrite(waterBlockCount + " water blocks, " + lavaBlockCount + " lava blocks.");
-                        ConsoleWrite(tempBlockCount + " temporary blocks.");
+                            ConsoleWrite(waterBlockCount + " water blocks, " + lavaBlockCount + " lava blocks.");
+                            ConsoleWrite(tempBlockCount + " temporary blocks.");
+                        }
                     }
                     break;
                 case "flowsleep":
                     {
-                        uint sleepcount = 0;
+                        if (authority > 0)
+                        {
+                            uint sleepcount = 0;
 
-                        for (ushort i = 0; i < MAPSIZE; i++)
-                            for (ushort j = 0; j < MAPSIZE; j++)
-                                for (ushort k = 0; k < MAPSIZE; k++)
-                                    if (flowSleep[i, j, k] == true)
-                                        sleepcount += 1;
+                            for (ushort i = 0; i < MAPSIZE; i++)
+                                for (ushort j = 0; j < MAPSIZE; j++)
+                                    for (ushort k = 0; k < MAPSIZE; k++)
+                                        if (flowSleep[i, j, k] == true)
+                                            sleepcount += 1;
 
-                        ConsoleWrite(sleepcount +" liquids are happily sleeping.");
+                            ConsoleWrite(sleepcount + " liquids are happily sleeping.");
+                        }
                     }
                     break;
                 case "admins":
                     {
-                        ConsoleWrite("Admin list:");
-                        foreach (string ip in admins.Keys)
-                            ConsoleWrite(ip);
+                        if (authority > 0)
+                        {
+                            ConsoleWrite("Admin list:");
+                            foreach (string ip in admins.Keys)
+                                ConsoleWrite(ip);
+                        }
                     }
                     break;
                 case "admin":
                     {
-                        if (args.Length == 2)
+                        if (authority > 0)
                         {
-                            if (sender == null || sender.admin >= 2)
-                                AdminPlayer(args[1]);
-                            else
-                                SendServerMessageToPlayer("You do not have the authority to add admins.", sender.NetConn);
+                            if (args.Length == 2)
+                            {
+                                if (sender == null || sender.admin >= 2)
+                                    AdminPlayer(args[1]);
+                                else
+                                    SendServerMessageToPlayer("You do not have the authority to add admins.", sender.NetConn);
+                            }
                         }
                     }
                     break;
                 case "adminn":
                     {
-                        if (args.Length == 2)
+                        if (authority > 0)
                         {
-                            if (sender == null || sender.admin >= 2)
-                                AdminPlayer(args[1],true);
-                            else
-                                SendServerMessageToPlayer("You do not have the authority to add admins.", sender.NetConn);
+                            if (args.Length == 2)
+                            {
+                                if (sender == null || sender.admin >= 2)
+                                    AdminPlayer(args[1], true);
+                                else
+                                    SendServerMessageToPlayer("You do not have the authority to add admins.", sender.NetConn);
+                            }
                         }
                     }
                     break;
@@ -892,7 +968,10 @@ namespace Infiniminer
                     break;
                 case "announce":
                     {
-                        PublicServerListUpdate(true);
+                        if (authority > 0)
+                        {
+                            PublicServerListUpdate(true);
+                        }
                     }
                     break;
                 case "kick":
@@ -987,51 +1066,63 @@ namespace Infiniminer
 
                 case "say":
                     {
-                        if (args.Length == 2)
+                        if (authority > 0)
                         {
-                            string message = "SERVER: " + args[1];
-                            SendServerMessage(message);
+                            if (args.Length == 2)
+                            {
+                                string message = "SERVER: " + args[1];
+                                SendServerMessage(message);
+                            }
                         }
                     }
                     break;
 
                 case "save":
                     {
-                        if (args.Length >= 2)
+                        if (authority > 0)
                         {
-                            if (sender!=null)
-                                ConsoleWrite(sender.Handle + " is saving the map.");
-                            SaveLevel(args[1]);
+                            if (args.Length >= 2)
+                            {
+                                if (sender != null)
+                                    ConsoleWrite(sender.Handle + " is saving the map.");
+                                SaveLevel(args[1]);
+                            }
                         }
                     }
                     break;
 
                 case "load":
                     {
-                        if (args.Length >= 2)
+                        if (authority > 0)
                         {
-                            if (sender!=null)
-                                ConsoleWrite(sender.Handle + " is loading a map.");
-                            physicsEnabled = false;
-                            Thread.Sleep(2);
-                            LoadLevel(args[1]);
-                            physicsEnabled = true;
-                            /*if (LoadLevel(args[1]))
-                                Console.WriteLine("Loaded level " + args[1]);
-                            else
-                                Console.WriteLine("Level file not found!");*/
-                        }
-                        else if (levelToLoad != "")
-                        {
-                            physicsEnabled = false;
-                            Thread.Sleep(2);
-                            LoadLevel(levelToLoad);
-                            physicsEnabled = true;
+                            if (args.Length >= 2)
+                            {
+                                if (sender != null)
+                                    ConsoleWrite(sender.Handle + " is loading a map.");
+                                physicsEnabled = false;
+                                Thread.Sleep(2);
+                                LoadLevel(args[1]);
+                                physicsEnabled = true;
+                                /*if (LoadLevel(args[1]))
+                                    Console.WriteLine("Loaded level " + args[1]);
+                                else
+                                    Console.WriteLine("Level file not found!");*/
+                            }
+                            else if (levelToLoad != "")
+                            {
+                                physicsEnabled = false;
+                                Thread.Sleep(2);
+                                LoadLevel(levelToLoad);
+                                physicsEnabled = true;
+                            }
                         }
                     }
                     break;
                 default: //Check / set var
                     {
+                        if (authority == 0)
+                            return false;
+
                         string name = args[0];
                         int exists = varExists(name);
                         if (exists > 0)
@@ -1656,6 +1747,7 @@ namespace Infiniminer
                     newItem.Content[2] = 100;//g
                     newItem.Content[3] = 100;//b
                     newItem.Content[5] = 80;//4 second fuse
+                    newItem.Weight = 1.5f;
                 }
                 else
                 {
@@ -2568,6 +2660,7 @@ namespace Infiniminer
                                                 string chatString = Defines.Sanitize(msgBuffer.ReadString());
                                                 if (!ProcessCommand(chatString,GetAdmin(playerList[msgSender].IP),playerList[msgSender]))
                                                 {
+                                                    if (chatType == ChatMessageType.SayAll)
                                                     ConsoleWrite("CHAT: (" + player.Handle + ") " + chatString);
 
                                                     // Append identifier information.
@@ -2613,8 +2706,8 @@ namespace Infiniminer
                                                         UseStrongArm(player, playerPosition, playerHeading);
                                                         break;
                                                     case PlayerTools.Smash:
-                                                        if(player.Class == PlayerClass.Sapper)
-                                                        UseSmash(player, playerPosition, playerHeading);
+                                                        //if(player.Class == PlayerClass.Sapper)
+                                                        //UseSmash(player, playerPosition, playerHeading);
                                                         break;
                                                     case PlayerTools.ConstructionGun:
                                                         UseConstructionGun(player, playerPosition, playerHeading, blockType);
@@ -2637,7 +2730,7 @@ namespace Infiniminer
                                                         if (player.Class == PlayerClass.Engineer)
                                                         SetRemote(player);
                                                         break;
-                                                    case PlayerTools.SpawnItem:
+                                                    case PlayerTools.ThrowBomb:
                                                         if (player.Class == PlayerClass.Sapper)
                                                         ThrowBomb(player, playerPosition, playerHeading);
                                                         break;
@@ -3005,8 +3098,8 @@ namespace Infiniminer
 
                 }
                 //random diamond appearance
-
-                if (randGen.Next(1, 40000) == 2)
+                if (sleeping == false)
+                if (randGen.Next(1, 50000) == 2)
                 {
                     ushort diamondx = (ushort)randGen.Next(4, 57);
                     ushort diamondy = (ushort)randGen.Next(3, 30);
@@ -3177,17 +3270,17 @@ namespace Infiniminer
 
                         if (i.Content[5] == 1)
                         {
-                            BombAtPoint((int)(i.Position.X), (int)(i.Position.Y), (int)(i.Position.Z));
+                            BombAtPoint((int)(i.Position.X), (int)(i.Position.Y), (int)(i.Position.Z), (PlayerTeam)i.Content[6]);
                             i.Disposing = true;
                             continue;
                         }
                     }
                     tv = i.Position;
-                    tv.Y -= 0.2f;//changes where the item rests
+                    tv.Y -= 0.05f;//changes where the item rests
 
-                    if (BlockAtPoint(tv + i.Velocity * (delta * 50)) == BlockType.None)//shouldnt be checking every 100ms, needs area check
+                    if (BlockAtPoint(tv + i.Velocity * (delta * 50)) == BlockType.None || BlockAtPoint(tv + i.Velocity * (delta * 50)) == BlockType.Water)//shouldnt be checking every 100ms, needs area check
                     {
-                        i.Velocity.Y -= GRAVITY;// *(delta * 50);//delta interferes with sleep states
+                        i.Velocity.Y -= GRAVITY*i.Weight;// *(delta * 50);//delta interferes with sleep states
                         i.Position += i.Velocity * (delta * 50);
                         //i.Velocity.X = i.Velocity.X * 0.99f;
                         //i.Velocity.Z = i.Velocity.Z * 0.99f;
@@ -3202,16 +3295,16 @@ namespace Infiniminer
                     }
                     else if (i.Velocity.X != 0.0f || i.Velocity.Y != 0.0f || i.Velocity.Z != 0.0f)
                     {
-
                         Vector3 nv = i.Velocity;//adjustment axis
                         nv.Y = i.Velocity.Y;
                         nv.X = 0;
                         nv.Z = 0;
                         if (Math.Abs(i.Velocity.Y) > 0.5f)
                         {
-                            if (BlockAtPoint(tv + nv) != BlockType.None)
+                            if (BlockAtPoint(tv + nv) != BlockType.None || BlockAtPoint(tv + nv) != BlockType.Water)
                             {
                                 i.Velocity.Y = -i.Velocity.Y / 2;
+                                continue;
                             }
                         }
                         else
@@ -3222,11 +3315,12 @@ namespace Infiniminer
                         nv.X = i.Velocity.X;
                         nv.Y = 0;
                         nv.Z = 0;
-                        if (Math.Abs(i.Velocity.X) > 0.5f)
+                        if (Math.Abs(i.Velocity.X) > 0.2f)
                         {
-                            if (BlockAtPoint(tv + nv) != BlockType.None)
+                            if (BlockAtPoint(tv + nv) != BlockType.None || BlockAtPoint(tv + nv) != BlockType.Water)
                             {
                                 i.Velocity.X = -i.Velocity.X / 2;
+                                continue;
                             }
                         }
                         else
@@ -3238,11 +3332,12 @@ namespace Infiniminer
                         nv.X = 0;
                         nv.Y = 0;
                         nv.Z = i.Velocity.Z;
-                        if (Math.Abs(i.Velocity.Z) > 0.5f)
+                        if (Math.Abs(i.Velocity.Z) > 0.2f)
                         {
-                            if (BlockAtPoint(tv + nv) != BlockType.None)
+                            if (BlockAtPoint(tv + nv) != BlockType.None || BlockAtPoint(tv + nv) != BlockType.Water)
                             {
                                 i.Velocity.Z = -i.Velocity.Z / 2;
+                                continue;
                             }
                         }
                         else
@@ -4220,46 +4315,132 @@ namespace Infiniminer
                                     blockListContent[i, j, k, 0]++;
 
                                     if (j > 0)
-                                        if (blockList[i, j - 1, k] == BlockType.None)
+                                        if (blockList[i, j - 1, k] == BlockType.None || blockList[i, j - 1, k] == BlockType.Lava)
                                         {
-                                            SetBlock(i, (ushort)(j - 1), k, BlockType.Lava, PlayerTeam.None);
-                                            blockListContent[i, j - 1, k, 1] = 40;
-                                        }
+                                            for (ushort m = 1; m < 10; m++)//multiply exit area
+                                            {
+                                                if (j - m > 0)
+                                                {
+                                                    if (blockList[i, j - m, k] == BlockType.None)
+                                                    {
+                                                        SetBlock(i, (ushort)(j - m), k, BlockType.Lava, PlayerTeam.None);//places its contents in desired direction at a distance
+                                                        blockListContent[i, j - m, k, 1] = 40;
+                                                        break;
+                                                    }
+                                                    else if (blockList[i, j - m, k] != BlockType.Lava)
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+
+                                            }
+                                        } 
 
                                     if (j < MAPSIZE - 1)
-                                        if (blockList[i, j + 1, k] == BlockType.None)
+                                        if (blockList[i, j + 1, k] == BlockType.None || blockList[i, j + 1, k] == BlockType.Lava)
+                                        for (ushort m = 1; m < 10; m++)//multiply exit area
                                         {
-                                            SetBlock(i, (ushort)(j + 1), k, BlockType.Lava, PlayerTeam.None);
-                                            blockListContent[i, j + 1, k, 1] = 40;
+                                            if (j + m < MAPSIZE - 1)
+                                            {
+                                                if (blockList[i, j + m, k] == BlockType.None)
+                                                {
+                                                    SetBlock(i, (ushort)(j + m), k, BlockType.Lava, PlayerTeam.None);//places its contents in desired direction at a distance
+                                                    blockListContent[i, j + m, k, 1] = 40;
+                                                    break;
+                                                }
+                                                else if (blockList[i, j + m, k] != BlockType.Lava)
+                                                {
+                                                    continue;
+                                                }
+                                            }
+
                                         }
 
                                     if (i > 0)
-                                        if (blockList[i - 1, j, k] == BlockType.None)
+                                        if (blockList[i - 1, j, k] == BlockType.None || blockList[i - 1, j, k] == BlockType.Lava)
                                         {
-                                            SetBlock((ushort)(i - 1), j, k, BlockType.Lava, PlayerTeam.None);
-                                            blockListContent[i - 1, j, k, 1] = 40;
-                                        }
+                                            for (ushort m = 1; m < 10; m++)//multiply exit area
+                                            {
+                                                if (i - m > 0)
+                                                {
+                                                    if (blockList[i - m, j, k] == BlockType.None)
+                                                    {
+                                                        SetBlock((ushort)(i - m), j, k, BlockType.Lava, PlayerTeam.None);//places its contents in desired direction at a distance
+                                                        blockListContent[i - m, j, k, 1] = 40;
+                                                        break;
+                                                    }
+                                                    else if (blockList[i - m, j, k] != BlockType.Lava)
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+
+                                            }
+                                        } 
 
                                     if (i < MAPSIZE - 1)
-                                        if (blockList[i + 1, j, k] == BlockType.None)
+                                        if (blockList[i + 1, j, k] == BlockType.None || blockList[i + 1, j, k] == BlockType.Lava)
                                         {
-                                            SetBlock((ushort)(i + 1), j, k, BlockType.Lava, PlayerTeam.None);
-                                            blockListContent[i + 1, j, k, 1] = 40;
-                                        }
+                                            for (ushort m = 1; m < 10; m++)//multiply exit area
+                                            {
+                                                if (i + m < MAPSIZE - 1)
+                                                {
+                                                    if (blockList[i + m, j, k] == BlockType.None)
+                                                    {
+                                                        SetBlock((ushort)(i + m), j, k, BlockType.Lava, PlayerTeam.None);//places its contents in desired direction at a distance
+                                                        blockListContent[i + m, j, k, 1] = 40;
+                                                        break;
+                                                    }
+                                                    else if (blockList[i + m, j, k] != BlockType.Lava)
+                                                    {
+                                                        continue;
+                                                    }
+                                                }
+
+                                            }
+                                        } 
 
                                     if (k > 0)
-                                        if (blockList[i, j, k - 1] == BlockType.None)
+                                        if (blockList[i, j, k - 1] == BlockType.None || blockList[i, j, k - 1] == BlockType.Lava)
                                         {
-                                            SetBlock(i, j, (ushort)(k - 1), BlockType.Lava, PlayerTeam.None);
-                                            blockListContent[i, j, k - 1, 0] = 40;
-                                        }
+                                            for (ushort m = 1; m < 10; m++)//multiply exit area
+                                            {
+                                                if (k - m > 0)
+                                                {
+                                                    if (blockList[i, j, k - m] == BlockType.None)
+                                                    {
+                                                        SetBlock(i, j, (ushort)(k - m), BlockType.Lava, PlayerTeam.None);//places its contents in desired direction at a distance
+                                                        blockListContent[i, j, k - m, 1] = 40;
+                                                    }
+                                                    else if (blockList[i, j, k - m] != BlockType.Lava)
+                                                    {
+                                                        break;
+                                                    }
+                                                }
+
+                                            }
+                                        } 
 
                                     if (k < MAPSIZE - 1)
-                                        if (blockList[i, j, k + 1] == BlockType.None)
+                                        if (blockList[i, j, k + 1] == BlockType.None || blockList[i, j, k + 1] == BlockType.Lava)
                                         {
-                                            SetBlock(i, j, (ushort)(k + 1), BlockType.Lava, PlayerTeam.None);
-                                            blockListContent[i, j, k + 1, 0] = 40;
-                                        }
+                                            for (ushort m = 1; m < 10; m++)//multiply exit area
+                                            {
+                                                if (k + m < MAPSIZE - 1)
+                                                {
+                                                    if (blockList[i, j, k + m] == BlockType.None)
+                                                    {
+                                                        SetBlock(i, j, (ushort)(k + m), BlockType.Lava, PlayerTeam.None);//places its contents in desired direction at a distance
+                                                        blockListContent[i, j, k + m, 1] = 40;
+                                                    }
+                                                    else if (blockList[i, j, k + m] != BlockType.Lava)
+                                                    {
+                                                        break;
+                                                    }
+                                                }
+
+                                            }
+                                        } 
                                 }
                                 else if (blockListContent[i, j, k, 1] < 1)//priming time / 400ms
                                 {
@@ -4298,11 +4479,40 @@ namespace Infiniminer
                                         {
                                             blockListContent[i, j, k, 1]++;
                                         }
+
+                                    if (blockListContent[i, j, k, 1] == 0)
+                                    {
+                                        //talk a walk around the map
+                                        if (randGen.Next(1000) == 1 && sleeping == false)//500+
+                                        {
+                                            int x = i + randGen.Next(2) - 1;
+                                            int y = j + randGen.Next(2) - 1;
+                                            int z = k + randGen.Next(2) - 1;
+
+                                            if (x < 1 || y < 1 || z < 1 || x > MAPSIZE - 2 || y > MAPSIZE - 2 || z > MAPSIZE - 2)
+                                            {
+                                            }
+                                            else
+                                            {
+                                                if (blockList[x - 1, y, z] != BlockType.None)
+                                                    if (blockList[x + 1, y, z] != BlockType.None)
+                                                        if (blockList[x, y - 1, z] != BlockType.None)
+                                                            if (blockList[x, y + 1, z] != BlockType.None)
+                                                                if (blockList[x, y, z - 1] != BlockType.None)
+                                                                    if (blockList[x, y, z + 1] != BlockType.None)
+                                                                    {
+                                                                     //   ConsoleWrite("magmaburst moved from " + i + "/" + j + "/" + k + " to " + x + "/" + y + "/" + z);
+                                                                        SetBlock((ushort)i, (ushort)j, (ushort)k, BlockType.Dirt, PlayerTeam.None);
+                                                                        SetBlock((ushort)x, (ushort)y, (ushort)z, BlockType.MagmaBurst, PlayerTeam.None);
+                                                                    }
+                                            }
+                                        }
+                                    }
                                 }
-                                else//run out of magma
+                                else//run out of magma->turn into rock (gold became too frequent)
                                 {
-                                    SetBlock(i, j, k, BlockType.Gold, PlayerTeam.None);
-                                    blockListHP[i, j, k] = BlockInformation.GetHP(BlockType.Gold);
+                                    SetBlock(i, j, k, BlockType.Rock, PlayerTeam.None);
+                                    blockListHP[i, j, k] = BlockInformation.GetHP(BlockType.Rock);
                                 }
                             }
                             else if (blockList[i, j, k] == BlockType.Mud)//mud dries out
@@ -5466,14 +5676,14 @@ namespace Infiniminer
             {
                 actionFailed = true;
             }
-            else if (player.Ore > 19)
+            else if (player.Ore > 49)
             {
-                player.Ore -= 20;
+                player.Ore -= 50;
                 SendOreUpdate(player);
             }
             else
             {
-              //  actionFailed = true;
+                actionFailed = true;
             }
             // If there's no surface within range, bail.
             Vector3 hitPoint = playerPosition;//Vector3.Zero;
@@ -5513,7 +5723,8 @@ namespace Infiniminer
 
                 exactPoint.Y = exactPoint.Y + (float)0.25;//0.25 = items height
 
-                SetItem(ItemType.Bomb, exactPoint, playerHeading, playerHeading*3, player.Team);
+                uint ii = SetItem(ItemType.Bomb, exactPoint, playerHeading, playerHeading*3, player.Team);
+                itemList[ii].Content[6] = (byte)player.Team;//set teamsafe
                // player.Ore -= blockCost;
                // SendResourceUpdate(player);
 
@@ -5821,7 +6032,7 @@ namespace Infiniminer
             }
         }
 
-        public void ExplosionEffectAtPoint(float x, float y, float z, int strength)
+        public void ExplosionEffectAtPoint(float x, float y, float z, int strength, PlayerTeam team)
         {
             //SetBlock((ushort)x, (ushort)y, (ushort)z, BlockType.Fire, PlayerTeam.None);//might be better at detonate
             //blockListContent[x, y, z, 0] = 6;//fire gets stuck?
@@ -5832,6 +6043,7 @@ namespace Infiniminer
                 if (netConn.Status == NetConnectionStatus.Connected && playerList[netConn].Alive)
                 {
                     if(playerList[netConn].Alive)//needs teamcheck
+                    if (playerList[netConn].Team != team)
                     {
                         dist = Distf(playerList[netConn].Position, new Vector3(x, y, z));
                         if (dist <= strength)//player in range of bomb on server?
@@ -5927,9 +6139,9 @@ namespace Infiniminer
                     netServer.SendMessage(msgBuffer, netConn, NetChannel.ReliableUnordered);
         }
 
-        public void BombAtPoint(int x, int y, int z)
+        public void BombAtPoint(int x, int y, int z, PlayerTeam team)
         {
-            ExplosionEffectAtPoint(x, y, z, 3);
+            ExplosionEffectAtPoint(x, y, z, 3, team);
 
             for (int dx = -1; dx <= 1; dx++)
                 for (int dy = -1; dy <= 1; dy++)
@@ -5939,9 +6151,11 @@ namespace Infiniminer
                             continue;
 
                         if (blockList[x + dx, y + dy, z + dz] == BlockType.Explosive)
-                            DetonateAtPoint(x + dx, y + dy, z + dz);
+                            if (blockCreatorTeam[x + dx, y + dy, z + dz] != team)//must hit opposing team
+                                DetonateAtPoint(x + dx, y + dy, z + dz);
 
                         if(BlockInformation.GetMaxHP(blockList[x + dx, y + dy, z + dz]) > 0)//not immune block
+                            if (blockCreatorTeam[x + dx, y + dy, z + dz] != team)//must hit opposing team
                         if (blockListHP[x + dx, y + dy, z + dz] > 0)
                         {
 
@@ -5992,6 +6206,13 @@ namespace Infiniminer
 
                                     SetBlockDebris((ushort)(x + dx), (ushort)(y + dy), (ushort)(z + dz), BlockType.None, PlayerTeam.None);
                                 }
+                                else
+                                {
+                                    if (blockList[x + dx, y + dy, z + dz] == BlockType.Rock)//rock is weak to explosives
+                                    {//item creation must be outside item loop
+                                        SetBlockDebris((ushort)(x + dx), (ushort)(y + dy), (ushort)(z + dz), BlockType.None, PlayerTeam.None);
+                                    }
+                                }
                             }
                         }
                     }
@@ -6000,6 +6221,7 @@ namespace Infiniminer
         public void DetonateAtPoint(int x, int y, int z)
         {
             // Remove the block that is detonating.
+            PlayerTeam team = blockCreatorTeam[(ushort)(x), (ushort)(y), (ushort)(z)];
             SetBlock((ushort)(x), (ushort)(y), (ushort)(z), BlockType.None, PlayerTeam.None);
 
             // Remove this from any explosive lists it may be in.
@@ -6054,6 +6276,7 @@ namespace Infiniminer
                                     break;
                             }
                             if (destroyBlock)
+                            if (team != blockCreatorTeam[x+dx,y+dy,z+dz])
                             {
                                 if (blockList[x + dx, y + dy, z + dz] == BlockType.RadarRed)//requires special remove
                                 {//never executes??
@@ -6149,7 +6372,7 @@ namespace Infiniminer
                             }
                         }
             }
-            ExplosionEffectAtPoint(x, y, z, 3);
+            ExplosionEffectAtPoint(x, y, z, 3, blockCreatorTeam[x, y, z]);
         }
 
         public void UseDetonator(Player player)
@@ -6166,7 +6389,7 @@ namespace Infiniminer
                 else if (!varGetB("tnt"))
                 {
                     player.ExplosiveList.RemoveAt(0);
-                    ExplosionEffectAtPoint(x,y,z,3);
+                    ExplosionEffectAtPoint(x,y,z,3,player.Team);
                     // Remove the block that is detonating.
                     SetBlock(x, y, z, BlockType.None, PlayerTeam.None);
                 }

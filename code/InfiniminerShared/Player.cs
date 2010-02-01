@@ -35,7 +35,7 @@ namespace Infiniminer
         Detonator,
         Remote,
         SetRemote,
-        SpawnItem,
+        ThrowBomb,
         LeftHand,
         RightHand,
         Body,
@@ -251,7 +251,7 @@ namespace Infiniminer
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;
                 case PlayerTools.ProspectingRadar: return 0.5f;
-                case PlayerTools.SpawnItem: return 0.05f;
+                case PlayerTools.ThrowBomb: return 0.07f;
                 default: return 0;
             }
         }

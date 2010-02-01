@@ -23,6 +23,7 @@ namespace Infiniminer
         public bool Disposing;//deleting from array in progress
         public Vector3 Heading;
         public Vector3 Position;
+        public float Weight = 1.0f;
         public float Scale = 0.5f;
         public Vector3 Velocity = Vector3.Zero;
         public Vector3 deltaPosition;

@@ -95,6 +95,11 @@ namespace Infiniminer
             foreach (KeyValuePair<uint, Item> i in _P.itemList)//  if (bPair.Value.Team == _P.playerTeam)//doesnt care which team
             {
                 i.Value.deltaPosition = i.Value.deltaPosition + (((i.Value.Position - i.Value.deltaPosition) * (8*(float)gameTime.ElapsedGameTime.TotalSeconds)));
+                if (i.Value.Type == ItemType.Bomb)
+                {
+                    if(gameInstance.propertyBag.randGen.Next(0, 5) == 1)
+                    _P.particleEngine.CreateTrail(i.Value.deltaPosition + Vector3.UnitY * 0.3f, Color.Gray);
+                }
             }
         }
 

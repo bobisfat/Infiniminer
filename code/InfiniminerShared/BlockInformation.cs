@@ -277,6 +277,7 @@ namespace Infiniminer
             blockMaxHP[(byte)BlockType.Sand] = 1;
             blockMaxHP[(byte)BlockType.Dirt] = 1;
             blockMaxHP[(byte)BlockType.Ore] = 1;
+            blockHP[(byte)BlockType.Rock] = 200;
             blockMaxHP[(byte)BlockType.Rock] = 1;
             blockMaxHP[(byte)BlockType.ForceR] = 0;
             blockMaxHP[(byte)BlockType.ForceB] = 0;
@@ -288,8 +289,8 @@ namespace Infiniminer
             blockHP[(byte)BlockType.ConstructionB] = 100;
             blockMaxHP[(byte)BlockType.ConstructionB] = 200;
 
-            blockHP[(byte)BlockType.Gold] = 80;
-            blockMaxHP[(byte)BlockType.Gold] = 80;
+            blockHP[(byte)BlockType.Gold] = 40;
+            blockMaxHP[(byte)BlockType.Gold] = 40;
 
             blockHP[(byte)BlockType.Diamond] = 200;
             blockMaxHP[(byte)BlockType.Diamond] = 200;

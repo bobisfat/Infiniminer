@@ -91,7 +91,7 @@ namespace Infiniminer
         public Dictionary<uint, Item> itemList = new Dictionary<uint, Item>();
 
         // Screen effect stuff.
-        private Random randGen = new Random();
+        public Random randGen = new Random();
         public ScreenEffect screenEffect = ScreenEffect.None;
         public double screenEffectCounter = 0;
 
@@ -564,7 +564,7 @@ namespace Infiniminer
                 PlayerTools.ConstructionGun,
                 PlayerTools.DeconstructionGun,
                 PlayerTools.ProspectingRadar,
-                PlayerTools.SpawnItem,
+                PlayerTools.ThrowBomb,
                 PlayerTools.Detonator
                 };
 
@@ -648,7 +648,7 @@ namespace Infiniminer
                     case PlayerClass.Sapper:
                         playerTools = new PlayerTools[4] {  PlayerTools.Pickaxe,
                                                             PlayerTools.ConstructionGun,
-                                                            PlayerTools.SpawnItem,
+                                                            PlayerTools.ThrowBomb,
                                                             PlayerTools.Detonator };
                         playerBlocks = new BlockType[7] {   BlockType.Explosive,
                                                             playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
@@ -1000,7 +1000,7 @@ namespace Infiniminer
             msgBuffer.Write((byte)InfiniminerMessage.UseTool);
             msgBuffer.Write(playerPosition);
             msgBuffer.Write(playerCamera.GetLookVector());
-            msgBuffer.Write((byte)PlayerTools.SpawnItem);
+            msgBuffer.Write((byte)PlayerTools.ThrowBomb);
             msgBuffer.Write((byte)BlockType.None);
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
@@ -1310,7 +1310,7 @@ namespace Infiniminer
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;
                 case PlayerTools.ProspectingRadar: return 0.5f;
-                case PlayerTools.SpawnItem: return 0.05f;
+                case PlayerTools.ThrowBomb: return 0.1f;
                 default: return 0;
             }
         }
