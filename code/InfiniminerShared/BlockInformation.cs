@@ -12,6 +12,7 @@ namespace Infiniminer
         Ore,
         Artifact,
         Diamond,
+        Bomb,
         MAXIMUM
     }
 
@@ -263,20 +264,20 @@ namespace Infiniminer
                 blockMaxHP[a] = 30;
             }
 
-            blockMaxHP[(byte)BlockType.Water] = 0;
-            blockMaxHP[(byte)BlockType.Lava] = 0;
+            blockMaxHP[(byte)BlockType.Water] = 1;
+            blockMaxHP[(byte)BlockType.Lava] = 1;
             blockMaxHP[(byte)BlockType.Spring] = 0;
             blockMaxHP[(byte)BlockType.MagmaVent] = 0;
             blockMaxHP[(byte)BlockType.MagmaBurst] = 0;
-            blockMaxHP[(byte)BlockType.Magma] = 0;
+            blockMaxHP[(byte)BlockType.Magma] = 1;
             blockMaxHP[(byte)BlockType.Fire] = 0;
             blockMaxHP[(byte)BlockType.BaseBlue] = 0;
             blockMaxHP[(byte)BlockType.BaseRed] = 0;
             blockMaxHP[(byte)BlockType.Vacuum] = 0;
-            blockMaxHP[(byte)BlockType.Sand] = 0;
-            blockMaxHP[(byte)BlockType.Dirt] = 0;
-            blockMaxHP[(byte)BlockType.Ore] = 0;
-            blockMaxHP[(byte)BlockType.Rock] = 0;
+            blockMaxHP[(byte)BlockType.Sand] = 1;
+            blockMaxHP[(byte)BlockType.Dirt] = 1;
+            blockMaxHP[(byte)BlockType.Ore] = 1;
+            blockMaxHP[(byte)BlockType.Rock] = 1;
             blockMaxHP[(byte)BlockType.ForceR] = 0;
             blockMaxHP[(byte)BlockType.ForceB] = 0;
             blockMaxHP[(byte)BlockType.TransRed] = 0;

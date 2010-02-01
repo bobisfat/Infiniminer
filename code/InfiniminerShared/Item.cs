@@ -75,6 +75,10 @@ namespace Infiniminer
                             //SpriteModel.StartActiveAnimation("3,0.15");
                             //SpriteModel.
                         }
+                        else if (Type == ItemType.Bomb)
+                        {
+                            SpriteModel.SetPassiveAnimation("0,0.2;1,0.2;2,0.2;3,0.2");
+                        }
                         //else
                           //  SpriteModel.SetPassiveAnimation("0,0.2;1,0.2;2,0.2;1,0.2");
                        // else
@@ -104,6 +108,9 @@ namespace Infiniminer
                     break;
                 case ItemType.Diamond:
                     textureName = "sprites/tex_sprite_diamond";
+                    break;
+                case ItemType.Bomb:
+                    textureName = "sprites/tex_sprite_bomb";
                     break;
                 default:
                     textureName = "sprites/tex_sprite_lemonorgoldnum";

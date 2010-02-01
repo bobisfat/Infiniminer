@@ -375,15 +375,30 @@ namespace Infiniminer
                                             {
                                                 propertyBag.screenEffect = ScreenEffect.Fall;
                                                 propertyBag.screenEffectCounter = 2 - 0.5;
-                                                propertyBag.particleEngine.CreateBloodSplatter(propertyBag.playerPosition, propertyBag.playerTeam == PlayerTeam.Red ? Color.Red : Color.Blue, 0.2f);
-                                                propertyBag.forceVector = propertyBag.playerList[aID].Heading;
-                                                propertyBag.forceVector.Y = 0;
-                                                //propertyBag.forceVector.Normalize();
-                                                propertyBag.forceStrength = 4.0f;
+                                                
+                                                if (aID == 0)//bomb or other hurt
+                                                {
+                                                    propertyBag.particleEngine.CreateBloodSplatter(propertyBag.playerPosition, propertyBag.playerTeam == PlayerTeam.Red ? Color.Red : Color.Blue, 0.4f);
+                                                }
+                                                else//player attack
+                                                {
+                                                    propertyBag.particleEngine.CreateBloodSplatter(propertyBag.playerPosition, propertyBag.playerTeam == PlayerTeam.Red ? Color.Red : Color.Blue, 0.2f);
+                                                    propertyBag.forceVector = propertyBag.playerList[aID].Heading;
+                                                    propertyBag.forceVector.Y = 0;
+                                                    //propertyBag.forceVector.Normalize();
+                                                    propertyBag.forceStrength = 4.0f;
+                                                }
                                             }
                                             else
                                             {
-                                                propertyBag.particleEngine.CreateBloodSplatter(propertyBag.playerList[pID].Position, propertyBag.playerList[pID].Team == PlayerTeam.Red ? Color.Red : Color.Blue, 0.2f);
+                                                if (aID == 0)//bomb or other hurt
+                                                {
+                                                    propertyBag.particleEngine.CreateBloodSplatter(propertyBag.playerList[pID].Position, propertyBag.playerList[pID].Team == PlayerTeam.Red ? Color.Red : Color.Blue, 0.4f);
+                                                }
+                                                else
+                                                {
+                                                    propertyBag.particleEngine.CreateBloodSplatter(propertyBag.playerList[pID].Position, propertyBag.playerList[pID].Team == PlayerTeam.Red ? Color.Red : Color.Blue, 0.2f);
+                                                }
                                             }
                                             
                                         }
@@ -507,9 +522,10 @@ namespace Infiniminer
 
                                             // Figure out what the effect is.
                                             float distFromExplosive = (blockPos + 0.5f * Vector3.One - propertyBag.playerPosition).Length();
-                                            if (distFromExplosive < 3)
-                                                propertyBag.KillPlayer(Defines.deathByExpl);//"WAS KILLED IN AN EXPLOSION!");
-                                            else if (distFromExplosive < 8)
+                                            //if (distFromExplosive < 3)
+                                             //   propertyBag.KillPlayer(Defines.deathByExpl);//"WAS KILLED IN AN EXPLOSION!");
+                                            //else 
+                                            if (distFromExplosive < 8)
                                             {
                                                 // If we're not in explosion mode, turn it on with the minimum ammount of shakiness.
                                                 if (propertyBag.screenEffect != ScreenEffect.Explosion)
@@ -747,7 +763,7 @@ namespace Infiniminer
             graphicsDeviceManager.IsFullScreen = false;
             graphicsDeviceManager.PreferredBackBufferWidth = 1024;
             graphicsDeviceManager.PreferredBackBufferHeight = 768;
-            graphicsDeviceManager.SynchronizeWithVerticalRetrace = true;
+            graphicsDeviceManager.SynchronizeWithVerticalRetrace = true;//vsync
             graphicsDeviceManager.PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8;
             this.IsFixedTimeStep = false;
 

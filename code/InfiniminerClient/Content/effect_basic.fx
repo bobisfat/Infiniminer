@@ -17,6 +17,7 @@ float4x4 xProjection;
 float4x4 xWorld;
 float3	 xLODColor;
 float	 xTime;
+float	xLight;
 
 //------- Texture Samplers --------
 Texture xTexture;
@@ -56,7 +57,7 @@ PixelToFrame BlockPS(VertexToPixel PSIn)
 	Output.Color.rgb = lerp(texColor.rgb, xLODColor, PSIn.SpecialInfo.y);
 	Output.Color.rgb *= PSIn.SpecialInfo.x;
 	Output.Color.a = texColor.a;
-	
+	Output.Color *= xLight;
 	return Output;
 }
 

@@ -270,6 +270,7 @@ namespace Infiniminer
             screenEffect = ScreenEffect.None;
             screenEffectCounter = 0;
             UpdateCamera();
+            forceStrength = 0.0f;
             allowRespawn = false;
             // Tell the server we have respawned.
             NetBuffer msgBufferb = netClient.CreateBuffer();
@@ -645,8 +646,9 @@ namespace Infiniminer
                         break;
 
                     case PlayerClass.Sapper:
-                        playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
+                        playerTools = new PlayerTools[4] {  PlayerTools.Pickaxe,
                                                             PlayerTools.ConstructionGun,
+                                                            PlayerTools.SpawnItem,
                                                             PlayerTools.Detonator };
                         playerBlocks = new BlockType[7] {   BlockType.Explosive,
                                                             playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
@@ -804,7 +806,7 @@ namespace Infiniminer
                 case BlockType.SolidRed:
                     if (playerTeam == PlayerTeam.Blue)
                         Damage = 10;
-                    else if (playerOre > 1)
+                    else if (playerOre > 0)
                         Damage = 10;
                     else//player has no ore
                         Damage = 0;
@@ -814,7 +816,7 @@ namespace Infiniminer
                 case BlockType.SolidBlue:
                     if (playerTeam == PlayerTeam.Red)
                         Damage = 10;
-                    else if (playerOre > 1)
+                    else if (playerOre > 0)
                         Damage = 10;
                     else//player has no ore
                         Damage = 0;
@@ -824,7 +826,7 @@ namespace Infiniminer
                 case BlockType.SolidRed2:
                     if (playerTeam == PlayerTeam.Blue)
                         Damage = 10;
-                    else if (playerOre > 1)
+                    else if (playerOre > 0)
                         Damage = 10;
                     else//player has no ore
                         Damage = 0;
@@ -834,7 +836,7 @@ namespace Infiniminer
                 case BlockType.SolidBlue2:
                     if (playerTeam == PlayerTeam.Red)
                         Damage = 10;
-                    else if (playerOre > 1)
+                    else if (playerOre > 0)
                         Damage = 10;
                     else//player has no ore
                         Damage = 0;

@@ -151,6 +151,12 @@ Content\blocks\tex_block_force_red.xnb
 Content\icons\tex_icon_glassb.xnb
 Content\icons\tex_icon_glassr.xnb
 Content\icons\tex_icon_metal.xnb
+Content\sprites\tex_sprite_diamond.xnb
+Content\icons\tex_icon_plate.xnb
+Content\blocks\tex_block_hinge.xnb
+Content\icons\tex_icon_research.xnb
+Content\blocks\tex_block_barrel_side.xnb
+Content\blocks\tex_block_barrel_top.xnb
 Content\font_04b08.xnb
 Content\font_04b03b.xnb
 Content\sounds\build.xnb
@@ -171,10 +177,5 @@ Content\sounds\radar-low.xnb
 Content\sounds\rockfall.xnb
 Content\song_title.xnb
 Content\models\basketball.xnb
-Content\sprites\tex_sprite_diamond.xnb
-Content\icons\tex_icon_plate.xnb
-Content\blocks\tex_block_hinge.xnb
-Content\icons\tex_icon_research.xnb
-Content\blocks\tex_block_barrel_side.xnb
-Content\blocks\tex_block_barrel_top.xnb
+Content\sprites\tex_sprite_bomb.xnb
 Content\song_title.wma

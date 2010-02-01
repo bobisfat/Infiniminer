@@ -82,7 +82,8 @@ namespace Infiniminer
         Effect basicEffect;
         InfiniminerGame gameInstance;
         DynamicVertexBuffer[,] vertexBuffers = null;
-        bool[,] vertexListDirty = null;
+        public bool[,] vertexListDirty = null;
+        public float[, ,] Light = null;
         VertexDeclaration vertexDeclaration;
         BloomComponent bloomPosteffect;
 
@@ -227,6 +228,14 @@ namespace Infiniminer
             // Build vertex lists.
             vertexBuffers = new DynamicVertexBuffer[(byte)BlockTexture.MAXIMUM, NUMREGIONS];
             vertexListDirty = new bool[(byte)BlockTexture.MAXIMUM, NUMREGIONS];
+            Light = new float[MAPSIZE, MAPSIZE, MAPSIZE];
+
+            for(int x = 0;x < MAPSIZE-1;x++)
+                for (int y = 0; y < MAPSIZE - 1; y++)
+                    for (int z = 0; z < MAPSIZE - 1; z++)
+                    {
+                        Light[x, y, z] = 0.2f;
+                    }
             for (int i = 0; i < (byte)BlockTexture.MAXIMUM; i++)
                 for (int j = 0; j < NUMREGIONS; j++)
                     vertexListDirty[i, j] = true;
@@ -278,6 +287,30 @@ namespace Infiniminer
             if (x < 0 || y < 0 || z < 0 || x >= MAPSIZE || y >= MAPSIZE || z >= MAPSIZE)
                 return BlockType.None;
             return blockList[x, y, z]; 
+        }
+
+        public bool RayCollision(Vector3 startPosition, Vector3 src, int searchGranularity)
+        {//light ray expires when it hits wall, returns true if it hits nothing
+            Vector3 testPos = startPosition;
+
+            //float distance = Vector3.Distance(cyl.end, cyl.start);
+            Vector3 dir = Vector3.Normalize(src - startPosition);
+            //src -= dir * 2;
+            for(int imax = 10;imax > 0;imax--)
+            {
+                testPos += dir;// / searchGranularity;
+                BlockType testBlock = BlockAtPoint(testPos);
+
+                if ((int)testPos.X == (int)src.X && (int)testPos.Y == (int)src.Y && (int)testPos.Z == (int)src.Z)
+                    return true;
+
+                if(((int)testPos.X != (int)startPosition.X || (int)testPos.Y != (int)startPosition.Y || (int)testPos.Z != (int)startPosition.Z))
+                if (testBlock != BlockType.None)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         public bool RayCollision(Vector3 startPosition, Vector3 rayDirection, float distance, int searchGranularity, ref Vector3 hitPoint, ref Vector3 buildPoint)
@@ -383,6 +416,7 @@ namespace Infiniminer
 
         private void RenderVertexList(GraphicsDevice graphicsDevice, DynamicVertexBuffer vertexBuffer, Texture2D blockTexture, Color lodColor, bool renderTranslucent, BlockTexture blocktex, float elapsedTime)
         {
+            
             if (vertexBuffer == null)
                 return;
 
@@ -395,13 +429,12 @@ namespace Infiniminer
             {
                 basicEffect.CurrentTechnique = basicEffect.Techniques["Block"];
             }
-            
             basicEffect.Parameters["xWorld"].SetValue(Matrix.Identity);
             basicEffect.Parameters["xView"].SetValue(gameInstance.propertyBag.playerCamera.ViewMatrix);
             basicEffect.Parameters["xProjection"].SetValue(gameInstance.propertyBag.playerCamera.ProjectionMatrix);
             basicEffect.Parameters["xTexture"].SetValue(blockTexture);
-            basicEffect.Parameters["xLODColor"].SetValue(lodColor.ToVector3());
-
+            basicEffect.Parameters["xLODColor"].SetValue(new Vector3(0.0f,0.0f,0.0f));//lodColor.ToVector3());
+            basicEffect.Parameters["xLight"].SetValue(1.0f);
 
             basicEffect.Begin();
             
@@ -451,7 +484,7 @@ namespace Infiniminer
        
         }
 
-        private void RegenerateDirtyVertexLists()
+        public void RegenerateDirtyVertexLists()
         {
             for (BlockTexture blockTexture = BlockTexture.None+1; blockTexture < BlockTexture.MAXIMUM; blockTexture++)
                 for (int r = 0; r < NUMREGIONS; r++)
@@ -505,80 +538,88 @@ namespace Infiniminer
             }
         }
 
+        public float GetLighting(ref ushort x, ref ushort y, ref ushort z)
+        {
+            float light = Light[x, y, z];
+            //light = 1.0f - ((MAPSIZE-10) - y) * 0.05f;
+            return light;
+        }
+
         private void BuildFaceVertices(ref VertexPositionTextureShade[] vertexList, ulong vertexPointer, uint faceInfo, bool isShockBlock)
         {
             // Decode the face information.
             ushort x = 0, y = 0, z = 0;
             BlockFaceDirection faceDir = BlockFaceDirection.MAXIMUM;
             DecodeBlockFace(faceInfo, ref x, ref y, ref z, ref faceDir);
-
+            //lighting
+            float modifier = 1.0f;// GetLighting(ref x, ref y, ref z);// 1.0f - (MAPSIZE - y) * 0.05f;
             // Insert the vertices.
             switch (faceDir)
             {
                 case BlockFaceDirection.XIncreasing:
                     {
-                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z + 1), new Vector2(0, 0), 0.6);
-                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z), new Vector2(1, 0), 0.6);
-                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(0, 1), 0.6);
-                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(0, 1), 0.6);
-                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z), new Vector2(1, 0), 0.6);
-                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(1, 1), 0.6);
+                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z + 1), new Vector2(0, 0), 0.6*modifier);
+                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z), new Vector2(1, 0), 0.6 * modifier);
+                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(0, 1), 0.6 * modifier);
+                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(0, 1), 0.6 * modifier);
+                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z), new Vector2(1, 0), 0.6 * modifier);
+                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(1, 1), 0.6 * modifier);
                     }
                     break;
 
 
                 case BlockFaceDirection.XDecreasing:
                     {
-                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(0, 0), 0.6);
-                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x, y + 1, z + 1), new Vector2(1, 0), 0.6);
-                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(1, 1), 0.6);
-                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(0, 0), 0.6);
-                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(1, 1), 0.6);
-                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y, z), new Vector2(0, 1), 0.6);
+                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(0, 0), 0.6 * modifier);
+                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x, y + 1, z + 1), new Vector2(1, 0), 0.6 * modifier);
+                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(1, 1), 0.6 * modifier);
+                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(0, 0), 0.6 * modifier);
+                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(1, 1), 0.6 * modifier);
+                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y, z), new Vector2(0, 1), 0.6 * modifier);
                     }
                     break;
 
                 case BlockFaceDirection.YIncreasing:
                     {
-                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(0, 1), 0.8);
-                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z), new Vector2(0, 0), 0.8);
-                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z + 1), new Vector2(1, 0), 0.8);
-                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(0, 1), 0.8);
-                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z + 1), new Vector2(1, 0), 0.8);
-                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y + 1, z + 1), new Vector2(1, 1), 0.8);
+                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(0, 1), 0.8 * modifier);
+                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z), new Vector2(0, 0), 0.8 * modifier);
+                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z + 1), new Vector2(1, 0), 0.8 * modifier);
+                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(0, 1), 0.8 * modifier);
+                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z + 1), new Vector2(1, 0), 0.8 * modifier);
+                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y + 1, z + 1), new Vector2(1, 1), 0.8 * modifier);
                     }
                     break;
 
                 case BlockFaceDirection.YDecreasing:
                     {
-                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(0, 0), isShockBlock ? 1.5 : 0.2);
-                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(1, 0), isShockBlock ? 1.5 : 0.2);
-                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(0, 1), isShockBlock ? 1.5 : 0.2);
-                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(0, 1), isShockBlock ? 1.5 : 0.2);
-                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(1, 0), isShockBlock ? 1.5 : 0.2);
-                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y, z), new Vector2(1, 1), isShockBlock ? 1.5 : 0.2);
+                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(0, 0), isShockBlock ? 1.5 : 0.2 * modifier);
+                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(1, 0), isShockBlock ? 1.5 : 0.2 * modifier);
+                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(0, 1), isShockBlock ? 1.5 : 0.2 * modifier);
+                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(0, 1), isShockBlock ? 1.5 : 0.2 * modifier);
+                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(1, 0), isShockBlock ? 1.5 : 0.2 * modifier);
+                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y, z), new Vector2(1, 1), isShockBlock ? 1.5 : 0.2 * modifier);
                     }
                     break;
 
                 case BlockFaceDirection.ZIncreasing:
                     {
-                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x, y + 1, z + 1), new Vector2(0, 0), 0.4);
-                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z + 1), new Vector2(1, 0), 0.4);
-                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(1, 1), 0.4);
-                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x, y + 1, z + 1), new Vector2(0, 0), 0.4);
-                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(1, 1), 0.4);
-                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(0, 1), 0.4);
+                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x, y + 1, z + 1), new Vector2(0, 0), 0.4 * modifier);
+                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z + 1), new Vector2(1, 0), 0.4 * modifier);
+                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(1, 1), 0.4 * modifier);
+                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x, y + 1, z + 1), new Vector2(0, 0), 0.4 * modifier);
+                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x + 1, y, z + 1), new Vector2(1, 1), 0.4 * modifier);
+                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y, z + 1), new Vector2(0, 1), 0.4 * modifier);
                     }
                     break;
 
                 case BlockFaceDirection.ZDecreasing:
                     {
-                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z), new Vector2(0, 0), 0.4);
-                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(1, 0), 0.4);
-                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(0, 1), 0.4);
-                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(0, 1), 0.4);
-                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(1, 0), 0.4);
-                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y, z), new Vector2(1, 1), 0.4);
+                        vertexList[vertexPointer + 0] = new VertexPositionTextureShade(new Vector3(x + 1, y + 1, z), new Vector2(0, 0), 0.4 * modifier);
+                        vertexList[vertexPointer + 1] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(1, 0), 0.4 * modifier);
+                        vertexList[vertexPointer + 2] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(0, 1), 0.4 * modifier);
+                        vertexList[vertexPointer + 3] = new VertexPositionTextureShade(new Vector3(x + 1, y, z), new Vector2(0, 1), 0.4 * modifier);
+                        vertexList[vertexPointer + 4] = new VertexPositionTextureShade(new Vector3(x, y + 1, z), new Vector2(1, 0), 0.4 * modifier);
+                        vertexList[vertexPointer + 5] = new VertexPositionTextureShade(new Vector3(x, y, z), new Vector2(1, 1), 0.4 * modifier);
                     }
                     break;
             }
@@ -651,7 +692,7 @@ namespace Infiniminer
         }
 
         // Returns the region that a block at (x,y,z) should belong in.
-        private uint GetRegion(ushort x, ushort y, ushort z)
+        public uint GetRegion(ushort x, ushort y, ushort z)
         {
             return (uint)(x / REGIONSIZE + (y / REGIONSIZE) * REGIONRATIO + (z / REGIONSIZE) * REGIONRATIO * REGIONRATIO);
         }

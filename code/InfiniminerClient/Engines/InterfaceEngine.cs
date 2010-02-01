@@ -223,7 +223,7 @@ namespace Infiniminer
             }
             //if (_P.playerClass == PlayerClass.Prospector)
             //{
-            if (_P.temperature < 30)
+            if (_P.temperature < 30 && _P.temperature > 0)
                     spriteBatch.DrawString(uiFont, "temp: " + _P.temperature, new Vector2(200, 200), Color.Blue);
             else if (_P.temperature > 30 && _P.temperature < 71)
                     spriteBatch.DrawString(uiFont, "temp: " + _P.temperature, new Vector2(200, 200), Color.Yellow);
@@ -537,35 +537,35 @@ namespace Infiniminer
                 if (_P.screenEffectCounter >= 2)
                     RenderMessageCenter(spriteBatch, "You may now respawn.", new Vector2(graphicsDevice.Viewport.Width / 2, graphicsDevice.Viewport.Height / 2), Color.White, Color.Black);
             }
-            if (_P.screenEffect == ScreenEffect.Teleport || _P.screenEffect == ScreenEffect.Explosion)
+            else if (_P.screenEffect == ScreenEffect.Teleport || _P.screenEffect == ScreenEffect.Explosion)
             {
                 Color drawColor = new Color(1, 1, 1, 1 - (float)_P.screenEffectCounter * 0.5f);
                 spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height), drawColor);
                 if (_P.screenEffectCounter > 2)
                     _P.screenEffect = ScreenEffect.None;
             }
-            if (_P.screenEffect == ScreenEffect.Earthquake)
+            else if (_P.screenEffect == ScreenEffect.Earthquake)
             {
                 //Color drawColor = new Color(1, 1, 1, 1 - (float)_P.screenEffectCounter * 0.5f);
                 //spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height), drawColor);
                 if (_P.screenEffectCounter > 2)
                     _P.screenEffect = ScreenEffect.None;
             }
-            if (_P.screenEffect == ScreenEffect.Fall)
+            else if (_P.screenEffect == ScreenEffect.Fall)
             {
                 Color drawColor = new Color(1, 0, 0, 1 - (float)_P.screenEffectCounter * 0.5f);
                 spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height), drawColor);
                 if (_P.screenEffectCounter > 2)
                     _P.screenEffect = ScreenEffect.None;
             }
-            if (_P.screenEffect == ScreenEffect.Water)
+            else if (_P.screenEffect == ScreenEffect.Water)
             {
                 Color drawColor = new Color(0, 0, 1, 1 - (float)_P.screenEffectCounter);
                 spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height), drawColor);
                 if (_P.screenEffectCounter > 2)
                     _P.screenEffect = ScreenEffect.None;
             }
-            if (_P.screenEffect == ScreenEffect.Drown)
+            else if (_P.screenEffect == ScreenEffect.Drown)
             {
                 Color drawColor = new Color(0.5f, 0, 0.8f, 0.25f + (float)_P.screenEffectCounter*0.2f);
                 spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height), drawColor);

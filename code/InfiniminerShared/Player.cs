@@ -130,6 +130,7 @@ namespace Infiniminer
         }
         public Vector3 deltaPosition = Vector3.Zero;
         private Vector3 position = Vector3.Zero;
+        public Vector3 lastPosition = Vector3.Zero;
         public Vector3 Position
         {
             get { return position; }

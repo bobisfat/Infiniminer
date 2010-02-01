@@ -311,7 +311,7 @@ namespace Infiniminer
                     }
 
                 }
-                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2 || block == BlockType.GlassR || block == BlockType.ArtCaseR)
+                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2 || block == BlockType.GlassR || block == BlockType.ArtCaseR || block == BlockType.ResearchR || block == BlockType.BeaconRed)
                 {
                     p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
                 }
@@ -323,7 +323,7 @@ namespace Infiniminer
                 {
                     p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
-                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2 || block == BlockType.GlassB || block == BlockType.ArtCaseB)
+                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2 || block == BlockType.GlassB || block == BlockType.ArtCaseB || block == BlockType.ResearchB || block == BlockType.BeaconBlue)
                 {
                     p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
@@ -416,9 +416,14 @@ namespace Infiniminer
                     p.Position.Y += 1.0f + (float)randGen.NextDouble() - 0.5f;
 
                 }
-                else
+                else if (block == BlockType.Dirt || block == BlockType.DirtSign)
                 {
                     p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
+                }
+                else
+                {
+                    p.Color = Vector4.One * (0.2f + (float)(randGen.NextDouble() * 0.7f));
+                    //p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
                 }
                 particleList.Add(p);
             }
@@ -483,11 +488,11 @@ namespace Infiniminer
                 {
                     p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
-                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2 || block == BlockType.GlassR || block == BlockType.ArtCaseR)
+                else if (block == BlockType.SolidRed || block == BlockType.SolidRed2 || block == BlockType.GlassR || block == BlockType.ArtCaseR || block == BlockType.ResearchR || block == BlockType.BeaconRed)
                 {
                     p.Color = new Vector4(0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 0.1f, 0.1f, 1.0f);
                 }
-                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2 || block == BlockType.GlassB || block == BlockType.ArtCaseB)
+                else if (block == BlockType.SolidBlue || block == BlockType.SolidBlue2 || block == BlockType.GlassB || block == BlockType.ArtCaseB || block == BlockType.ResearchB || block == BlockType.BeaconBlue)
                 {
                     p.Color = new Vector4(0.1f, 0.1f, 0.8f + (float)((randGen.NextDouble() - 0.5f) * 0.2f), 1.0f);
                 }
@@ -563,9 +568,14 @@ namespace Infiniminer
                     p.Position.Y += 1.0f + (float)randGen.NextDouble() - 0.5f;
                     
                 }
-                else
+                else if (block == BlockType.Dirt || block == BlockType.DirtSign)
                 {
                     p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
+                }
+                else
+                {
+                    p.Color = Vector4.One * (0.2f + (float)(randGen.NextDouble() * 0.7f));
+                    //p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
                 }
 
                 particleList.Add(p);

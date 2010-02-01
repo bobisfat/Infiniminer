@@ -41,7 +41,52 @@ namespace Infiniminer
                     p.IdleAnimation = true;
 
                 if (!(float.IsNaN(p.Position.X)))
-                p.deltaPosition = p.deltaPosition + (((p.Position - p.deltaPosition) * (8 * (float)gameTime.ElapsedGameTime.TotalSeconds)));
+                {
+                    p.deltaPosition = p.deltaPosition + (((p.Position - p.deltaPosition) * (8 * (float)gameTime.ElapsedGameTime.TotalSeconds)));
+  
+                    //for (int a = -5; a < 6; a++)
+                    //    for (int b = -5; b < 6; b++)
+                    //        for (int c = -5; c < 6; c++)
+                    //        {
+                    //            int nx = a + (int)p.deltaPosition.X;
+                    //            int ny = b + (int)p.deltaPosition.Y;
+                    //            int nz = c + (int)p.deltaPosition.Z;
+                    //            if (nx < 63 && ny < 63 && nz < 63 && nx > 0 && ny > 0 && nz > 0)
+                    //            {
+                    //                if ((int)p.lastPosition.X != (int)p.deltaPosition.X || (int)p.lastPosition.Y != (int)p.deltaPosition.Y || (int)p.lastPosition.Z != (int)p.deltaPosition.Z)
+                    //                {
+                    //                    Vector3 raydir = new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f) - p.deltaPosition;
+                    //                    raydir.Normalize();
+                    //                    float distray = (new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f) - p.deltaPosition).Length();
+
+                    //                    if (gameInstance.propertyBag.blockEngine.RayCollision(new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f), raydir, distray - 1.0f, 5, ref nx, ref ny, ref nz))
+                    //                    {
+                    //                        float lightdist = distray;
+                    //                        gameInstance.propertyBag.blockEngine.Light[nx, ny, nz] = 1.0f;// 1.0f - lightdist * 0.2f;
+
+                    //                        uint region = gameInstance.propertyBag.blockEngine.GetRegion((ushort)nx, (ushort)ny, (ushort)nz);
+
+                    //                        for (int d = 1; d < (int)BlockTexture.MAXIMUM; d++)
+                    //                        {
+                    //                            gameInstance.propertyBag.blockEngine.vertexListDirty[d, region] = true;
+                    //                        }
+                    //                    }
+                    //                    else
+                    //                    {
+                    //                        gameInstance.propertyBag.blockEngine.Light[nx, ny, nz] = 0.1f;
+                    //                        uint region = gameInstance.propertyBag.blockEngine.GetRegion((ushort)nx, (ushort)ny, (ushort)nz);
+
+                    //                        for (int d = 1; d < (int)BlockTexture.MAXIMUM; d++)
+                    //                        {
+                    //                            gameInstance.propertyBag.blockEngine.vertexListDirty[d, region] = true;
+                    //                        }
+                    //                    }
+                    //                }
+                    //            }
+                    //        }
+
+                    p.lastPosition = p.deltaPosition;
+                }
                 //.zero for NAN problems with dragging window
                 
                 p.SpriteModel.Update(gameTime);

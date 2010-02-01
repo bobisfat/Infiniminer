@@ -118,10 +118,56 @@ namespace Infiniminer.States
             return nextState;
         }
 
+        public void Lightsource(ref Vector3 src, int intensity)
+        {
+            for (int a = -intensity; a <= intensity; a++)
+                for (int b = -intensity; b <= intensity; b++)
+                    for (int c = -intensity; c <= intensity; c++)
+                        {
+                            int nx = a + (int)src.X;
+                            int ny = b + (int)src.Y;
+                            int nz = c + (int)src.Z;
+
+                            if (nx < 63 && ny < 63 && nz < 63 && nx > 0 && ny > 0 && nz > 0)
+                            {
+                                
+
+                                if (_P.blockEngine.RayCollision(new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f), src, 10))
+                                {
+                                    float distray = (new Vector3(nx, ny, nz) - src).Length();
+                                    float lightdist = distray;
+                                    _P.blockEngine.Light[nx, ny, nz] = 1.0f - lightdist * 0.1f;
+
+                                    uint region = _P.blockEngine.GetRegion((ushort)nx, (ushort)ny, (ushort)nz);
+
+                                    for (int d = 1; d < (int)BlockTexture.MAXIMUM; d++)
+                                    {
+                                        _P.blockEngine.vertexListDirty[d, region] = true;
+                                    }
+                                }
+                                else
+                                {
+                                    _P.blockEngine.Light[nx, ny, nz] = 0.1f;
+                                    uint region = _P.blockEngine.GetRegion((ushort)nx, (ushort)ny, (ushort)nz);
+
+                                    for (int d = 1; d < (int)BlockTexture.MAXIMUM; d++)
+                                    {
+                                        _P.blockEngine.vertexListDirty[d, region] = true;
+                                    }
+                                }
+                            }
+                        }
+        }
+
         private void UpdatePlayerPosition(GameTime gameTime, KeyboardState keyState)
         {
+           /* if ((int)_P.lastPosition.X != (int)_P.playerPosition.X || (int)_P.lastPosition.Y != (int)_P.playerPosition.Y || (int)_P.lastPosition.Z != (int)_P.playerPosition.Z)
+            {//update lights
+                Vector3 light = _P.playerPosition + Vector3.UnitY * 0.5f;
+                Lightsource(ref light, 10);
+            }*/
             //temperature data
-            
+
                 _P.temperature = 0;
                 for (int a = -5; a < 6; a++)
                     for (int b = -5; b < 6; b++)
@@ -140,7 +186,7 @@ namespace Infiniminer.States
                             }
                         }
 
-            
+               
             // Double-speed move flag, set if we're on road.
             _P.moveVector = Vector3.Zero;
             bool movingOnRoad = false;
@@ -446,8 +492,11 @@ namespace Infiniminer.States
                     if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Sprint))//keyState.IsKeyDown(Keys.LeftShift) || keyState.IsKeyDown(Keys.RightShift))
                         sprinting = true;
                     //Crouching
-                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Crouch))
-                        crouching = true;
+                    //if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Crouch))
+                    //{
+                       
+                    //    crouching = true;
+                    //}
                 //}
             }
             
@@ -483,6 +532,11 @@ namespace Infiniminer.States
                         else if (bPair.Value.Type == ItemType.Artifact && _P.Content[10] == 0 && bPair.Value.Content[6] == 0)//[10] artifact slot, [6] locked item
                         {
                             _P.GetItem(bPair.Value.ID);
+                        }
+                        else if (bPair.Value.Type == ItemType.Bomb)//[10] artifact slot, [6] locked item
+                        {
+                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds((int)(distance * 100));//retry based on objects distance
+                            //_P.GetItem(bPair.Value.ID);
                         }
                         else
                         {
