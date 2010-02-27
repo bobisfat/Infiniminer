@@ -42,50 +42,57 @@ namespace Infiniminer
 
                 if (!(float.IsNaN(p.Position.X)))
                 {
-                    p.deltaPosition = p.deltaPosition + (((p.Position - p.deltaPosition) * (8 * (float)gameTime.ElapsedGameTime.TotalSeconds)));
-  
-                    //for (int a = -5; a < 6; a++)
-                    //    for (int b = -5; b < 6; b++)
-                    //        for (int c = -5; c < 6; c++)
-                    //        {
-                    //            int nx = a + (int)p.deltaPosition.X;
-                    //            int ny = b + (int)p.deltaPosition.Y;
-                    //            int nz = c + (int)p.deltaPosition.Z;
-                    //            if (nx < 63 && ny < 63 && nz < 63 && nx > 0 && ny > 0 && nz > 0)
-                    //            {
-                    //                if ((int)p.lastPosition.X != (int)p.deltaPosition.X || (int)p.lastPosition.Y != (int)p.deltaPosition.Y || (int)p.lastPosition.Z != (int)p.deltaPosition.Z)
-                    //                {
-                    //                    Vector3 raydir = new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f) - p.deltaPosition;
-                    //                    raydir.Normalize();
-                    //                    float distray = (new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f) - p.deltaPosition).Length();
+                    if (p.Class == PlayerClass.Prospector && p.Content[5] == 1)
+                    {
+                        p.deltaPosition = Vector3.Zero;
+                    }
+                    else
+                    {
+                        p.deltaPosition = p.deltaPosition + (((p.Position - p.deltaPosition) * (8 * (float)gameTime.ElapsedGameTime.TotalSeconds)));
 
-                    //                    if (gameInstance.propertyBag.blockEngine.RayCollision(new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f), raydir, distray - 1.0f, 5, ref nx, ref ny, ref nz))
-                    //                    {
-                    //                        float lightdist = distray;
-                    //                        gameInstance.propertyBag.blockEngine.Light[nx, ny, nz] = 1.0f;// 1.0f - lightdist * 0.2f;
+                        //for (int a = -5; a < 6; a++)
+                        //    for (int b = -5; b < 6; b++)
+                        //        for (int c = -5; c < 6; c++)
+                        //        {
+                        //            int nx = a + (int)p.deltaPosition.X;
+                        //            int ny = b + (int)p.deltaPosition.Y;
+                        //            int nz = c + (int)p.deltaPosition.Z;
+                        //            if (nx < 63 && ny < 63 && nz < 63 && nx > 0 && ny > 0 && nz > 0)
+                        //            {
+                        //                if ((int)p.lastPosition.X != (int)p.deltaPosition.X || (int)p.lastPosition.Y != (int)p.deltaPosition.Y || (int)p.lastPosition.Z != (int)p.deltaPosition.Z)
+                        //                {
+                        //                    Vector3 raydir = new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f) - p.deltaPosition;
+                        //                    raydir.Normalize();
+                        //                    float distray = (new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f) - p.deltaPosition).Length();
 
-                    //                        uint region = gameInstance.propertyBag.blockEngine.GetRegion((ushort)nx, (ushort)ny, (ushort)nz);
+                        //                    if (gameInstance.propertyBag.blockEngine.RayCollision(new Vector3(nx + 0.5f, ny + 0.5f, nz + 0.5f), raydir, distray - 1.0f, 5, ref nx, ref ny, ref nz))
+                        //                    {
+                        //                        float lightdist = distray;
+                        //                        gameInstance.propertyBag.blockEngine.Light[nx, ny, nz] = 1.0f;// 1.0f - lightdist * 0.2f;
 
-                    //                        for (int d = 1; d < (int)BlockTexture.MAXIMUM; d++)
-                    //                        {
-                    //                            gameInstance.propertyBag.blockEngine.vertexListDirty[d, region] = true;
-                    //                        }
-                    //                    }
-                    //                    else
-                    //                    {
-                    //                        gameInstance.propertyBag.blockEngine.Light[nx, ny, nz] = 0.1f;
-                    //                        uint region = gameInstance.propertyBag.blockEngine.GetRegion((ushort)nx, (ushort)ny, (ushort)nz);
+                        //                        uint region = gameInstance.propertyBag.blockEngine.GetRegion((ushort)nx, (ushort)ny, (ushort)nz);
 
-                    //                        for (int d = 1; d < (int)BlockTexture.MAXIMUM; d++)
-                    //                        {
-                    //                            gameInstance.propertyBag.blockEngine.vertexListDirty[d, region] = true;
-                    //                        }
-                    //                    }
-                    //                }
-                    //            }
-                    //        }
+                        //                        for (int d = 1; d < (int)BlockTexture.MAXIMUM; d++)
+                        //                        {
+                        //                            gameInstance.propertyBag.blockEngine.vertexListDirty[d, region] = true;
+                        //                        }
+                        //                    }
+                        //                    else
+                        //                    {
+                        //                        gameInstance.propertyBag.blockEngine.Light[nx, ny, nz] = 0.1f;
+                        //                        uint region = gameInstance.propertyBag.blockEngine.GetRegion((ushort)nx, (ushort)ny, (ushort)nz);
 
-                    p.lastPosition = p.deltaPosition;
+                        //                        for (int d = 1; d < (int)BlockTexture.MAXIMUM; d++)
+                        //                        {
+                        //                            gameInstance.propertyBag.blockEngine.vertexListDirty[d, region] = true;
+                        //                        }
+                        //                    }
+                        //                }
+                        //            }
+                        //        }
+
+                        p.lastPosition = p.deltaPosition;
+                    }
                 }
                 //.zero for NAN problems with dragging window
                 
@@ -130,7 +137,9 @@ namespace Infiniminer
             {
                 if (i.Value.Type == ItemType.Artifact)//artifact pulse
                 {
-                    color = new Vector4((float)(i.Value.Content[1]) / 100 * this.gameInstance.propertyBag.colorPulse, (float)(i.Value.Content[2]) / 100 * this.gameInstance.propertyBag.colorPulse, (float)(i.Value.Content[3]) / 100 * this.gameInstance.propertyBag.colorPulse, 1.0f);
+                    float goldtwinkle = 0.75f + (this.gameInstance.propertyBag.colorPulse * 0.25f);
+                    //* this.gameInstance.propertyBag.colorPulse
+                    color = new Vector4((float)(i.Value.Content[1]) / 100 * goldtwinkle, (float)(i.Value.Content[2]) / 100 * goldtwinkle, (float)(i.Value.Content[3]) / 100 * goldtwinkle, 1.0f);
                 }
                 else if (i.Value.Type == ItemType.Gold)//gold twinkle
                 {
@@ -199,20 +208,26 @@ namespace Infiniminer
                             Vector3 hit = Vector3.Zero;
                             Vector3 build = Vector3.Zero;
                             gameInstance.propertyBag.blockEngine.RayCollision(_P.playerPosition + new Vector3(0f, 0.1f, 0f), diff, len, 25, ref hit, ref build);
-                            if (hit == Vector3.Zero) //Why is this reversed?
+                            if (hit == Vector3.Zero)
                                 continueDraw = true;
                         }
                     }
                     if (continueDraw)//p.ID != _P.playerMyId && p.Team == _P.playerTeam)
                     {
-                        playerText = p.Handle;
-                        if (p.Ping > 0)
-                            playerText = "*** " + playerText + " ***";
+                        if (p.Class == PlayerClass.Prospector && p.Content[5] == 1)
+                        {//no drawing hidden
+                        }
+                        else
+                        {
+                            playerText = p.Handle;
+                            if (p.Ping > 0)
+                                playerText = "*** " + playerText + " ***";
 
-                        p.SpriteModel.DrawText(_P.playerCamera.ViewMatrix,
-                                               _P.playerCamera.ProjectionMatrix,
-                                               p.Position - Vector3.UnitY * 1.5f,
-                                               playerText, p.Team == PlayerTeam.Blue ? _P.blue : _P.red);//Defines.IM_BLUE : Defines.IM_RED);
+                            p.SpriteModel.DrawText(_P.playerCamera.ViewMatrix,
+                                                   _P.playerCamera.ProjectionMatrix,
+                                                   p.Position - Vector3.UnitY * 1.5f,
+                                                   playerText, p.Team == PlayerTeam.Blue ? _P.blue : _P.red);//Defines.IM_BLUE : Defines.IM_RED);
+                        }
                     }
                 }
             }

@@ -113,6 +113,9 @@ namespace Infiniminer
                 case ItemType.Bomb:
                     textureName = "sprites/tex_sprite_bomb";
                     break;
+                case ItemType.Rope:
+                    textureName = "sprites/tex_sprite_diamond";
+                    break;
                 default:
                     textureName = "sprites/tex_sprite_lemonorgoldnum";
                     break;

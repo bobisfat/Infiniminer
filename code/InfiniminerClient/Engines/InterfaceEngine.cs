@@ -98,6 +98,7 @@ namespace Infiniminer
             blockIcons[BlockType.Metal] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_metal");
             blockIcons[BlockType.TrapR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
             blockIcons[BlockType.Dirt] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_dirt");
+            blockIcons[BlockType.Grass] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_grass");
             blockIcons[BlockType.Pump] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pump");
             blockIcons[BlockType.Barrel] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_compressor");
             blockIcons[BlockType.Lever] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_lever");
@@ -403,6 +404,9 @@ namespace Infiniminer
 
             if (gameInstance.DrawFrameRate)
                 RenderMessageCenter(spriteBatch, String.Format("FPS: {0:000}", gameInstance.FrameRate), new Vector2(60, graphicsDevice.Viewport.Height - 20), Color.Gray, Color.Black);
+
+            if (!_P.playerDead && _P.Content[10] > 0)
+                RenderMessageCenter(spriteBatch, ArtifactInformation.GetName(_P.Content[10]), new Vector2(240 + (ArtifactInformation.GetName(_P.Content[10])).Length * 2, graphicsDevice.Viewport.Height - 20), Color.Lerp(Color.White, Color.Gold, _P.colorPulse), Color.Black);
 
             // Show the altimeter.
             int altitude = (int)(_P.playerPosition.Y - 64 + Defines.GROUND_LEVEL);

@@ -28,6 +28,11 @@ D8 = Interact1
 D9 = Interact2
 D0 = Interact3
 OemMinus = Interact4
+O = DropOre
+G = DropGold
+L = DropDiamond
+P = DropArtifact
+
 Y = SayAll
 U = SayTeam
 M = ChangeClass

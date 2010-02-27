@@ -197,6 +197,10 @@ namespace Infiniminer
             keyBinds.Add(Keys.D9, Buttons.Interact2);
             keyBinds.Add(Keys.D0, Buttons.Interact3);
             keyBinds.Add(Keys.OemMinus, Buttons.Interact4);
+            keyBinds.Add(Keys.O, Buttons.DropOre);
+            keyBinds.Add(Keys.G, Buttons.DropGold);
+            keyBinds.Add(Keys.L, Buttons.DropDiamond);
+            keyBinds.Add(Keys.P, Buttons.DropArtifact);
 
             keyBinds.Add(Keys.Y, Buttons.SayAll);
             keyBinds.Add(Keys.U, Buttons.SayTeam);

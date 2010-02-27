@@ -25,6 +25,10 @@ namespace Infiniminer
         Interact2,
         Interact3,
         Interact4,
+        DropOre,
+        DropGold,
+        DropArtifact,
+        DropDiamond,
         //All buttons past this point will never be sent to the server
         SayAll,
         SayTeam,
@@ -91,6 +95,7 @@ namespace Infiniminer
         BlockSet,               // x, y, z, type
         BlockSetDebris,         // x, y, z, type + particle debris distance check
         TriggerDebris,          // position, spawns a bunch of particles
+        Effect,                 //spawn graphic effect
         UseTool,                // position, heading, tool, blocktype 
         SelectClass,            // class
         ResourceUpdate,         // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash: ReliableInOrder1
@@ -100,12 +105,14 @@ namespace Infiniminer
         CashUpdate,
         ScoreUpdate,
         TeamCashUpdate,
+        TeamOreUpdate,
         ItemUpdate,             // send its new x/y
         ItemScaleUpdate,
         ItemContentSpecificUpdate,
         ContentUpdate,          // sends all player.content to player
         ContentSpecificUpdate,   //sends a single content update to a player
         PlayerContentUpdate,    //update a single players content(specific) for all players
+        ActiveArtifactUpdate,   //show player what active artifacts are engaged currently
         DepositOre,
         DepositCash,
         WithdrawOre,
@@ -118,6 +125,7 @@ namespace Infiniminer
         PlayerJoined,           // uint id, player name :ReliableInOrder2
         PlayerLeft,             // uint id              :ReliableInOrder2
         PlayerSetTeam,          // (uint id for server), byte team   :ReliableInOrder2
+        PlayerSetClass,
         PlayerDead,             // (uint id for server) :ReliableInOrder2
         PlayerAlive,            // (uint id for server) :ReliableInOrder2
         PlayerPing,             // uint id
@@ -132,6 +140,7 @@ namespace Infiniminer
         SetBeacon,              // vector3 position, string text ("" means remove)
         SetItem,
         GetItem,
+        DropItem,
         SetItemRemove,
     }
 

@@ -416,7 +416,7 @@ namespace Infiniminer
                     p.Position.Y += 1.0f + (float)randGen.NextDouble() - 0.5f;
 
                 }
-                else if (block == BlockType.Dirt || block == BlockType.DirtSign)
+                else if (block == BlockType.Dirt || block == BlockType.DirtSign || block == BlockType.Grass)
                 {
                     p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
                 }
@@ -568,7 +568,7 @@ namespace Infiniminer
                     p.Position.Y += 1.0f + (float)randGen.NextDouble() - 0.5f;
                     
                 }
-                else if (block == BlockType.Dirt || block == BlockType.DirtSign)
+                else if (block == BlockType.Dirt || block == BlockType.DirtSign || block == BlockType.Grass)
                 {
                     p.Color = new Vector4(0.35f + (float)((randGen.NextDouble() - 0.5f) * 0.03f), 0.235f + (float)((randGen.NextDouble() - 0.5f) * 0.02f), 0.156f + (float)((randGen.NextDouble() - 0.5f) * 0.015f), 1.0f);
                 }
@@ -619,6 +619,29 @@ namespace Infiniminer
                 
                 p.Size = 0.15f;
                 p.Position = Position;
+                p.Gravity = -2.0f;
+                //p.Position.Y += (float)randGen.NextDouble();
+                p.Velocity = new Vector3((float)randGen.NextDouble() * 2 - 1.0f, 0.0f, (float)randGen.NextDouble() * 2 - 1.0f);
+                p.Lifetime = DateTime.Now;
+                p.Bounce = 0.5f;
+                p.SizeChange = 0.2f;
+                particleList.Add(p);
+            }
+        }
+
+        public void CreateHidden(Vector3 Position, Color color)
+        {
+            for (int i = 0; i < 25; i++)
+            {
+                Particle p = new Particle();
+                p.Color = color.ToVector4();
+                p.Position = Position;
+                p.Position.X += (float)randGen.NextDouble() - 0.5f;
+                p.Position.Z += (float)randGen.NextDouble() - 0.5f;
+                p.Position.Y += (float)randGen.NextDouble() + 0.1f;
+
+                p.Size = 0.15f;
+
                 p.Gravity = -2.0f;
                 //p.Position.Y += (float)randGen.NextDouble();
                 p.Velocity = new Vector3((float)randGen.NextDouble() * 2 - 1.0f, 0.0f, (float)randGen.NextDouble() * 2 - 1.0f);

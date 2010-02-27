@@ -38,6 +38,7 @@ namespace Infiniminer
         public KeyBindHandler keyBinds = null;
 
         // Player variables.
+        public Int32[,] artifactActive = null;
         public Camera playerCamera = null;
         public Vector3 playerPosition = Vector3.Zero;
         public Vector3 playerVelocity = Vector3.Zero;
@@ -58,6 +59,7 @@ namespace Infiniminer
         public uint playerCash = 0;
         public uint playerWeight = 0;
         public uint playerOreMax = 0;
+        public DateTime blockPickup = DateTime.Now;
         public int temperature = 0;
         public Vector3 forceVector = Vector3.Zero;
         public float forceStrength = 0.0f;
@@ -130,6 +132,7 @@ namespace Infiniminer
             {
                 Content[a] = 0;
             }
+            artifactActive = new int[3, 20];
 
             netClient.Start();
 
@@ -224,6 +227,13 @@ namespace Infiniminer
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
+        public void DropItem(uint ID)
+        {
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.DropItem);
+            msgBuffer.Write(ID);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
         public void KillPlayer(string deathMessage)
         {
             if (netClient.Status != NetConnectionStatus.Connected)
@@ -598,7 +608,8 @@ namespace Infiniminer
                     case PlayerClass.Prospector:
                         playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
                                                             PlayerTools.ConstructionGun,
-                                                            PlayerTools.ProspectingRadar };
+                                                            PlayerTools.ProspectingRadar,
+                        };// PlayerTools.Hide };//.ThrowRope
 
                         playerBlocks = new BlockType[6] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                             playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
@@ -672,7 +683,7 @@ namespace Infiniminer
 
                 if (this.playerClass != PlayerClass.None)
                 {
-                    this.KillPlayer("");
+                    this.KillPlayer("BECAME A " + playerClass + "!");
                 }
 
                 this.playerClass = playerClass;
@@ -725,13 +736,18 @@ namespace Infiniminer
             Vector3 hitPoint = Vector3.Zero;
             Vector3 buildPoint = Vector3.Zero;
 
-            bool dig = blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2, 10, ref hitPoint, ref buildPoint, BlockType.Water);
-            
+            bool dig = false;
+            if(artifactActive[(byte)playerTeam,4] > 0 || Content[10] == 4)
+                dig = blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2, 10, ref hitPoint, ref buildPoint, BlockType.Water);
+            else
+                dig = blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2, 10, ref hitPoint, ref buildPoint, BlockType.None);
+
             Vector3 attackVector = playerPosition + (playerCamera.GetLookVector()*0.8f);
 
             foreach (Player p in playerList.Values)
             {
-                if(p.ID != playerMyId && p.Team != playerTeam)
+                //medical artifact prevents us hitting enemies
+                if (p.ID != playerMyId && p.Team != playerTeam && Content[10] != 8 || Content[10] == 8 && p.ID != playerMyId && p.Team == playerTeam)
                 if((attackVector - (p.deltaPosition-Vector3.UnitY*0.2f)).Length() < 0.7f)
                 {
                     NetBuffer msgBuffer = netClient.CreateBuffer();
@@ -987,7 +1003,7 @@ namespace Infiniminer
                 //netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
             }
         }
-        public void FireSpawnItem()
+        public void FireBomb()
         {
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
@@ -1005,7 +1021,41 @@ namespace Infiniminer
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
+        public void FireRope()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
 
+            //playerToolCooldown = GetToolCooldown(PlayerTools.SpawnItem);
+            //constructionGunAnimation = -5;
+
+            // Send the message.
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+            msgBuffer.Write(playerPosition);
+            msgBuffer.Write(playerCamera.GetLookVector());
+            msgBuffer.Write((byte)PlayerTools.ThrowRope);
+            msgBuffer.Write((byte)BlockType.None);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
+
+        public void Hide()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+            //playerToolCooldown = GetToolCooldown(PlayerTools.SpawnItem);
+            //constructionGunAnimation = -5;
+
+            // Send the message.
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+            msgBuffer.Write(playerPosition);
+            msgBuffer.Write(playerCamera.GetLookVector());
+            msgBuffer.Write((byte)PlayerTools.Hide);
+            msgBuffer.Write((byte)BlockType.None);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
         public void FireDeconstructionGun()
         {
             if (netClient.Status != NetConnectionStatus.Connected)
@@ -1304,13 +1354,15 @@ namespace Infiniminer
         {
             switch (tool)
             {
-                case PlayerTools.Pickaxe: return 0.4f;// 0.55f;
+                case PlayerTools.Pickaxe: return 0.5f;// 0.55f;
                 case PlayerTools.Detonator: return 0.1f;
                 case PlayerTools.Remote: return 0.01f;
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;
                 case PlayerTools.ProspectingRadar: return 0.5f;
                 case PlayerTools.ThrowBomb: return 0.1f;
+                case PlayerTools.ThrowRope: return 0.6f;
+                case PlayerTools.Hide: return 0.6f;
                 default: return 0;
             }
         }

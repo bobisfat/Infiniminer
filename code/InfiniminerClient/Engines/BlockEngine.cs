@@ -138,6 +138,8 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.None] = new IMTexture(null);
             blockTextures[(byte)BlockTexture.Dirt] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_dirt"));
             blockTextures[(byte)BlockTexture.Mud] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_mud"));
+            blockTextures[(byte)BlockTexture.Grass] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_grass"));
+            blockTextures[(byte)BlockTexture.GrassSide] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_grass_side"));
             blockTextures[(byte)BlockTexture.Sand] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_sand"));
             blockTextures[(byte)BlockTexture.Rock] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_rock"));
             blockTextures[(byte)BlockTexture.Ore] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_ore"));
@@ -167,6 +169,8 @@ namespace Infiniminer
             blockTextures[(byte)BlockTexture.BankFrontBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_front_blue"));
             blockTextures[(byte)BlockTexture.BankRightBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_right_blue"));
             blockTextures[(byte)BlockTexture.BankBackBlue] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_bank_back_blue"));
+            blockTextures[(byte)BlockTexture.Forge] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_forge"));
+            blockTextures[(byte)BlockTexture.ForgeSide] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_forge_side"));
             blockTextures[(byte)BlockTexture.ArtCaseR] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_artcase_red"));
             blockTextures[(byte)BlockTexture.ArtCaseB] = new IMTexture(gameInstance.Content.Load<Texture2D>("blocks/tex_block_artcase_blue"));
             
@@ -462,6 +466,8 @@ namespace Infiniminer
                 else
                 {
                     graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Linear;
+                    graphicsDevice.SamplerStates[0].MipFilter = TextureFilter.Anisotropic;//probably leaking over into other textures
+                    graphicsDevice.SamplerStates[0].MaxAnisotropy = 4;//probably leaking over into other textures
                 }
                 graphicsDevice.RenderState.CullMode = CullMode.CullCounterClockwiseFace;
                 graphicsDevice.VertexDeclaration = vertexDeclaration;

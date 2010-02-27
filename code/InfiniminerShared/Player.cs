@@ -29,6 +29,7 @@ namespace Infiniminer
         Pickaxe,
         StrongArm,//strong arms pick up and throw ability
         Smash,//defenders charge
+        Hide,//prospector
         ConstructionGun,
         DeconstructionGun,
         ProspectingRadar,
@@ -36,6 +37,7 @@ namespace Infiniminer
         Remote,
         SetRemote,
         ThrowBomb,
+        ThrowRope,
         LeftHand,
         RightHand,
         Body,
@@ -245,13 +247,14 @@ namespace Infiniminer
         {//needs to be converted to over a time frame
             switch (tool)
             {
-                case PlayerTools.Pickaxe: return 0.1f;// 0.55f;
+                case PlayerTools.Pickaxe: return 0.4f;// 0.55f;
                 case PlayerTools.Detonator: return 0.01f;
                 case PlayerTools.Remote: return 0.01f;
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;
                 case PlayerTools.ProspectingRadar: return 0.5f;
                 case PlayerTools.ThrowBomb: return 0.07f;
+                case PlayerTools.ThrowRope: return 0.07f;
                 default: return 0;
             }
         }

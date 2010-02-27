@@ -8,7 +8,6 @@ Content\GaussianBlur.xnb
 Content\blocks\tex_block_ore.xnb
 Content\blocks\tex_block_rock.xnb
 Content\blocks\tex_block_silver.xnb
-Content\blocks\tex_block_dirt.xnb
 Content\blocks\tex_block_home_red.xnb
 Content\blocks\tex_block_diamond.xnb
 Content\blocks\tex_block_blue.xnb
@@ -178,4 +177,10 @@ Content\sounds\rockfall.xnb
 Content\song_title.xnb
 Content\models\basketball.xnb
 Content\sprites\tex_sprite_bomb.xnb
+Content\blocks\tex_block_dirt.xnb
+Content\blocks\tex_block_grass.xnb
+Content\blocks\tex_block_grass_side.xnb
+Content\icons\tex_icon_grass.xnb
+Content\blocks\tex_block_forge.xnb
+Content\blocks\tex_block_forge_side.xnb
 Content\song_title.wma

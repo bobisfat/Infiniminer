@@ -13,6 +13,7 @@ namespace Infiniminer
         Artifact,
         Diamond,
         Bomb,
+        Rope,
         MAXIMUM
     }
 
@@ -21,6 +22,7 @@ namespace Infiniminer
         None,
         Dirt,
         Mud,
+        Grass,
         Sand,
         Ore,
         Gold,
@@ -86,6 +88,8 @@ namespace Infiniminer
         None,
         Dirt,
         Mud,
+        Grass,
+        GrassSide,
         Sand,
         Ore,
         Gold,
@@ -98,6 +102,8 @@ namespace Infiniminer
         Explosive,
         Spikes,
         HomeRed,
+        ForgeSide,
+        Forge,
         HomeBlue,
         BankTopRed,
         BankTopBlue,
@@ -145,7 +151,6 @@ namespace Infiniminer
         MagmaVent,
         MagmaBurst,
         Fire,
-        Water,
         Magma,
         TrapR,
         TrapB,
@@ -155,8 +160,6 @@ namespace Infiniminer
         StealthBlockB,
         Lever,
         Plate,
-        TransRed,   // THESE MUST BE THE LAST TWO TEXTURES
-        TransBlue,
         RadarRed,
         RadarBlue,
         Hinge,
@@ -167,6 +170,9 @@ namespace Infiniminer
         ArtCaseB,
         ForceR,
         ForceB,
+        TransRed,   // THESE MUST BE THE LAST TWO TEXTURES
+        TransBlue,
+        Water,
         MAXIMUM
     }
 
@@ -176,6 +182,8 @@ namespace Infiniminer
         ImpHealth,
         Strength,
         Regen,
+        Fortify,
+        Destruction,
         MAXIMUM,
         Range,
         Blockcost,
@@ -199,6 +207,8 @@ namespace Infiniminer
             researchCost[(byte)Research.ImpHealth] = 30;
             researchCost[(byte)Research.Strength] = 50;
             researchCost[(byte)Research.Regen] = 50;
+            researchCost[(byte)Research.Fortify] = 50;
+            researchCost[(byte)Research.Destruction] = 100;
         }
         
         public static int GetCost(Research res)
@@ -222,6 +232,12 @@ namespace Infiniminer
                 case Research.Regen:
                     return "Health regeneration";
                     break;
+                case Research.Fortify:
+                    return "Fortification";
+                    break;
+                case Research.Destruction:
+                    return "Destruction";
+                    break;
              /*   case Research.Range:
                     return "Increased swing range";
                     break;
@@ -236,6 +252,66 @@ namespace Infiniminer
                     break;*/
             }
             return "";
+        }
+
+    }
+
+    public class ArtifactInformation
+    {
+      
+        static ArtifactInformation()
+        {
+        }
+
+        public static string GetName(int art)
+        {
+            switch (art)
+            {
+                case 0:
+                    {
+                        return "Powerless artifact";
+                    }
+                case 1:
+                    {
+                        return "Material artifact";
+                    }
+                case 2:
+                    {
+                        return "Vampiric artifact";
+                    }
+                case 3:
+                    {
+                        return "Regeneration artifact";
+                    }
+                case 4:
+                    {
+                        return "Aqua artifact";
+                    }
+                case 5:
+                    {
+                        return "Golden artifact";
+                    }
+                case 6:
+                    {
+                        return "Storm artifact";
+                    }
+                case 7:
+                    {
+                        return "Reflection artifact";
+                    }
+                case 8:
+                    {
+                        return "Medical artifact";
+                    }
+                case 9:
+                    {
+                        return "Stone artifact";
+                    }
+                default:
+                    {
+                        return "Unknown artifact";
+                    }
+            }
         }
 
     }
@@ -468,6 +544,16 @@ namespace Infiniminer
                     return BlockTexture.Dirt;
                 case BlockType.Mud:
                     return BlockTexture.Mud;
+                case BlockType.Grass:
+                    switch (faceDir)
+                    {
+                        case BlockFaceDirection.XIncreasing: return BlockTexture.GrassSide;
+                        case BlockFaceDirection.XDecreasing: return BlockTexture.GrassSide;
+                        case BlockFaceDirection.ZIncreasing: return BlockTexture.GrassSide;
+                        case BlockFaceDirection.ZDecreasing: return BlockTexture.GrassSide;
+                        case BlockFaceDirection.YDecreasing: return BlockTexture.Dirt;
+                        default: return BlockTexture.Grass;
+                    }
                 case BlockType.Sand:
                     return BlockTexture.Sand;
                 case BlockType.Lava:
@@ -558,17 +644,17 @@ namespace Infiniminer
                 case BlockType.BaseRed:
                     switch (faceDir)
                     {
-                        case BlockFaceDirection.XIncreasing: return BlockTexture.BankFrontRed;
-                        case BlockFaceDirection.XDecreasing: return BlockTexture.BankBackRed;
-                        case BlockFaceDirection.ZIncreasing: return BlockTexture.BankLeftRed;
-                        case BlockFaceDirection.ZDecreasing: return BlockTexture.BankRightRed;
+                        case BlockFaceDirection.XIncreasing: return BlockTexture.Forge;
+                        case BlockFaceDirection.XDecreasing: return BlockTexture.ForgeSide;
+                        case BlockFaceDirection.ZIncreasing: return BlockTexture.ForgeSide;
+                        case BlockFaceDirection.ZDecreasing: return BlockTexture.ForgeSide;
                         default: return BlockTexture.BankTopRed;
                     }
 
                 case BlockType.BaseBlue:
                     switch (faceDir)
                     {
-                        case BlockFaceDirection.XIncreasing: return BlockTexture.BankFrontBlue;
+                        case BlockFaceDirection.XIncreasing: return BlockTexture.Forge;
                         case BlockFaceDirection.XDecreasing: return BlockTexture.BankBackBlue;
                         case BlockFaceDirection.ZIncreasing: return BlockTexture.BankLeftBlue;
                         case BlockFaceDirection.ZDecreasing: return BlockTexture.BankRightBlue;

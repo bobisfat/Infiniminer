@@ -284,7 +284,13 @@ namespace Infiniminer
                                             newItem.Content[1] = msgBuffer.ReadInt32();
                                             newItem.Content[2] = msgBuffer.ReadInt32();
                                             newItem.Content[3] = msgBuffer.ReadInt32();
+                                            newItem.Content[10] = msgBuffer.ReadInt32();
                                             propertyBag.itemList.Add(newItem.ID, newItem);
+                                        }
+                                        break;
+                                    case InfiniminerMessage.ActiveArtifactUpdate:
+                                        {
+                                            propertyBag.artifactActive[msgBuffer.ReadByte(), msgBuffer.ReadInt32()] = msgBuffer.ReadInt32();
                                         }
                                         break;
                                     case InfiniminerMessage.ItemUpdate:
@@ -361,6 +367,11 @@ namespace Infiniminer
                                             propertyBag.teamBlueCash = msgBuffer.ReadUInt32();
                                         }
                                         break;
+                                    case InfiniminerMessage.TeamOreUpdate:
+                                        {
+                                           propertyBag.teamOre = msgBuffer.ReadUInt32();
+                                        }
+                                        break;
                                     case InfiniminerMessage.HealthUpdate:
                                         {
                                             propertyBag.playerHealth = msgBuffer.ReadUInt32();
@@ -386,7 +397,21 @@ namespace Infiniminer
                                                     propertyBag.forceVector = propertyBag.playerList[aID].Heading;
                                                     propertyBag.forceVector.Y = 0;
                                                     //propertyBag.forceVector.Normalize();
-                                                    propertyBag.forceStrength = 4.0f;
+                                                    if (propertyBag.artifactActive[(byte)propertyBag.playerTeam, 9] > 0)//stone artifact prevents kb
+                                                    {
+                                                        if (propertyBag.artifactActive[(byte)propertyBag.playerTeam, 9] < 4)
+                                                            propertyBag.forceStrength = 4.0f - (float)propertyBag.artifactActive[(byte)propertyBag.playerTeam, 9];
+                                                        else
+                                                            propertyBag.forceStrength = 0;
+                                                    }
+                                                    else if (propertyBag.Content[10] == 9)//stone artifact
+                                                    {
+                                                        propertyBag.forceStrength = 0;
+                                                    }
+                                                    else
+                                                    {
+                                                        propertyBag.forceStrength = 4.0f;
+                                                    }
                                                 }
                                             }
                                             else
@@ -432,6 +457,40 @@ namespace Infiniminer
                                             // update specific value
                                             int val = msgBuffer.ReadInt32();
                                             propertyBag.Content[val] = msgBuffer.ReadInt32();
+
+                                            if (val == 10)//artifact change
+                                            {
+                                                switch(propertyBag.Content[val])
+                                                {
+                                                    case 1:
+                                                        propertyBag.addChatMessage("You now wield the " + ArtifactInformation.GetName(propertyBag.Content[val]) + ", granting 10 ore periodically!", ChatMessageType.SayAll, 10);
+                                                        break;
+                                                    case 2:
+                                                        propertyBag.addChatMessage("You now wield the " + ArtifactInformation.GetName(propertyBag.Content[val]) + ", granting life stealing attacks!", ChatMessageType.SayAll, 10);
+                                                        break;
+                                                    case 3:
+                                                        propertyBag.addChatMessage("You now wield the " + ArtifactInformation.GetName(propertyBag.Content[val]) + ", granting powerful life regeneration, and regenerating any nearby blocks when thrown!", ChatMessageType.SayAll, 10);
+                                                        break;
+                                                    case 4:
+                                                        propertyBag.addChatMessage("You now wield the " + ArtifactInformation.GetName(propertyBag.Content[val]) + ", granting water breathing and digging underwater!", ChatMessageType.SayAll, 10);
+                                                        break;
+                                                    case 5:
+                                                        propertyBag.addChatMessage("You now wield the " + ArtifactInformation.GetName(propertyBag.Content[val]) + ", transmuting every 100 ore into 10 gold!", ChatMessageType.SayAll, 10);
+                                                        break;
+                                                    case 6:
+                                                        propertyBag.addChatMessage("You now wield the " + ArtifactInformation.GetName(propertyBag.Content[val]) + ", shocking nearby enemies, and creating a torrential downpour when thrown!", ChatMessageType.SayAll, 10);
+                                                        break;
+                                                    case 7:
+                                                        propertyBag.addChatMessage("You now wield the " + ArtifactInformation.GetName(propertyBag.Content[val]) + ", reflecting half of damage taken!", ChatMessageType.SayAll, 10);
+                                                        break;
+                                                    case 8://medical
+                                                        propertyBag.addChatMessage("You now wield the " + ArtifactInformation.GetName(propertyBag.Content[val]) + ", healing friendlies with each swing; however you may no longer hit enemies!", ChatMessageType.SayAll, 10);
+                                                        break;
+                                                    case 9://stone
+                                                        propertyBag.addChatMessage("You now wield the " + ArtifactInformation.GetName(propertyBag.Content[val]) + ", making you immune to knockback and resistant to fall damage!", ChatMessageType.SayAll, 10);
+                                                        break;
+                                                }
+                                            }
                                         }
                                         break;
                                     case InfiniminerMessage.PlayerPosition:
@@ -539,6 +598,16 @@ namespace Infiniminer
 
                                         }
                                         break;
+                                    case InfiniminerMessage.Effect:
+                                        {
+                                            Vector3 blockPos = msgBuffer.ReadVector3();
+                                            uint effectType = msgBuffer.ReadUInt32();
+                                            float distFromDebris = (blockPos + 0.5f * Vector3.One - propertyBag.playerPosition).Length();
+
+                                            if(distFromDebris < 14 && effectType == 1)
+                                                propertyBag.particleEngine.CreateHidden(blockPos, Color.GhostWhite); 
+                                        }
+                                        break;
                                   case InfiniminerMessage.TriggerDebris:
                                         {
                                             Vector3 blockPos = msgBuffer.ReadVector3();
@@ -591,7 +660,16 @@ namespace Infiniminer
                                             }
                                         }
                                         break;
-
+                                    case InfiniminerMessage.PlayerSetClass:
+                                        {
+                                            uint playerId = msgBuffer.ReadUInt32();
+                                            if (propertyBag.playerList.ContainsKey(playerId))
+                                            {
+                                                Player player = propertyBag.playerList[playerId];
+                                                player.Class = (PlayerClass)msgBuffer.ReadByte();
+                                            }
+                                        }
+                                        break;
                                     case InfiniminerMessage.PlayerJoined:
                                         {
                                             uint playerId = msgBuffer.ReadUInt32();

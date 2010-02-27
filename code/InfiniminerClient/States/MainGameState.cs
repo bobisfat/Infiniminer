@@ -90,10 +90,18 @@ namespace Infiniminer.States
                 _P.FirePickaxe();
                //_P.playerToolCooldown = _P.GetToolCooldown(PlayerTools.Pickaxe);//(_P.playerClass == PlayerClass.Miner ? 0.4f : 1.0f);
             }
-            if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.ThrowBomb)
-            {
-                _P.FireSpawnItem();
-            }
+            //if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.ThrowBomb)
+            //{
+            //    _P.FireBomb();
+            //}
+            //else if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.ThrowRope)
+            //{
+            //    _P.FireBomb();
+            //}
+            //else if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.ThrowRope)
+            //{
+            //    _P.Hide();
+            //}
             // Prospector radar stuff.
             if (!_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.ProspectingRadar)
             {
@@ -210,11 +218,12 @@ namespace Infiniminer.States
                         {
                             _P.playerVelocity.Y *= 0.2f;
                         }
-                        if (_P.playerHoldBreath > 9)
-                        {
+                        //if (_P.playerHoldBreath > 9)
+                        //{
                             _P.screenEffect = ScreenEffect.Water;
                             _P.screenEffectCounter = 0.5;
-                        }
+                       // }
+                       // }
                         
                         _P.playerHoldBreath -= (float)gameTime.ElapsedGameTime.TotalSeconds;
                     }
@@ -238,8 +247,8 @@ namespace Infiniminer.States
                 if (timeSpan.TotalMilliseconds > 1000)
                 {
                     //_P.addChatMessage("Breath held.." + _P.playerHoldBreath, ChatMessageType.SayAll, 10);
-                    if (_P.playerHoldBreath <= 10)
-                    {
+                    if (_P.playerHoldBreath <= 10 && _P.Content[10] != 4 && _P.artifactActive[(byte)_P.playerTeam, 4] < 1)
+                    {//water breathing is artifact 4
                         _P.screenEffect = ScreenEffect.Drown;
                         _P.screenEffectCounter = 1.0;
                         if (((int)_P.playerHealth - ((9 - _P.playerHoldBreath) * 10)) > 0)
@@ -258,7 +267,7 @@ namespace Infiniminer.States
 
                     if (_P.playerHealth <= 0)
                     {
-                        _P.KillPlayer(Defines.deathByFall);
+                        _P.KillPlayer(Defines.deathByDrown);
                     }
             }
             else
@@ -319,7 +328,14 @@ namespace Infiniminer.States
                         {
                             _P.screenEffect = ScreenEffect.Fall;
                             if (((int)_P.playerHealth - (fallDamage*100)) > 0) {
-                                _P.playerHealth -= (uint)(fallDamage*100);
+                                if (_P.Content[10] == 9)//stone artifact)
+                                {
+                                    _P.playerHealth -= (uint)(fallDamage * 100 / 3);
+                                }
+                                else
+                                {
+                                    _P.playerHealth -= (uint)(fallDamage * 100 / 2);
+                                }
                             } else {
                                 _P.playerHealth = 0;
                             }
@@ -329,7 +345,7 @@ namespace Infiniminer.States
                                 _P.KillPlayer(Defines.deathByFall);
                             }
 
-                            _P.SendPlayerHurt();//was update
+                            _P.SendPlayerHurt();
                         }
                     }
                 }
@@ -488,6 +504,34 @@ namespace Infiniminer.States
                         _P.moveVector += _P.playerCamera.GetRightVector();
                     if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Left))//keyState.IsKeyDown(Keys.A))
                         _P.moveVector -= _P.playerCamera.GetRightVector();
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.DropOre))
+                        if (_P.playerOre > 19)
+                        {
+                            _P.blockPickup = DateTime.Now + TimeSpan.FromSeconds(1);
+                            _P.playerOre = 0;
+                            _P.DropItem(1);
+                        }
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.DropGold))
+                        if (_P.playerCash > 9)
+                        {
+                            _P.blockPickup = DateTime.Now + TimeSpan.FromSeconds(1);
+                            _P.playerCash = 0;
+                            _P.DropItem(2);
+                        }
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.DropArtifact))
+                        if (_P.Content[10] > 0)
+                        {
+                            _P.blockPickup = DateTime.Now + TimeSpan.FromSeconds(1);
+                            _P.Content[10] = 0;
+                            _P.DropItem(3);
+                        }
+                    if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.DropDiamond))
+                        if (_P.Content[11] > 0)
+                        {
+                            _P.blockPickup = DateTime.Now + TimeSpan.FromSeconds(1);
+                            _P.Content[11] = 0;
+                            _P.DropItem(4);
+                        }
                     //Sprinting
                     if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Sprint))//keyState.IsKeyDown(Keys.LeftShift) || keyState.IsKeyDown(Keys.RightShift))
                         sprinting = true;
@@ -501,6 +545,7 @@ namespace Infiniminer.States
             }
             
             //grab item
+            if(_P.blockPickup < DateTime.Now)
             foreach (KeyValuePair<uint, Item> bPair in _P.itemList)
             {
                 TimeSpan diff = DateTime.Now - bPair.Value.Frozen;
@@ -513,28 +558,33 @@ namespace Infiniminer.States
 
                     float distance = (float)(Math.Sqrt(dx * dx + dy * dy + dz * dz));
 
-                    if (distance < 1.2)
+                    if (distance < 1.2 && _P.blockPickup < DateTime.Now)
                     {
                         bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds(500);//no interaction for half a second after trying once
 
                         if (bPair.Value.Type == ItemType.Ore && _P.playerOre < _P.playerOreMax)//stops requesting items it doesnt need
                         {
+                            _P.blockPickup = DateTime.Now + TimeSpan.FromSeconds(0.3);
                             _P.GetItem(bPair.Value.ID);
                         }
                         else if (bPair.Value.Type == ItemType.Gold && _P.playerWeight < _P.playerWeightMax)
                         {
+                            _P.blockPickup = DateTime.Now + TimeSpan.FromSeconds(0.3);
                             _P.GetItem(bPair.Value.ID);
                         }
                         else if (bPair.Value.Type == ItemType.Diamond && _P.playerWeight < _P.playerWeightMax)
                         {
+                            _P.blockPickup = DateTime.Now + TimeSpan.FromSeconds(0.3);
                             _P.GetItem(bPair.Value.ID);
                         }
                         else if (bPair.Value.Type == ItemType.Artifact && _P.Content[10] == 0 && bPair.Value.Content[6] == 0)//[10] artifact slot, [6] locked item
                         {
+                            _P.blockPickup = DateTime.Now + TimeSpan.FromSeconds(0.3);
                             _P.GetItem(bPair.Value.ID);
                         }
                         else if (bPair.Value.Type == ItemType.Bomb)//[10] artifact slot, [6] locked item
                         {
+                            _P.blockPickup = DateTime.Now + TimeSpan.FromSeconds(0.3);
                             bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds((int)(distance * 100));//retry based on objects distance
                             //_P.GetItem(bPair.Value.ID);
                         }
@@ -690,7 +740,6 @@ namespace Infiniminer.States
                     _P.playerPosition.Y += 0.1f;
                 return true;
             }
-           
             return false;
         }
 
@@ -744,7 +793,7 @@ namespace Infiniminer.States
                             //    break;
 
                             case PlayerTools.ConstructionGun:
-                                _P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
+                                _P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
                                 break;
 
                             case PlayerTools.DeconstructionGun:
@@ -766,7 +815,15 @@ namespace Infiniminer.States
                                 break;
 
                             case PlayerTools.ThrowBomb:
-                                _P.FireSpawnItem();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
+                                _P.FireBomb();
+                                break;
+
+                            case PlayerTools.ThrowRope:
+                                _P.FireRope();
+                                break;
+
+                            case PlayerTools.Hide:
+                                _P.Hide();
                                 break;
                         }
                     }
@@ -777,21 +834,27 @@ namespace Infiniminer.States
                         switch (_P.playerClass)
                         {
                             case PlayerClass.Miner:
-                                _P.StrongArm();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
+                                _P.StrongArm();
                                 break;
                             case PlayerClass.Engineer:
                                 _P.PlaySound(InfiniminerSound.ClickHigh);
-                                _P.FireRemote();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
+                                _P.FireRemote();
                                 break;
                             case PlayerClass.Sapper:
-                                _P.Smash();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
-                                Vector3 smashVector = _P.playerCamera.GetLookVector();// +_P.playerVelocity;
-                                _P.Content[6] = (int)(smashVector.X * 1000);
-                                _P.Content[7] = (int)(smashVector.Y * 1000);
-                                _P.Content[8] = (int)(smashVector.Z * 1000);
-                                _P.Content[5] = 5*1000;//5 second smash
+                               // _P.PlaySound(InfiniminerSound.ClickHigh);
+                                _P.FireBomb();
+                                //_P.Smash();
+                                //Vector3 smashVector = _P.playerCamera.GetLookVector();// +_P.playerVelocity;
+                                //_P.Content[6] = (int)(smashVector.X * 1000);
+                                //_P.Content[7] = (int)(smashVector.Y * 1000);
+                                //_P.Content[8] = (int)(smashVector.Z * 1000);
+                                //_P.Content[5] = 5*1000;//5 second smash
 
-                                _P.addChatMessage(_P.Content[6] + "/" + _P.Content[7] + "/" +_P.Content[8], ChatMessageType.SayAll, 10);
+                                //_P.addChatMessage(_P.Content[6] + "/" + _P.Content[7] + "/" +_P.Content[8], ChatMessageType.SayAll, 10);
+                                break;
+                            case PlayerClass.Prospector:
+                                _P.PlaySound(InfiniminerSound.ClickHigh);
+                                _P.Hide();
                                 break;
                         }
                     }
@@ -1104,7 +1167,7 @@ namespace Infiniminer.States
             {
                 if (scrollDelta >= 120)
                 {
-                    Console.WriteLine("Handling input for scroll up...");
+                    //Console.WriteLine("Handling input for scroll up...");
                     HandleInput((_SM as InfiniminerGame).keyBinds.GetBound(MouseButton.WheelUp));//.keyBinds.GetBound(button));
                 }
                 else if (scrollDelta <= -120)
