@@ -6,10 +6,10 @@
       <TargetPlatform>Windows</TargetPlatform>
       <BuildConfiguration>Debug</BuildConfiguration>
       <CompressContent>false</CompressContent>
-      <RootDirectory>D:\infiniminer_source\code\InfiniminerShared\Content\</RootDirectory>
-      <LoggerRootDirectory>D:\infiniminer_source\code\InfiniminerShared\</LoggerRootDirectory>
-      <IntermediateDirectory>D:\infiniminer_source\code\InfiniminerShared\Content\obj\x86\Debug\</IntermediateDirectory>
-      <OutputDirectory>D:\infiniminer_source\code\InfiniminerShared\bin\x86\Debug\Content\</OutputDirectory>
+      <RootDirectory>D:\fork_source\code\InfiniminerShared\Content\</RootDirectory>
+      <LoggerRootDirectory>D:\fork_source\code\InfiniminerShared\</LoggerRootDirectory>
+      <IntermediateDirectory>D:\fork_source\code\InfiniminerShared\Content\obj\x86\Debug\</IntermediateDirectory>
+      <OutputDirectory>D:\fork_source\code\InfiniminerShared\bin\x86\Debug\Content\</OutputDirectory>
     </Settings>
     <Assemblies>
       <Assembly>
