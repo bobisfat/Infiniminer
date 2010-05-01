@@ -707,9 +707,9 @@ namespace Infiniminer
             // Play the title music.
             if (!NoSound)
             {
-             //   songTitle = Content.Load<Song>("song_title");
-              //  MediaPlayer.Play(songTitle);
-             //   MediaPlayer.Volume = propertyBag.volumeLevel;
+                songTitle = Content.Load<Song>("tmp");
+                MediaPlayer.Play(songTitle);
+                MediaPlayer.Volume = propertyBag.volumeLevel;
             }
         }
     }
