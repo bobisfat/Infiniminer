@@ -21,7 +21,7 @@ namespace Infiniminer
         private static Random randGen = new Random();
 
         // Create a cave system.
-        public static BlockType[, ,] GenerateCaveSystem(int size, bool includeLava, uint oreFactor)
+        public static BlockType[, ,] GenerateCaveSystem(int size, bool includeLava, uint oreFactor, bool includeWater)
         {
             float gradientStrength = (float)randGen.NextDouble();
             BlockType[, ,] caveData = CaveGenerator.GenerateConstant(size, BlockType.Dirt);
@@ -54,7 +54,19 @@ namespace Infiniminer
                     for (int z = 0; z <= Defines.GROUND_LEVEL; z++)
                         if (mountainData[x, y, z] == BlockType.None)
                             caveData[x, y, z] = BlockType.None;
-            
+            // carve sand
+            float[, ,] caveNoiseSand = CaveGenerator.GeneratePerlinNoise(32);
+            caveNoiseSand = InterpolateData(ref caveNoiseSand, 32, size);
+            gradient = CaveGenerator.GenerateGradient(size);
+            CaveGenerator.AddDataTo(ref caveNoiseSand, ref gradient, size, 1 - gradientStrength, gradientStrength);
+            int cavesToCarveSand = randGen.Next(size / 16, size / 8);
+            for (int i = 0; i < cavesToCarveSand; i++)
+                CaveGenerator.PaintWithRandomWalk(ref caveData, ref caveNoiseSand, size, randGen.Next(1, 2), BlockType.Sand, false);
+            cavesToCarveSand = randGen.Next(size / 16, size / 8);
+            for (int i = 0; i < cavesToCarveSand; i++)
+                CaveGenerator.PaintWithRandomWalk(ref caveData, ref caveNoiseSand, size, randGen.Next(1, 2), BlockType.Sand, false);
+
+
             // Carve some caves into the ground.
             float[, ,] caveNoise = CaveGenerator.GeneratePerlinNoise(32);
             caveNoise = InterpolateData(ref caveNoise, 32, size);
@@ -76,6 +88,10 @@ namespace Infiniminer
             // Add lava.
             if (includeLava)
                 AddLava(ref caveData, size);
+            
+            // Add Water
+            if (includeWater)
+                AddWater(ref caveData, size);
 
             // Add starting positions.
             //AddStartingPosition(ref caveData, size, size - 5, size - 5, InfiniminerGame.GROUND_LEVEL, BlockType.HomeRed);
@@ -158,8 +174,49 @@ namespace Infiniminer
 
                 if (data[x, y, z] == BlockType.None && z+1 < size-1)
                 {
-                    data[x, y, z] = BlockType.Rock;
+                    data[x, y, z] = BlockType.MagmaVent;
                     data[x, y, z+1] = BlockType.Lava;
+                    if (z + 2 < size - 2)
+                    {
+                        data[x, y, z + 2] = BlockType.Lava;
+                    }
+                    numFlows -= 1;
+                }
+            }
+        }
+
+        public static void AddWater(ref BlockType[, ,] data, int size)
+        {
+            int numFlows = randGen.Next(size / 16, size / 2);
+            while (numFlows > 0)
+            {
+                int x = randGen.Next(0, size);
+                int y = randGen.Next(0, size);
+
+                //switch (randGen.Next(0, 4))
+                //{
+                //    case 0: x = 0; break;
+                //    case 1: x = size - 1; break;
+                //    case 2: y = 0; break;
+                //    case 3: y = size - 1; break;
+                //}
+
+                // generate a random z-value weighted toward a medium depth
+                float zf = 0;
+                for (int j = 0; j < 4; j++)
+                    zf += (float)randGen.NextDouble();
+                zf /= 2;
+                zf = 1 - Math.Abs(zf - 1);
+                int z = (int)(zf * size);
+
+                if (data[x, y, z] == BlockType.None && z + 1 < size - 1)
+                {
+                    data[x, y, z] = BlockType.Spring;
+                    data[x, y, z + 1] = BlockType.Water;
+                    if (z+2 < size - 2)
+                    {
+                        data[x, y, z + 2] = BlockType.Water;
+                    }
                     numFlows -= 1;
                 }
             }
@@ -238,7 +295,7 @@ namespace Infiniminer
                 }
             }
         }
-
+ 
         // Generates a cube of noise with sides of length size. Noise falls in a linear
         // distribution ranging from 0 to magnitude.
         public static float[, ,] GenerateNoise(int size, float magnitude)

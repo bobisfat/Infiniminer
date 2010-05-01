@@ -119,45 +119,149 @@ namespace Infiniminer.States
         {
             // Double-speed move flag, set if we're on road.
             bool movingOnRoad = false;
+            bool movingOnMud = false;
             bool sprinting = false;
+            bool crouching = false;
+            bool swimming = false;
 
-            // Apply "gravity".
-            _P.playerVelocity.Y += GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
             Vector3 footPosition = _P.playerPosition + new Vector3(0f, -1.5f, 0f);
             Vector3 headPosition = _P.playerPosition + new Vector3(0f, 0.1f, 0f);
+            Vector3 midPosition = _P.playerPosition + new Vector3(0f, -0.7f, 0f);
+
+           // if (!_P.blockEngine.SolidAtPointForPlayer(midBodyPoint))
+           // {
+                if(_P.blockEngine.BlockAtPoint(footPosition) == BlockType.Water || _P.blockEngine.BlockAtPoint(headPosition) == BlockType.Water || _P.blockEngine.BlockAtPoint(midPosition) == BlockType.Water) 
+                {
+                    swimming = true;
+                    if (_P.blockEngine.BlockAtPoint(headPosition) == BlockType.Water)
+                    {
+                        if (_P.playerHoldBreath == 20)
+                        {
+                            _P.playerVelocity.Y *= 0.2f;
+                        }
+                        if (_P.playerHoldBreath > 9)
+                        {
+                            _P.screenEffect = ScreenEffect.Water;
+                            _P.screenEffectCounter = 0.5;
+                        }
+                        
+                        _P.playerHoldBreath -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    }
+                    else
+                    {
+                        _P.playerHoldBreath = 20;
+                    }
+                }
+                else
+	            {
+                    swimming = false;
+                    _P.playerHoldBreath = 20;
+	            }
+         //   }
+
+            // 
+            if (swimming)
+            {
+                TimeSpan timeSpan = DateTime.Now - _P.lastBreath;
+                _P.playerVelocity.Y += (GRAVITY/8) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (timeSpan.TotalMilliseconds > 1000)
+                {
+                    //_P.addChatMessage("Breath held.." + _P.playerHoldBreath, ChatMessageType.SayAll, 10);
+                    if (_P.playerHoldBreath <= 10)
+                    {
+                        _P.screenEffect = ScreenEffect.Drown;
+                        _P.screenEffectCounter = 1.0;
+                        if (((int)_P.playerHealth - ((9 - _P.playerHoldBreath) * 10)) > 0)
+                        {
+                            _P.playerHealth -= (uint)(9 - _P.playerHoldBreath) * (_P.playerHealthMax / 10);
+                            _P.SendPlayerHurt();
+                            _P.lastBreath = DateTime.Now;
+                        }
+                        else
+                        {
+                            _P.playerHealth = 0;
+                        }
+                        _P.PlaySoundForEveryone(InfiniminerSound.Death, _P.playerPosition);
+                    }
+                }
+
+                    if (_P.playerHealth <= 0)
+                    {
+                        _P.KillPlayer(Defines.deathByFall);
+                    }
+
+                    _P.SendPlayerUpdate();
+            }
+            else
+            {
+                _P.playerVelocity.Y += GRAVITY * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
+
             if (_P.blockEngine.SolidAtPointForPlayer(footPosition) || _P.blockEngine.SolidAtPointForPlayer(headPosition))
             {
                 BlockType standingOnBlock = _P.blockEngine.BlockAtPoint(footPosition);
                 BlockType hittingHeadOnBlock = _P.blockEngine.BlockAtPoint(headPosition);
-
+                
                 // If we"re hitting the ground with a high velocity, die!
                 if (standingOnBlock != BlockType.None && _P.playerVelocity.Y < 0)
                 {
                     float fallDamage = Math.Abs(_P.playerVelocity.Y) / DIEVELOCITY;
-                    if (fallDamage >= 1)
+                    if (fallDamage > 0.5)
                     {
-                        _P.PlaySoundForEveryone(InfiniminerSound.GroundHit, _P.playerPosition);
-                        _P.KillPlayer(Defines.deathByFall);//"WAS KILLED BY GRAVITY!");
-                        return;
-                    }
-                    else if (fallDamage > 0.5)
-                    {
+                    //    _P.PlaySoundForEveryone(InfiniminerSound.GroundHit, _P.playerPosition);
+                    //    _P.KillPlayer(Defines.deathByFall);//"WAS KILLED BY GRAVITY!");
+                    //    return;
+                    //}
+                    //else if (fallDamage > 0.5)
+                    //{
                         // Fall damage of 0.5 maps to a screenEffectCounter value of 2, meaning that the effect doesn't appear.
                         // Fall damage of 1.0 maps to a screenEffectCounter value of 0, making the effect very strong.
                         if (standingOnBlock != BlockType.Jump)
                         {
                             _P.screenEffect = ScreenEffect.Fall;
+                            if (((int)_P.playerHealth - (fallDamage*100)) > 0) {
+                                _P.playerHealth -= (uint)(fallDamage*100);
+                            } else {
+                                _P.playerHealth = 0;
+                            }
                             _P.screenEffectCounter = 2 - (fallDamage - 0.5) * 4;
                             _P.PlaySoundForEveryone(InfiniminerSound.GroundHit, _P.playerPosition);
+                            if (_P.playerHealth <= 0) {
+                                _P.KillPlayer(Defines.deathByFall);
+                            }
+
+                            _P.SendPlayerHurt();//was update
                         }
                     }
                 }
 
+                if (_P.blockEngine.SolidAtPointForPlayer(midPosition))
+                {
+                    //float size = 0.1f;
+                    //bool allow = false;
+                    //for (int x = -1; x < 2; x++)
+                    //    for (int y = -1; y < 2; y++)
+                    //        for (int z = -1; z < 2; z++)
+                    //        {
+                    //            Vector3 box = new Vector3(size * x, size * y, size * z);
+                    //            if (!_P.blockEngine.SolidAtPointForPlayer(midPosition + box))
+                    //            {
+                    //                allow = true;
+                    //                y = 2;
+                    //                x = 2;
+                    //                break;
+                    //            }
+                    //        }
+
+                    //if(allow == false)
+                        _P.KillPlayer(Defines.deathByCrush);//may not be reliable enough to kill players that get hit by sand
+                }
                 // If the player has their head stuck in a block, push them down.
                 if (_P.blockEngine.SolidAtPointForPlayer(headPosition))
                 {
                     int blockIn = (int)(headPosition.Y);
                     _P.playerPosition.Y = (float)(blockIn - 0.15f);
+
                 }
 
                 // If the player is stuck in the ground, bring them out.
@@ -169,6 +273,7 @@ namespace Infiniminer.States
                 }
 
                 _P.playerVelocity.Y = 0;
+
 
                 // Logic for standing on a block.
                 switch (standingOnBlock)
@@ -182,9 +287,14 @@ namespace Infiniminer.States
                         movingOnRoad = true;
                         break;
 
+                    case BlockType.Mud:
+                        movingOnMud = true;
+                        break;
+
                     case BlockType.Lava:
                         _P.KillPlayer(Defines.deathByLava);
                         return;
+
                 }
 
                 // Logic for bumping your head on a block.
@@ -199,8 +309,10 @@ namespace Infiniminer.States
                         return;
                 }
             }
-            _P.playerPosition += _P.playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
-
+            if (!_P.blockEngine.SolidAtPointForPlayer(midPosition + _P.playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds))
+            {
+                _P.playerPosition += _P.playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
             // Death by falling off the map.
             if (_P.playerPosition.Y < -30)
             {
@@ -224,34 +336,70 @@ namespace Infiniminer.States
                 //Sprinting
                 if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Sprint))//keyState.IsKeyDown(Keys.LeftShift) || keyState.IsKeyDown(Keys.RightShift))
                     sprinting = true;
+                //Crouching
+                if ((_SM as InfiniminerGame).keyBinds.IsPressed(Buttons.Crouch))
+                    crouching = true;
             }
 
             if (moveVector.X != 0 || moveVector.Z != 0)
             {
+                //grab item
+                foreach (KeyValuePair<string, Item> bPair in _P.itemList)
+                {
+                    TimeSpan diff = DateTime.Now - bPair.Value.Frozen;
+                    if (diff.Milliseconds > 0)
+                    {
+                       
+                        float dx = bPair.Value.Position.X - _P.playerPosition.X;
+                        float dy = bPair.Value.Position.Y - _P.playerPosition.Y;
+                        float dz = bPair.Value.Position.Z - _P.playerPosition.Z;
+                        float distance = (float)(Math.Sqrt(dx * dx + dy * dy + dz * dz));
+                       
+                        if (distance < 1.0)
+                        {
+                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds(1000);//no interaction for a second after trying once
+                            _P.GetItem(bPair.Value.ID);
+                            //break;
+                        }
+                        else
+                        {
+                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds((int)(distance*50));//retry based on objects distance
+                        }
+                    }
+                }
                 // "Flatten" the movement vector so that we don"t move up/down.
                 moveVector.Y = 0;
                 moveVector.Normalize();
                 moveVector *= MOVESPEED * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (movingOnRoad)
                     moveVector *= 2;
+                if (movingOnMud)
+                    moveVector *= 0.5f;
+                if (swimming)
+                    moveVector *= 0.5f;
                 // Sprinting doubles speed, even if already on road
                 if (sprinting)
                     moveVector *= 1.5f;
+                if (crouching)
+                    moveVector.Y = -1;
 
                 // Attempt to move, doing collision stuff.
                 if (TryToMoveTo(moveVector, gameTime)) { }
-                else if (!TryToMoveTo(new Vector3(0, 0, moveVector.Z), gameTime)) { }
-                else if (!TryToMoveTo(new Vector3(moveVector.X, 0, 0), gameTime)) { }
+                else
+                {
+                    if (!TryToMoveTo(new Vector3(0, 0, moveVector.Z), gameTime)) { }
+                    if (!TryToMoveTo(new Vector3(moveVector.X, 0, 0), gameTime)) { }
+                }
             }
         }
 
         private bool TryToMoveTo(Vector3 moveVector, GameTime gameTime)
         {
-            // Build a "test vector" that is a little longer than the move vector.
+            // Build a "test vector" that is a little longer than the move vector.//yeah that was a great idea wasnt it
             float moveLength = moveVector.Length();
             Vector3 testVector = moveVector;
             testVector.Normalize();
-            testVector = testVector * (moveLength + 0.1f);
+            testVector = testVector * (moveLength);// + 0.1f);
 
             // Apply this test vector.
             Vector3 movePosition = _P.playerPosition + testVector;
@@ -260,8 +408,18 @@ namespace Infiniminer.States
 
             if (!_P.blockEngine.SolidAtPointForPlayer(movePosition) && !_P.blockEngine.SolidAtPointForPlayer(lowerBodyPoint) && !_P.blockEngine.SolidAtPointForPlayer(midBodyPoint))
             {
-                _P.playerPosition = _P.playerPosition + moveVector;
-                return true;
+                testVector = moveVector;
+                testVector.Normalize();
+                testVector = testVector * (moveLength + 0.11f);//prevent player from getting camera too close to block
+                movePosition = _P.playerPosition + testVector;
+                midBodyPoint = movePosition + new Vector3(0, -0.7f, 0);
+                lowerBodyPoint = movePosition + new Vector3(0, -1.4f, 0);
+
+                if (!_P.blockEngine.SolidAtPointForPlayer(movePosition) && !_P.blockEngine.SolidAtPointForPlayer(lowerBodyPoint) && !_P.blockEngine.SolidAtPointForPlayer(midBodyPoint))
+                {
+                    _P.playerPosition = _P.playerPosition + moveVector;
+                    return true;
+                }
             }
 
             // It's solid there, so while we can't move we have officially collided with it.
@@ -275,7 +433,7 @@ namespace Infiniminer.States
                 _P.KillPlayer(Defines.deathByLava);
                 return true;
             }
-
+          
             // If it's a ladder, move up.
             if (upperBlock == BlockType.Ladder || lowerBlock == BlockType.Ladder || midBlock == BlockType.Ladder)
             {
@@ -354,17 +512,35 @@ namespace Infiniminer.States
                             case PlayerTools.ProspectingRadar:
                                 _P.FireRadar();
                                 break;
+
+                            case PlayerTools.SpawnItem:
+                                _P.FireSpawnItem();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
+                                break;
                         }
                     }
                     break;
                 case Buttons.Jump:
                     {
+                       // Vector3 belowfootPosition = _P.playerPosition + new Vector3(0f, -2.5f, 0f);
                         Vector3 footPosition = _P.playerPosition + new Vector3(0f, -1.5f, 0f);
+                        Vector3 midPosition = _P.playerPosition + new Vector3(0f, -0.7f, 0f);
+
                         if (_P.blockEngine.SolidAtPointForPlayer(footPosition) && _P.playerVelocity.Y == 0)
                         {
-                            _P.playerVelocity.Y = JUMPVELOCITY;
+                            if (_P.blockEngine.BlockAtPoint(footPosition) == BlockType.Mud)
+                            {
+                                _P.playerVelocity.Y = JUMPVELOCITY / 3;
+                            }
+                            else
+                            {
+                                _P.playerVelocity.Y = JUMPVELOCITY;
+                            }
                             float amountBelowSurface = ((ushort)footPosition.Y) + 1 - footPosition.Y;
                             _P.playerPosition.Y += amountBelowSurface + 0.01f;
+                        }
+                        if (_P.blockEngine.BlockAtPoint(midPosition) == BlockType.Water)
+                        {
+                            _P.playerVelocity.Y = JUMPVELOCITY * 0.4f;
                         }
                     }
                     break;
@@ -429,16 +605,58 @@ namespace Infiniminer.States
                     }
                     break;
                 case Buttons.Deposit:
-                    if (_P.AtBankTerminal())
+                    BlockType targetd =_P.Interact();
+                    if (targetd == BlockType.BankRed && _P.playerTeam == PlayerTeam.Red || targetd == BlockType.BankBlue && _P.playerTeam == PlayerTeam.Blue)
                     {
                         _P.DepositOre();
                         _P.PlaySound(InfiniminerSound.ClickHigh);
                     }
+                    else if (targetd == BlockType.Pump)
+                    {
+                        _P.PlayerInteract(1);
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    else if (targetd == BlockType.Compressor)
+                    {
+                        _P.PlayerInteract(1);
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    else if (targetd == BlockType.Generator)
+                    {
+                        _P.PlayerInteract(1);
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    else if (targetd == BlockType.Pipe)
+                    {
+                        _P.PlayerInteract(1);//press button 1
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
                     break;
                 case Buttons.Withdraw:
-                    if (_P.AtBankTerminal())
+                    BlockType targetw = _P.Interact();
+                    if (targetw == BlockType.BankRed && _P.playerTeam == PlayerTeam.Red || targetw == BlockType.BankBlue && _P.playerTeam == PlayerTeam.Blue)
                     {
                         _P.WithdrawOre();
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    else if (targetw == BlockType.Pump)
+                    {
+                        _P.PlayerInteract(2);
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    else if (targetw == BlockType.Compressor)
+                    {
+                        _P.PlayerInteract(2);
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    else if (targetw == BlockType.Generator)
+                    {
+                        _P.PlayerInteract(2);
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    else if (targetw == BlockType.Pipe)
+                    {
+                        _P.PlayerInteract(2);//press button 1
                         _P.PlaySound(InfiniminerSound.ClickHigh);
                     }
                     break;

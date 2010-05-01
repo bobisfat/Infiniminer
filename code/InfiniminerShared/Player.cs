@@ -17,6 +17,7 @@ namespace Infiniminer
 {
     public enum PlayerClass
     {
+        None,
         Prospector,
         Miner,
         Engineer,
@@ -30,6 +31,13 @@ namespace Infiniminer
         DeconstructionGun,
         ProspectingRadar,
         Detonator,
+        SpawnItem,
+        LeftHand,
+        RightHand,
+        Body,
+        Head,
+        LeftLeg,
+        RightLeg
     }
 
     public enum PlayerTeam
@@ -57,6 +65,8 @@ namespace Infiniminer
         public Color blueTeam = new Color();
         public bool compression = false;
         public string Handle = "";
+        public uint Health = 0;
+        public uint HealthMax = 0;
         public uint OreMax = 0;
         public uint WeightMax = 0;
         public uint Ore = 0;

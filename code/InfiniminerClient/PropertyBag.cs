@@ -38,18 +38,25 @@ namespace Infiniminer
         public Camera playerCamera = null;
         public Vector3 playerPosition = Vector3.Zero;
         public Vector3 playerVelocity = Vector3.Zero;
-        public PlayerClass playerClass;
+        public Vector3 lastPosition = Vector3.Zero;
+        public Vector3 lastHeading = Vector3.Zero;
+        public PlayerClass playerClass = PlayerClass.None;
         public PlayerTools[] playerTools = new PlayerTools[1] { PlayerTools.Pickaxe };
         public int playerToolSelected = 0;
         public BlockType[] playerBlocks = new BlockType[1] { BlockType.None };
         public int playerBlockSelected = 0;
-        public PlayerTeam playerTeam = PlayerTeam.Red;
+        public PlayerTeam playerTeam = PlayerTeam.None;//Red;
         public bool playerDead = true;
+        public bool allowRespawn = false;
         public uint playerOre = 0;
+        public uint playerHealth = 0;
+        public uint playerHealthMax = 0;
         public uint playerCash = 0;
         public uint playerWeight = 0;
         public uint playerOreMax = 0;
         public uint playerWeightMax = 0;
+        public float playerHoldBreath = 20;
+        public DateTime lastBreath = DateTime.Now;
         public bool playerRadarMute = false;
         public float playerToolCooldown = 0;
         public string playerHandle = "Player";
@@ -68,6 +75,7 @@ namespace Infiniminer
         public uint teamBlueCash = 0;
         public PlayerTeam teamWinners = PlayerTeam.None;
         public Dictionary<Vector3, Beacon> beaconList = new Dictionary<Vector3, Beacon>();
+        public Dictionary<string, Item> itemList = new Dictionary<string, Item>();
 
         // Screen effect stuff.
         private Random randGen = new Random();
@@ -144,11 +152,15 @@ namespace Infiniminer
                 case BlockType.SolidBlue:
                 case BlockType.BeaconBlue:
                 case BlockType.BankBlue:
+                case BlockType.StealthBlockB:
+                case BlockType.TrapB:
                     return PlayerTeam.Blue;
                 case BlockType.TransRed:
                 case BlockType.SolidRed:
                 case BlockType.BeaconRed:
                 case BlockType.BankRed:
+                case BlockType.StealthBlockR:
+                case BlockType.TrapR:
                     return PlayerTeam.Red;
                 default:
                     return PlayerTeam.None;
@@ -169,15 +181,25 @@ namespace Infiniminer
             addChatMessage("Map saved to " + filename, ChatMessageType.SayAll, 10f);//DateTime.Now.ToUniversalTime());
         }
 
+        public void GetItem(string ID)
+        {
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.GetItem);
+            msgBuffer.Write(playerPosition);//also sends player locational data for range check
+            msgBuffer.Write(ID);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
+
         public void KillPlayer(string deathMessage)
         {
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
 
             PlaySound(InfiniminerSound.Death);
-            playerPosition = new Vector3(randGen.Next(2, 62), 66, randGen.Next(2, 62));
+           // playerPosition = new Vector3(randGen.Next(2, 62), 66, randGen.Next(2, 62));
             playerVelocity = Vector3.Zero;
             playerDead = true;
+            allowRespawn = false;
             screenEffect = ScreenEffect.Death;
             screenEffectCounter = 0;
 
@@ -185,6 +207,10 @@ namespace Infiniminer
             msgBuffer.Write((byte)InfiniminerMessage.PlayerDead);
             msgBuffer.Write(deathMessage);
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+         
+           // msgBuffer = netClient.CreateBuffer();
+           // msgBuffer.Write((byte)InfiniminerMessage.PlayerRespawn);
+          //  netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
         public void RespawnPlayer()
@@ -192,43 +218,16 @@ namespace Infiniminer
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
 
-            playerDead = false;
 
-            // Respawn a few blocks above a safe position above altitude 0.
-            bool positionFound = false;
-
-            // Try 20 times; use a potentially invalid position if we fail.
-            for (int i = 0; i < 20; i++)
+            if (allowRespawn == false)
             {
-                // Pick a random starting point.
-                Vector3 startPos = new Vector3(randGen.Next(2, 62), 63, randGen.Next(2, 62));
-
-                // See if this is a safe place to drop.
-                for (startPos.Y = 63; startPos.Y >= 54; startPos.Y--)
-                {
-                    BlockType blockType = blockEngine.BlockAtPoint(startPos);
-                    if (blockType == BlockType.Lava)
-                        break;
-                    else if (blockType != BlockType.None)
-                    {
-                        // We have found a valid place to spawn, so spawn a few above it.
-                        playerPosition = startPos + Vector3.UnitY * 5;
-                        positionFound = true;
-                        break;
-                    }
-                }
-
-                // If we found a position, no need to try anymore!
-                if (positionFound)
-                    break;
+                NetBuffer msgBuffer = netClient.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.PlayerRespawn);
+                netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+                return;
             }
 
-            // If we failed to find a spawn point, drop randomly.
-            if (!positionFound)
-                playerPosition = new Vector3(randGen.Next(2, 62), 66, randGen.Next(2, 62));
-
-            // Drop the player on the middle of the block, not at the corner.
-            playerPosition += new Vector3(0.5f, 0, 0.5f);
+            playerDead = false;
 
             // Zero out velocity and reset camera and screen effects.
             playerVelocity = Vector3.Zero;
@@ -237,9 +236,9 @@ namespace Infiniminer
             UpdateCamera();
 
             // Tell the server we have respawned.
-            NetBuffer msgBuffer = netClient.CreateBuffer();
-            msgBuffer.Write((byte)InfiniminerMessage.PlayerAlive);
-            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+            NetBuffer msgBufferb = netClient.CreateBuffer();
+            msgBufferb.Write((byte)InfiniminerMessage.PlayerAlive);
+            netClient.SendMessage(msgBufferb, NetChannel.ReliableUnordered);
         }
 
         public void PlaySound(InfiniminerSound sound)
@@ -250,6 +249,16 @@ namespace Infiniminer
             soundList[sound].Play(volumeLevel);
         }
 
+        public void PlaySound(InfiniminerSound sound, Vector3 position, int magnification)
+        {
+            if (soundList.Count == 0)
+                return;
+
+            float distance = (position - playerPosition).Length()-magnification;
+            float volume = Math.Max(0, 64 - distance) / 10.0f * volumeLevel;
+            volume = volume > 1.0f ? 1.0f : volume < 0.0f ? 0.0f : volume;
+            soundList[sound].Play(volume);
+        }
         public void PlaySound(InfiniminerSound sound, Vector3 position)
         {
             if (soundList.Count == 0)
@@ -349,7 +358,36 @@ namespace Infiniminer
                     // For 0 to 2, shake the camera.
                     if (screenEffectCounter < 2)
                     {
-                        Vector3 newPosition = playerCamera.Position;
+                        Vector3 newPosition = playerPosition;
+                        newPosition.X += (float)(2 - screenEffectCounter) * (float)(randGen.NextDouble() - 0.5) * 0.5f;
+                        newPosition.Y += (float)(2 - screenEffectCounter) * (float)(randGen.NextDouble() - 0.5) * 0.5f;
+                        newPosition.Z += (float)(2 - screenEffectCounter) * (float)(randGen.NextDouble() - 0.5) * 0.5f;
+                        if (!blockEngine.SolidAtPointForPlayer(newPosition) && (newPosition - playerPosition).Length() < 0.7f)
+                            playerCamera.Position = newPosition;
+                    }
+                    // For 2 to 3, move the camera back.
+                    else if (screenEffectCounter < 3)
+                    {
+                        Vector3 lerpVector = playerPosition - playerCamera.Position;
+                        playerCamera.Position += 0.5f * lerpVector;
+                    }
+                    else
+                    {
+                        screenEffect = ScreenEffect.None;
+                        screenEffectCounter = 0;
+                        playerCamera.Position = playerPosition;
+                    }
+                }
+            }
+            if (screenEffect == ScreenEffect.Earthquake)
+            {
+                if (gameTime != null)
+                {
+                    screenEffectCounter += gameTime.ElapsedGameTime.TotalSeconds;
+                    // For 0 to 2, shake the camera.
+                    if (screenEffectCounter < 2)
+                    {
+                        Vector3 newPosition = playerPosition;
                         newPosition.X += (float)(2 - screenEffectCounter) * (float)(randGen.NextDouble() - 0.5) * 0.5f;
                         newPosition.Y += (float)(2 - screenEffectCounter) * (float)(randGen.NextDouble() - 0.5) * 0.5f;
                         newPosition.Z += (float)(2 - screenEffectCounter) * (float)(randGen.NextDouble() - 0.5) * 0.5f;
@@ -417,12 +455,30 @@ namespace Infiniminer
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
 
-            this.playerTeam = playerTeam;
+            if (this.playerTeam != playerTeam)
+            {
 
-            NetBuffer msgBuffer = netClient.CreateBuffer();
-            msgBuffer.Write((byte)InfiniminerMessage.PlayerSetTeam);
-            msgBuffer.Write((byte)playerTeam);
-            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+                this.playerTeam = playerTeam;
+
+                NetBuffer msgBuffer = netClient.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.PlayerSetTeam);
+                msgBuffer.Write((byte)playerTeam);
+                netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+
+                if (playerTeam == PlayerTeam.Red)
+                {
+
+                    this.KillPlayer("HAS JOINED THE RED TEAM"); 
+                    blockEngine.blockTextures[(byte)BlockTexture.TrapR] = blockEngine.blockTextures[(byte)BlockTexture.TrapVis];
+                    blockEngine.blockTextures[(byte)BlockTexture.TrapB] = blockEngine.blockTextures[(byte)BlockTexture.Trap];
+                }
+                else
+                {
+                    this.KillPlayer("HAS JOINED THE BLUE TEAM"); 
+                    blockEngine.blockTextures[(byte)BlockTexture.TrapB] = blockEngine.blockTextures[(byte)BlockTexture.TrapVis];
+                    blockEngine.blockTextures[(byte)BlockTexture.TrapR] = blockEngine.blockTextures[(byte)BlockTexture.Trap];
+                }
+            }
         }
 
         public bool allWeps = false; //Needs to be true on sandbox servers, though that requires a server mod
@@ -431,15 +487,17 @@ namespace Infiniminer
         {
             playerToolSelected = 0;
             playerBlockSelected = 0;
+
             if (allWeps)
             {
-                playerTools = new PlayerTools[5] { PlayerTools.Pickaxe,
+                playerTools = new PlayerTools[6] { PlayerTools.Pickaxe,
                 PlayerTools.ConstructionGun,
                 PlayerTools.DeconstructionGun,
                 PlayerTools.ProspectingRadar,
-                PlayerTools.Detonator };
+                PlayerTools.Detonator,
+                PlayerTools.SpawnItem };
 
-                playerBlocks = new BlockType[12] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[14] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
@@ -447,10 +505,18 @@ namespace Infiniminer
                                              BlockType.Shock,
                                              playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue,
+                                             playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
+                                             playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
                                              BlockType.Explosive,
                                              BlockType.Road,
-                                             BlockType.Lava,
-                                             BlockType.Dirt };
+                                             //BlockType.Lava,
+                                             //BlockType.Dirt, 
+                                             //BlockType.Controller,
+                                             //BlockType.Generator,
+                                             BlockType.Pump,
+                                             //BlockType.Compressor,
+                                             //BlockType.Pipe,
+                                             BlockType.Water };
             }
             else
             {
@@ -475,16 +541,24 @@ namespace Infiniminer
                         break;
 
                     case PlayerClass.Engineer:
-                        playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
+                        playerTools = new PlayerTools[4] {  PlayerTools.Pickaxe,
                                                         PlayerTools.ConstructionGun,     
-                                                        PlayerTools.DeconstructionGun   };
-                        playerBlocks = new BlockType[9] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                                                        PlayerTools.DeconstructionGun,
+                                                        PlayerTools.SpawnItem };
+                        playerBlocks = new BlockType[16] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                         BlockType.TransRed,
                                                         BlockType.TransBlue, //playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue, //Only need one entry due to right-click
                                                         BlockType.Road,
                                                         BlockType.Ladder,
                                                         BlockType.Jump,
                                                         BlockType.Shock,
+                                                        BlockType.Water,
+                                                        BlockType.Controller,
+                                                        BlockType.Generator,
+                                                        BlockType.Pump,
+                                                        BlockType.Pipe,
+                                                        playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
+                                                        playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue  };
                         break;
@@ -509,6 +583,11 @@ namespace Infiniminer
                 if (netClient.Status != NetConnectionStatus.Connected)
                     return;
 
+                if (this.playerClass != PlayerClass.None)
+                {
+                    this.KillPlayer("");
+                }
+
                 this.playerClass = playerClass;
 
                 NetBuffer msgBuffer = netClient.CreateBuffer();
@@ -520,9 +599,13 @@ namespace Infiniminer
                 playerBlockSelected = 0;
 
                 equipWeps();
+
+                this.RespawnPlayer();
             }
-            this.KillPlayer("");
-            this.RespawnPlayer();
+            else
+            {
+                equipWeps();
+            }
         }
 
         public void FireRadar()
@@ -598,6 +681,25 @@ namespace Infiniminer
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
+        public void FireSpawnItem()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+            playerToolCooldown = GetToolCooldown(PlayerTools.SpawnItem);
+            constructionGunAnimation = -5;
+
+            // Send the message.
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+            msgBuffer.Write(playerPosition);
+            msgBuffer.Write(playerCamera.GetLookVector());
+            msgBuffer.Write((byte)PlayerTools.SpawnItem);
+           
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
+
+
         public void FireDeconstructionGun()
         {
             if (netClient.Status != NetConnectionStatus.Connected)
@@ -669,6 +771,94 @@ namespace Infiniminer
                 }
         }
 
+        public string strInteract()
+        {
+            Vector3 hitPoint = Vector3.Zero;
+            Vector3 buildPoint = Vector3.Zero;
+            if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2.5f, 25, ref hitPoint, ref buildPoint))
+                return "";
+
+            // If it's a valid bank object, we're good!
+            BlockType blockType = blockEngine.BlockAtPoint(hitPoint);
+
+            if (blockType == BlockType.BankRed && playerTeam == PlayerTeam.Red)
+            {
+                return "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE";
+            }
+            else if (blockType == BlockType.BankBlue && playerTeam == PlayerTeam.Blue)
+            {
+                return "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE";
+            }
+            else if (blockType == BlockType.Generator)
+            {
+                return "8: Generator On  9: Generator Off";
+            }
+            else if (blockType == BlockType.Pipe)
+            {
+                return "8: Rotate Left 9: Rotate Right";
+            }
+            else if (blockType == BlockType.Pump)
+            {
+                return "8: On/Off 9: Change direction";
+            }
+            else if (blockType == BlockType.Compressor)
+            {
+                return "8: Compress/Decompress";
+            }
+            return "";
+        }
+        public BlockType Interact()
+        {
+            Vector3 hitPoint = Vector3.Zero;
+            Vector3 buildPoint = Vector3.Zero;
+            if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2.5f, 25, ref hitPoint, ref buildPoint))
+                return BlockType.None;
+
+            // If it's a valid bank object, we're good!
+            BlockType blockType = blockEngine.BlockAtPoint(hitPoint);
+            return blockType;
+        }
+        public bool PlayerInteract(int button)
+        {
+            Vector3 hitPoint = Vector3.Zero;
+            Vector3 buildPoint = Vector3.Zero;
+            if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2.5f, 25, ref hitPoint, ref buildPoint))
+                return false;
+
+            //press button on server
+            SendPlayerInteract(button, (uint)hitPoint.X, (uint)hitPoint.Y, (uint)hitPoint.Z);
+            return true;
+        }
+        public bool AtGenerator()
+        {
+            // Figure out what we're looking at.
+            Vector3 hitPoint = Vector3.Zero;
+            Vector3 buildPoint = Vector3.Zero;
+            if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2.5f, 25, ref hitPoint, ref buildPoint))
+                return false;
+
+            // If it's a valid bank object, we're good!
+            BlockType blockType = blockEngine.BlockAtPoint(hitPoint);
+            if (blockType == BlockType.Generator)
+                return true;
+            return false;
+        }
+
+        public bool AtPipe()
+        {
+            // Figure out what we're looking at.
+            Vector3 hitPoint = Vector3.Zero;
+            Vector3 buildPoint = Vector3.Zero;
+            if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2.5f, 25, ref hitPoint, ref buildPoint))
+                return false;
+
+            // If it's a valid bank object, we're good!
+            BlockType blockType = blockEngine.BlockAtPoint(hitPoint);
+            if (blockType == BlockType.Pipe)
+                return true;
+            return false;
+        }
+
         // Returns true if the player is able to use a bank right now.
         public bool AtBankTerminal()
         {
@@ -696,6 +886,7 @@ namespace Infiniminer
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;
                 case PlayerTools.ProspectingRadar: return 0.5f;
+                case PlayerTools.SpawnItem: return 0.05f;
                 default: return 0;
             }
         }
@@ -705,13 +896,60 @@ namespace Infiniminer
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
 
+            if (lastPosition != playerPosition)//do full network update
+            {
+                lastPosition = playerPosition;
+
+                NetBuffer msgBuffer = netClient.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.PlayerUpdate);//full
+                msgBuffer.Write(playerPosition);
+                msgBuffer.Write(playerCamera.GetLookVector());
+                msgBuffer.Write((byte)playerTools[playerToolSelected]);
+                msgBuffer.Write(playerToolCooldown > 0.001f);
+                netClient.SendMessage(msgBuffer, NetChannel.UnreliableInOrder1);
+            }
+            else if(lastHeading != playerCamera.GetLookVector())
+            {
+                lastHeading = playerCamera.GetLookVector();
+                NetBuffer msgBuffer = netClient.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.PlayerUpdate1);//just heading
+                msgBuffer.Write(lastHeading);
+                msgBuffer.Write((byte)playerTools[playerToolSelected]);
+                msgBuffer.Write(playerToolCooldown > 0.001f);
+                netClient.SendMessage(msgBuffer, NetChannel.UnreliableInOrder1);
+            }
+            else
+            {
+                NetBuffer msgBuffer = netClient.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.PlayerUpdate2);//just tools
+                msgBuffer.Write((byte)playerTools[playerToolSelected]);
+                msgBuffer.Write(playerToolCooldown > 0.001f);
+                netClient.SendMessage(msgBuffer, NetChannel.UnreliableInOrder1);
+            }
+        }
+        public void SendPlayerHurt()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+                NetBuffer msgBuffer = netClient.CreateBuffer();
+                msgBuffer.Write((byte)InfiniminerMessage.PlayerHurt);
+                msgBuffer.Write(playerHealth);
+                netClient.SendMessage(msgBuffer, NetChannel.ReliableInOrder1);
+        }
+        public void SendPlayerInteract(int button, uint x, uint y, uint z)
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
             NetBuffer msgBuffer = netClient.CreateBuffer();
-            msgBuffer.Write((byte)InfiniminerMessage.PlayerUpdate);
-            msgBuffer.Write(playerPosition);
-            msgBuffer.Write(playerCamera.GetLookVector());
-            msgBuffer.Write((byte)playerTools[playerToolSelected]);
-            msgBuffer.Write(playerToolCooldown > 0.001f);
-            netClient.SendMessage(msgBuffer, NetChannel.UnreliableInOrder1);
+            msgBuffer.Write((byte)InfiniminerMessage.PlayerInteract);
+            msgBuffer.Write(playerPosition);//also sends player locational data for range check
+            msgBuffer.Write(button);
+            msgBuffer.Write(x);
+            msgBuffer.Write(y);
+            msgBuffer.Write(z);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
     }
 }

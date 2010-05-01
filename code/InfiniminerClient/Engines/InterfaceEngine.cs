@@ -76,6 +76,7 @@ namespace Infiniminer
             blockIcons[BlockType.BankRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_bank_red");
             blockIcons[BlockType.Explosive] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_explosive");
             blockIcons[BlockType.Jump] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_jump");
+            blockIcons[BlockType.Water] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_water");
             blockIcons[BlockType.Ladder] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_ladder");
             blockIcons[BlockType.SolidBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_solid_blue");
             blockIcons[BlockType.SolidRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_solid_red");
@@ -85,6 +86,18 @@ namespace Infiniminer
             blockIcons[BlockType.BeaconRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_beacon");
             blockIcons[BlockType.BeaconBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_beacon");
             blockIcons[BlockType.Road] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_road");
+            blockIcons[BlockType.Generator] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_generator");
+            blockIcons[BlockType.Controller] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_controller");
+            blockIcons[BlockType.Pipe] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pipe");
+            blockIcons[BlockType.Lava] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pipe");
+            blockIcons[BlockType.StealthBlockB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_stealth");
+            blockIcons[BlockType.StealthBlockR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_stealth");
+            blockIcons[BlockType.TrapB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
+            blockIcons[BlockType.TrapR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
+            blockIcons[BlockType.Dirt] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_generator");
+            blockIcons[BlockType.Pump] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pump");
+            blockIcons[BlockType.Compressor] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pump");
+            //blockIcons[BlockType.Spring] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_rock");
             blockIcons[BlockType.None] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_deconstruction");
 
             // Load fonts.
@@ -321,9 +334,18 @@ namespace Infiniminer
             int altitude = (int)(_P.playerPosition.Y - 64 + Defines.GROUND_LEVEL);
             RenderMessageCenter(spriteBatch, String.Format("ALTITUDE: {0:00}", altitude), new Vector2(graphicsDevice.Viewport.Width - 90, graphicsDevice.Viewport.Height - 20), altitude >= 0 ? Color.Gray : Defines.IM_RED, Color.Black);
 
-            // Draw bank instructions.
-            if (_P.AtBankTerminal())
-                RenderMessageCenter(spriteBatch, "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE", new Vector2(graphicsDevice.Viewport.Width / 2, graphicsDevice.Viewport.Height / 2 + 60), Color.White, Color.Black);
+            string interact = _P.strInteract();
+            if (interact != "")//interact with stuffs
+            {
+                RenderMessageCenter(spriteBatch, interact, new Vector2(graphicsDevice.Viewport.Width / 2, graphicsDevice.Viewport.Height / 2 + 60), Color.White, Color.Black);
+            }
+
+            //if (_P.AtBankTerminal())
+            //    RenderMessageCenter(spriteBatch, "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE", new Vector2(graphicsDevice.Viewport.Width / 2, graphicsDevice.Viewport.Height / 2 + 60), Color.White, Color.Black);
+            //if (_P.AtGenerator())
+            //    RenderMessageCenter(spriteBatch, "8: Generator On  9: Generator Off", new Vector2(graphicsDevice.Viewport.Width / 2, graphicsDevice.Viewport.Height / 2 + 60), Color.White, Color.Black);
+            //if (_P.AtPipe())
+            //    RenderMessageCenter(spriteBatch, "8: Rotate Left 9: Rotate Right", new Vector2(graphicsDevice.Viewport.Width / 2, graphicsDevice.Viewport.Height / 2 + 60), Color.White, Color.Black);
 
             // Are they trying to change class when they cannot?
             //if (Keyboard.GetState().IsKeyDown(Keys.M) && _P.playerPosition.Y <= 64 - Defines.GROUND_LEVEL && _P.chatMode == ChatMessageType.None)
@@ -334,7 +356,9 @@ namespace Infiniminer
             spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, 20), Color.Black);
             spriteBatch.DrawString(uiFont, "ORE: " + _P.playerOre + "/" + _P.playerOreMax, new Vector2(textStart + 3, 2), Color.White);
             spriteBatch.DrawString(uiFont, "LOOT: $" + _P.playerCash, new Vector2(textStart + 170, 2), Color.White);
-            spriteBatch.DrawString(uiFont, "WEIGHT: " + _P.playerWeight + "/" + _P.playerWeightMax, new Vector2(textStart + 340, 2), Color.White);
+            RenderMessageCenter(spriteBatch, String.Format("Health: {0:000}", _P.playerHealth) + "/" + String.Format("{0:000}", _P.playerHealthMax), new Vector2(graphicsDevice.Viewport.Width - 300, graphicsDevice.Viewport.Height - 20), _P.playerHealth >= _P.playerHealthMax / 4 ? _P.playerHealth >= _P.playerHealthMax * 0.8f ? Color.Green : Color.Gray : Defines.IM_RED, Color.Black);
+            //spriteBatch.DrawString(uiFont, "HEALTH: " + _P.playerHealth + "/" + _P.playerHealthMax, new Vector2(textStart + 170, 2), Color.White);
+            spriteBatch.DrawString(uiFont, "WEIGHT: " + _P.playerWeight + "/" + _P.playerWeightMax, new Vector2(textStart + 360, 2), Color.White);
             spriteBatch.DrawString(uiFont, "TEAM ORE: " + _P.teamOre, new Vector2(textStart + 515, 2), Color.White);
             spriteBatch.DrawString(uiFont, _P.redName + ": $" + _P.teamRedCash, new Vector2(textStart + 700, 2), _P.red);// Defines.IM_RED);
             spriteBatch.DrawString(uiFont, _P.blueName + ": $" + _P.teamBlueCash, new Vector2(textStart + 860, 2), _P.blue);// Defines.IM_BLUE);
@@ -411,6 +435,9 @@ namespace Infiniminer
                     RenderRadarBlip(spriteBatch, bPair.Key, Color.White, false, bPair.Value.ID);
             RenderRadarBlip(spriteBatch, new Vector3(100000, 0, 32), Color.White, false, "NORTH");
 
+           // foreach (KeyValuePair<string, Item> bPair in _P.itemList)//  if (bPair.Value.Team == _P.playerTeam)//doesnt care which team
+            //        RenderRadarBlip(spriteBatch, bPair.Value.Position, Color.Magenta, false, bPair.Value.ID);
+
             spriteBatch.Draw(texRadarForeground, new Vector2(10, 30), Color.White);
 
             // Draw escape message.
@@ -435,12 +462,36 @@ namespace Infiniminer
                 if (_P.screenEffectCounter > 2)
                     _P.screenEffect = ScreenEffect.None;
             }
+            if (_P.screenEffect == ScreenEffect.Earthquake)
+            {
+                //Color drawColor = new Color(1, 1, 1, 1 - (float)_P.screenEffectCounter * 0.5f);
+                //spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height), drawColor);
+                if (_P.screenEffectCounter > 2)
+                    _P.screenEffect = ScreenEffect.None;
+            }
             if (_P.screenEffect == ScreenEffect.Fall)
             {
                 Color drawColor = new Color(1, 0, 0, 1 - (float)_P.screenEffectCounter * 0.5f);
                 spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height), drawColor);
                 if (_P.screenEffectCounter > 2)
                     _P.screenEffect = ScreenEffect.None;
+            }
+            if (_P.screenEffect == ScreenEffect.Water)
+            {
+                Color drawColor = new Color(0, 0, 1, 1 - (float)_P.screenEffectCounter);
+                spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height), drawColor);
+                if (_P.screenEffectCounter > 2)
+                    _P.screenEffect = ScreenEffect.None;
+            }
+            if (_P.screenEffect == ScreenEffect.Drown)
+            {
+                Color drawColor = new Color(0.5f, 0, 0.8f, 0.25f + (float)_P.screenEffectCounter*0.2f);
+                spriteBatch.Draw(texBlank, new Rectangle(0, 0, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height), drawColor);
+                if (_P.screenEffectCounter > 2)
+                {
+                    _P.screenEffect = ScreenEffect.Water;
+                    _P.screenEffectCounter = 1;
+                }
             }
 
             // Draw the help screen.

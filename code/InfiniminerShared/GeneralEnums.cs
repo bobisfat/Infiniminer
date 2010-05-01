@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework;
 
 namespace Infiniminer
 {
@@ -57,6 +59,9 @@ namespace Infiniminer
         Teleport,
         Fall,
         Explosion,
+        Drown,
+        Water,
+        Earthquake
     }
 
     public enum InfiniminerSound
@@ -89,20 +94,28 @@ namespace Infiniminer
         DepositCash,
         WithdrawOre,
         TriggerExplosion,       // position
-
+        TriggerEarthquake,
         PlayerUpdate,           // (uint id for server), position, heading, current tool, animate using (bool): UnreliableInOrder1
+        PlayerUpdate1,           // minus position
+        PlayerUpdate2,           // minus heading
+        PlayerInteract,         //player mashes button 1 or 2 on block at x,y,z
         PlayerJoined,           // uint id, player name :ReliableInOrder2
         PlayerLeft,             // uint id              :ReliableInOrder2
         PlayerSetTeam,          // (uint id for server), byte team   :ReliableInOrder2
         PlayerDead,             // (uint id for server) :ReliableInOrder2
         PlayerAlive,            // (uint id for server) :ReliableInOrder2
         PlayerPing,             // uint id
-
+        PlayerHurt,             // allows client to tell server of damage
+        PlayerPosition,         // server sends client new position\
+        PlayerRespawn,          // allows the player to respawn
         ChatMessage,            // byte type, string message : ReliableInOrder3
         GameOver,               // byte team
         PlaySound,              // byte sound, bool isPositional, ?Vector3 location : ReliableUnordered
         TriggerConstructionGunAnimation,
         SetBeacon,              // vector3 position, string text ("" means remove)
+        SetItem,
+        GetItem,
+        SetItemRemove,
     }
 
     public enum ChatMessageType

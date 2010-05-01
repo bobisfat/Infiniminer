@@ -24,6 +24,7 @@ namespace Infiniminer
         float volumeLevel = 1.0f;
         NetBuffer msgBuffer = null;
         Song songTitle = null;
+        const float NETWORK_UPDATE_TIME = 0.05f;
 
         public bool RenderPretty = true;
         public bool DrawFrameRate = false;
@@ -35,7 +36,7 @@ namespace Infiniminer
         public string redName = "Red";
         public Color blue = Defines.IM_BLUE;
         public string blueName = "Blue";
-
+        IPEndPoint lastConnection;
         public KeyBindHandler keyBinds = new KeyBindHandler();
 
         public bool anyPacketsReceived = false;
@@ -128,11 +129,13 @@ namespace Infiniminer
         {
             // Update the server with our status.
             timeSinceLastUpdate += gameTime.ElapsedGameTime.TotalSeconds;
-            if (timeSinceLastUpdate > 0.05)
+            if (timeSinceLastUpdate > NETWORK_UPDATE_TIME)
             {
                 timeSinceLastUpdate = 0;
                 if (CurrentStateType == "Infiniminer.States.MainGameState")
+                {
                     propertyBag.SendPlayerUpdate();
+                }
             }
 
             // Recieve messages from the server.
@@ -144,7 +147,13 @@ namespace Infiniminer
                     case NetMessageType.StatusChanged:
                         {
                             if (propertyBag.netClient.Status == NetConnectionStatus.Disconnected)
-                                ChangeState("Infiniminer.States.ServerBrowserState");
+                            {
+                                ChangeState("Infiniminer.States.ServerBrowserState");//needed to reset 
+
+                                Thread.Sleep(50);
+                                JoinGame(lastConnection);//attempts to reconnect
+                                ChangeState("Infiniminer.States.LoadingState");
+                            }
                         }
                         break;
                     case NetMessageType.ConnectionApproval:
@@ -228,6 +237,8 @@ namespace Infiniminer
                                                     ChangeState("Infiniminer.States.TeamSelectionState");
                                                     if (!NoSound)
                                                         MediaPlayer.Stop();
+
+                                                    lastConnection = new IPEndPoint(propertyBag.netClient.ServerConnection.RemoteEndpoint.Address, 5565);
                                                     propertyBag.blockEngine.DownloadComplete();
                                                 }
                                             }
@@ -261,7 +272,27 @@ namespace Infiniminer
                                             }
                                         }
                                         break;
-
+                                    case InfiniminerMessage.SetItem:
+                                        {
+                                            Item newItem = new Item((Game)this);
+                                            newItem.ID = msgBuffer.ReadString();
+                                            newItem.Position = msgBuffer.ReadVector3();
+                                            newItem.Team = (PlayerTeam)msgBuffer.ReadByte();
+                                            newItem.Heading = msgBuffer.ReadVector3();
+                                           
+                                            propertyBag.itemList.Add(newItem.ID, newItem);
+                                        }
+                                        break;
+                                    case InfiniminerMessage.SetItemRemove:
+                                        {
+                                            string text = msgBuffer.ReadString();
+                                          
+                                            if (propertyBag.itemList.ContainsKey(text))
+                                                propertyBag.itemList.Remove(text);
+                                           
+                                        }
+                                        break;
+    
                                     case InfiniminerMessage.TriggerConstructionGunAnimation:
                                         {
                                             propertyBag.constructionGunAnimation = msgBuffer.ReadFloat();
@@ -281,9 +312,17 @@ namespace Infiniminer
                                             propertyBag.teamOre = msgBuffer.ReadUInt32();
                                             propertyBag.teamRedCash = msgBuffer.ReadUInt32();
                                             propertyBag.teamBlueCash = msgBuffer.ReadUInt32();
+                                            propertyBag.playerHealth = msgBuffer.ReadUInt32();
+                                            propertyBag.playerHealthMax = msgBuffer.ReadUInt32();
                                         }
                                         break;
-
+                                    case InfiniminerMessage.PlayerPosition:
+                                        {
+                                            // ore, cash, weight, max ore, max weight, team ore, red cash, blue cash, all uint
+                                            propertyBag.playerPosition = msgBuffer.ReadVector3();
+                                           
+                                        }
+                                        break;
                                     case InfiniminerMessage.BlockSet:
                                         {
                                             // x, y, z, type, all bytes
@@ -305,10 +344,28 @@ namespace Infiniminer
                                             }
                                         }
                                         break;
+                                    case InfiniminerMessage.TriggerEarthquake:
+                                        {
+                                            Vector3 blockPos = msgBuffer.ReadVector3();
+                                            uint expStrength = msgBuffer.ReadUInt32();
 
+                                            // Play the explosion sound.
+                                            propertyBag.PlaySound(InfiniminerSound.Explosion, blockPos, (int)(expStrength/1.5));
+
+                                            // Create some particles.
+                                            propertyBag.particleEngine.CreateExplosionDebris(blockPos);
+
+                                            // Figure out what the effect is.
+                                            float distFromExplosive = (blockPos + 0.5f * Vector3.One - propertyBag.playerPosition).Length();
+                                            
+                                            propertyBag.screenEffectCounter = Math.Min(propertyBag.screenEffectCounter, 1 / 5);
+                                            
+                                        }
+                                        break;
                                     case InfiniminerMessage.TriggerExplosion:
                                         {
                                             Vector3 blockPos = msgBuffer.ReadVector3();
+                                            uint expStrength = msgBuffer.ReadUInt32();
 
                                             // Play the explosion sound.
                                             propertyBag.PlaySound(InfiniminerSound.Explosion, blockPos);
@@ -331,6 +388,7 @@ namespace Infiniminer
                                                 // If this bomb would result in a bigger shake, use its value.
                                                 propertyBag.screenEffectCounter = Math.Min(propertyBag.screenEffectCounter, (distFromExplosive - 2) / 5);
                                             }
+
                                         }
                                         break;
 
@@ -396,6 +454,14 @@ namespace Infiniminer
                                         }
                                         break;
 
+                                    case InfiniminerMessage.PlayerRespawn:
+                                        {
+                                            //propertyBag.playerList[propertyBag.playerMyId].UpdatePosition(msgBuffer.ReadVector3(), gameTime.TotalGameTime.TotalSeconds);
+                                            propertyBag.playerPosition = msgBuffer.ReadVector3();
+                                            propertyBag.allowRespawn = true;
+                                        }
+                                        break;
+
                                     case InfiniminerMessage.PlayerUpdate:
                                         {
                                             uint playerId = msgBuffer.ReadUInt32();
@@ -407,6 +473,7 @@ namespace Infiniminer
                                                 player.Tool = (PlayerTools)msgBuffer.ReadByte();
                                                 player.UsingTool = msgBuffer.ReadBoolean();
                                                 player.Score = (uint)(msgBuffer.ReadUInt16() * 100);
+                                                player.Health = (uint)(msgBuffer.ReadUInt16() * 100);
                                             }
                                         }
                                         break;
@@ -479,6 +546,7 @@ namespace Infiniminer
             {
                 propertyBag.KillPlayer(Defines.deathByLava);
             }
+
         }
 
         protected override void Initialize()
@@ -486,7 +554,9 @@ namespace Infiniminer
             graphicsDeviceManager.IsFullScreen = false;
             graphicsDeviceManager.PreferredBackBufferWidth = 1024;
             graphicsDeviceManager.PreferredBackBufferHeight = 768;
+            graphicsDeviceManager.SynchronizeWithVerticalRetrace = true;
             graphicsDeviceManager.PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8;
+            this.IsFixedTimeStep = false;
 
             //Now moving to DatafileWriter only since it can read and write
             DatafileWriter dataFile = new DatafileWriter("client.config.txt");
@@ -637,9 +707,9 @@ namespace Infiniminer
             // Play the title music.
             if (!NoSound)
             {
-                songTitle = Content.Load<Song>("song_title");
-                MediaPlayer.Play(songTitle);
-                MediaPlayer.Volume = propertyBag.volumeLevel;
+             //   songTitle = Content.Load<Song>("song_title");
+              //  MediaPlayer.Play(songTitle);
+             //   MediaPlayer.Volume = propertyBag.volumeLevel;
             }
         }
     }

@@ -9,6 +9,8 @@ namespace Infiniminer
     {
         None,
         Dirt,
+        Mud,
+        Sand,
         Ore,
         Gold,
         Diamond,
@@ -27,8 +29,23 @@ namespace Infiniminer
         Metal,
         DirtSign,
         Lava,
+        Generator,
+        Controller,
+        Pump,
+        Compressor,
+        Pipe,
         TransRed,
         TransBlue,
+        Water,
+        Spring,
+        MagmaVent,
+        Fire,
+        Vacuum,
+        TrapB,
+        TrapR,
+        StealthBlockR,
+        StealthBlockB,
+        Magma,
         MAXIMUM
     }
 
@@ -36,6 +53,8 @@ namespace Infiniminer
     {
         None,
         Dirt,
+        Mud,
+        Sand,
         Ore,
         Gold,
         Diamond,
@@ -67,11 +86,27 @@ namespace Infiniminer
         Metal,
         DirtSign,
         Lava,
+        Generator,
+        Controller,
+        Pump,
+        Compressor,
+        Pipe,
         Road,
         RoadTop,
         RoadBottom,
         BeaconRed,
         BeaconBlue,
+        Spring,
+        MagmaVent,
+        Fire,
+        Water,
+        Magma,
+        TrapR,
+        TrapB,
+        TrapVis,
+        Trap,
+        StealthBlockR,
+        StealthBlockB,
         TransRed,   // THESE MUST BE THE LAST TWO TEXTURES
         TransBlue,
         MAXIMUM
@@ -102,6 +137,18 @@ namespace Infiniminer
 
                 case BlockType.SolidRed:
                 case BlockType.SolidBlue:
+                case BlockType.Water:
+                case BlockType.Generator:
+                case BlockType.Controller:
+                case BlockType.Pump:
+                case BlockType.Compressor:
+                case BlockType.Lava:
+                case BlockType.Dirt:
+                case BlockType.Pipe:
+                case BlockType.StealthBlockB:
+                case BlockType.StealthBlockR:
+                case BlockType.TrapB:
+                case BlockType.TrapR:
                     return 10;
 
                 case BlockType.TransRed:
@@ -132,14 +179,36 @@ namespace Infiniminer
         {
             switch (blockType)
             {
+                case BlockType.Generator:
+                    return BlockTexture.Generator;
+                case BlockType.Controller:
+                    return BlockTexture.Controller;
+                case BlockType.Pump:
+                    return BlockTexture.Pump;
+                case BlockType.Compressor:
+                    return BlockTexture.Compressor;
+                case BlockType.Pipe:
+                    return BlockTexture.Pipe;
                 case BlockType.Metal:
                     return BlockTexture.Metal;
                 case BlockType.Dirt:
                     return BlockTexture.Dirt;
+                case BlockType.Mud:
+                    return BlockTexture.Mud;
+                case BlockType.Sand:
+                    return BlockTexture.Sand;
                 case BlockType.Lava:
                     return BlockTexture.Lava;
+                case BlockType.Water:
+                    return BlockTexture.Water;
                 case BlockType.Rock:
                     return BlockTexture.Rock;
+                case BlockType.Spring:
+                    return BlockTexture.Spring;
+                case BlockType.MagmaVent:
+                    return BlockTexture.MagmaVent;
+                case BlockType.Fire:
+                    return BlockTexture.Fire;
                 case BlockType.Ore:
                     return BlockTexture.Ore;
                 case BlockType.Gold:
@@ -148,6 +217,16 @@ namespace Infiniminer
                     return BlockTexture.Diamond;
                 case BlockType.DirtSign:
                     return BlockTexture.DirtSign;
+                case BlockType.Magma:
+                    return BlockTexture.Magma;
+                case BlockType.StealthBlockR:
+                    return BlockTexture.StealthBlockR;
+                case BlockType.StealthBlockB:
+                    return BlockTexture.StealthBlockB;
+                case BlockType.TrapB:
+                    return BlockTexture.TrapB;
+                case BlockType.TrapR:
+                   return BlockTexture.TrapR;
 
                 case BlockType.BankRed:
                     switch (faceDir)
