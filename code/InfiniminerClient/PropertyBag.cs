@@ -504,7 +504,7 @@ namespace Infiniminer
                 PlayerTools.Detonator,
                 PlayerTools.SpawnItem };
 
-                playerBlocks = new BlockType[15] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[16] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
@@ -522,7 +522,7 @@ namespace Infiniminer
                                              //BlockType.Generator,
                                              BlockType.Pump,
                                              BlockType.Compressor,
-                                             //BlockType.Pipe,
+                                             BlockType.Pipe,
                                              BlockType.Water };
             }
             else
@@ -552,7 +552,7 @@ namespace Infiniminer
                                                         PlayerTools.ConstructionGun,     
                                                         PlayerTools.DeconstructionGun,
                                                         PlayerTools.SpawnItem };
-                        playerBlocks = new BlockType[12] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                        playerBlocks = new BlockType[13] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue, //Only need one entry due to right-click
                                                         BlockType.Road,
                                                         BlockType.Ladder,
@@ -560,6 +560,7 @@ namespace Infiniminer
                                                         BlockType.Shock,
                                                         BlockType.Water,
                                                         BlockType.Pump,
+                                                        BlockType.Pipe,
                                                         playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,

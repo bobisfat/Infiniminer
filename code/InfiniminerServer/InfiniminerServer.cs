@@ -2925,6 +2925,10 @@ namespace Infiniminer
                                                         PipeSourceLiquid = blockList[a, b, c];
                                                         blockListContent[i, j, k, 1] = 1; // Set as connected
                                                         //ChainConnectedToSource = 1;
+                                                        if (blockListContent[i, j, k, 4] != 1 && blockListContent[i, j, k, 3] == 1)
+                                                        {
+                                                            blockListContent[i, j, k, 2] = 1;// Set as a source pipe
+                                                        }
                                                         blockList[a, b, c] = BlockType.None;
                                                         LiquidIn += 1;
                                                     }
@@ -2933,9 +2937,9 @@ namespace Infiniminer
                                         }
                                     }
                                 }
-                                if (blockListContent[i, j, k, 4] != 1 && PipesConnected == 1)
+                                if (blockListContent[i, j, k, 3] > 1)
                                 {
-                                    blockListContent[i, j, k, 2] = 1;// Set as a source pipe
+                                    blockListContent[i, j, k, 2] = 0;// Set as a source pipe
                                 }
 
                                 if ((blockListContent[i, j, k, 1] == 1) && (blockListContent[i, j, k, 3] == 1) && (blockListContent[i, j, k, 2] == 0))
