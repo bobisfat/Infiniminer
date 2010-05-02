@@ -2078,6 +2078,7 @@ namespace Infiniminer
                                                 player.Weight = 0;
                                                 player.Health = 0;
                                                 player.Alive = false;
+                                                player.Content[5] = 0;
                                                 SendResourceUpdate(player);
                                                 SendPlayerDead(player);
 
@@ -2485,8 +2486,9 @@ namespace Infiniminer
                                 else
                                 {
                                     if (j > 0)
-                                        if (blockList[i, j - 1, k] == BlockType.None)//still nothing underneath us, but gravity state has just ended
+                                        if (blockList[i, j - 1, k] == BlockType.None || blockList[i, j - 1, k] == BlockType.Water || blockList[i, j - 1, k] == BlockType.Lava)//still nothing underneath us, but gravity state has just ended
                                         {
+                                            BlockType oldblock = blockList[i, j - 1, k];//this replaces any lost water/lava
 
                                             blockListContent[i, j, k, 11] = 0;
                                             blockListContent[i, j, k, 12] = -100;
@@ -2518,15 +2520,16 @@ namespace Infiniminer
                                                     }
                                                 }
                                             }
-                                            SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
+                                            SetBlock(i, j, k, oldblock, PlayerTeam.None);
                                         }
                                 }
                             }
                             else
                             {
                                 if (j > 0)//entire section is to allow blocks to drop once they have hit ceiling
-                                    if (blockList[i, j - 1, k] == BlockType.None)//still nothing underneath us, but gravity state has just ended
+                                    if (blockList[i, j - 1, k] == BlockType.None || blockList[i, j - 1, k] == BlockType.Water || blockList[i, j - 1, k] == BlockType.Lava)//still nothing underneath us, but gravity state has just ended
                                     {
+                                        BlockType oldblock = blockList[i, j - 1, k];//this replaces any lost water/lava
 
                                         blockListContent[i, j, k, 11] = 0;
                                         blockListContent[i, j, k, 12] = -100;
@@ -2558,7 +2561,7 @@ namespace Infiniminer
                                                 }
                                             }
                                         }
-                                        SetBlock(i, j, k, BlockType.None, PlayerTeam.None);
+                                        SetBlock(i, j, k, oldblock, PlayerTeam.None);
                                     }
                             }
 

@@ -341,7 +341,9 @@ namespace Infiniminer
                                                 if (propertyBag.blockEngine.BlockAtPoint(new Vector3(x, y, z)) != BlockType.None)
                                                     propertyBag.blockEngine.RemoveBlock(x, y, z);
                                                 propertyBag.blockEngine.AddBlock(x, y, z, blockType);
-                                                CheckForStandingInLava();
+
+                                                //if(!propertyBag.playerDead)
+                                                //CheckForStandingInLava();
                                             }
                                         }
                                         break;

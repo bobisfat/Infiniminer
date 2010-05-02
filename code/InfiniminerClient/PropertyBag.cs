@@ -210,6 +210,8 @@ namespace Infiniminer
             screenEffect = ScreenEffect.Death;
             screenEffectCounter = 0;
 
+            Content[5] = 0;
+
             NetBuffer msgBuffer = netClient.CreateBuffer();
             msgBuffer.Write((byte)InfiniminerMessage.PlayerDead);
             msgBuffer.Write(deathMessage);

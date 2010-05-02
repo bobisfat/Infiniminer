@@ -298,6 +298,7 @@ namespace Infiniminer.States
                 }
 
                 // Logic for bumping your head on a block.
+                
                 switch (hittingHeadOnBlock)
                 {
                     case BlockType.Shock:
