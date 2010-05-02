@@ -314,6 +314,7 @@ namespace Infiniminer
                                             propertyBag.teamBlueCash = msgBuffer.ReadUInt32();
                                             propertyBag.playerHealth = msgBuffer.ReadUInt32();
                                             propertyBag.playerHealthMax = msgBuffer.ReadUInt32();
+                                            propertyBag.Content[5] = msgBuffer.ReadInt32();
                                         }
                                         break;
                                     case InfiniminerMessage.PlayerPosition:

@@ -113,6 +113,10 @@ namespace Infiniminer
             //netClient.SimulatedLatencyVariance = 0.05f;
             //netClient.SimulatedLoss = 0.1f;
             //netClient.SimulatedDuplicates = 0.05f;
+            Content = new Int32[50];
+            for (int a = 0; a < 50; a++)
+                Content[a] = 0;
+
             netClient.Start();
 
             // Initialize engines.
@@ -500,7 +504,7 @@ namespace Infiniminer
                 PlayerTools.Detonator,
                 PlayerTools.SpawnItem };
 
-                playerBlocks = new BlockType[16] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[15] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
@@ -518,7 +522,7 @@ namespace Infiniminer
                                              //BlockType.Generator,
                                              BlockType.Pump,
                                              BlockType.Compressor,
-                                             BlockType.Pipe,
+                                             //BlockType.Pipe,
                                              BlockType.Water };
             }
             else
@@ -548,7 +552,7 @@ namespace Infiniminer
                                                         PlayerTools.ConstructionGun,     
                                                         PlayerTools.DeconstructionGun,
                                                         PlayerTools.SpawnItem };
-                        playerBlocks = new BlockType[13] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                        playerBlocks = new BlockType[12] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue, //Only need one entry due to right-click
                                                         BlockType.Road,
                                                         BlockType.Ladder,
@@ -556,7 +560,6 @@ namespace Infiniminer
                                                         BlockType.Shock,
                                                         BlockType.Water,
                                                         BlockType.Pump,
-                                                        BlockType.Pipe,
                                                         playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
@@ -695,7 +698,7 @@ namespace Infiniminer
             msgBuffer.Write(playerPosition);
             msgBuffer.Write(playerCamera.GetLookVector());
             msgBuffer.Write((byte)PlayerTools.StrongArm);
-            msgBuffer.Write(true);//possibly cause network problems
+            msgBuffer.Write(true);
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
@@ -813,7 +816,7 @@ namespace Infiniminer
             }
             else if (blockType == BlockType.Pipe)
             {
-                return "8: Display connected status 9: Do nothing";
+                return "8: Rotate Left 9: Rotate Right";
             }
             else if (blockType == BlockType.Pump)
             {
