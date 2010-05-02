@@ -1481,9 +1481,10 @@ namespace Infiniminer
             }
             else if(blockType == BlockType.Pipe)
             {
-                blockListContent[x, y, z, 1] = 0;
-                blockListContent[x, y, z, 2] = 0;
-                blockListContent[x, y, z, 3] = 0;
+                blockListContent[x, y, z, 1] = 0;//Is pipe connected? [0-1]
+                blockListContent[x, y, z, 2] = 0;//Is pipe a source? [0-1]
+                blockListContent[x, y, z, 3] = 0;//Pipes connected
+                blockListContent[x, y, z, 4] = 0;//Is pipe destination?
             }
             else if (blockType == BlockType.Compressor)
             {
@@ -2717,6 +2718,72 @@ namespace Infiniminer
                                     }
                                 }
                             }
+                            else if (blockList[i, j, k] == BlockType.Pipe) // Do pipe stuff
+                            {
+                                // Check if pipe connected to a source
+                                int FoundConnection = 0;
+                                int FoundSource = 0;
+                                int PipesConnected = 0;
+                                for (ushort a = (ushort)(-1 + i); a < 2 + i; a++)
+                                {
+                                    for (ushort b = (ushort)(-1 + j); b < 2 + j; b++)
+                                    {
+                                        for (ushort c = (ushort)(-1 + k); c < 2 + k; c++)
+                                        {
+                                            if (a > 0 && b > 0 && c > 0 && a < 64 && b < 64 && c < 64)
+                                            {
+                                                if (a != i || b != j || c != k)
+                                                {
+                                                    if (blockList[a, b, c] == BlockType.Pipe && blockListContent[a, b, c, 1] == 1)
+                                                    {
+                                                        blockListContent[i, j, k, 1] = 1; //set as connected
+                                                        blockListContent[i, j, k, 2] = 0; // not a source
+                                                        FoundConnection = 1;
+                                                        PipesConnected += 1;
+                                                        blockListContent[i, j, k, 3] = PipesConnected;// Set number of pipes connected to pipe
+                                                    }
+                                                    if ((blockList[a, b, c] == BlockType.Water || blockList[a, b, c] == BlockType.Lava) && blockListContent[i, j, k, 4] == 0)
+                                                    {
+                                                        blockListContent[i, j, k, 1] = 1; // Set as connected
+                                                        blockListContent[i, j, k, 2] = 1;// Set as a source pipe
+                                                        FoundConnection = 1;
+                                                        FoundSource = 1;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (FoundConnection == 0 && FoundSource == 0)
+                                {
+                                    blockListContent[i, j, k, 1] = 0;
+                                    blockListContent[i, j, k, 2] = 0;
+                                }
+                                if (FoundSource == 0)
+                                {
+                                    blockListContent[i, j, k, 2] = 0;
+                                }
+
+                                if (blockListContent[i, j, k, 3] == 1 && blockListContent[i, j, k, 2] == 0 && blockListContent[i, j, k, 1] == 1)// find outputs (not source with 1 pipe only connected)
+                                {
+                                    //set as dst pipe
+                                    blockListContent[i, j, k, 4] = 1;
+                                }
+                                else
+                                {
+                                    blockListContent[i, j, k, 4] = 0;
+                                }
+
+                                if (blockListContent[i, j, k, 4] == 1)
+                                {
+                                    if (blockList[i , j + 1, k] == BlockType.None) 
+                                    {
+                                        blockList[i, j + 1, k] = BlockType.Water;
+                                    }
+
+                                }
+
+                            }
                             else if (blockList[i, j, k] == BlockType.Compressor)
                             {//docompressorstuff
                                 if (blockListContent[i, j, k, 0] == 1)//active
@@ -2741,7 +2808,7 @@ namespace Infiniminer
                                                             blockListContent[i, j, k, 2] += 1;
                                                         }
                                                     }
-                                                    
+
                                                 }
 
                                             }
@@ -2760,13 +2827,13 @@ namespace Infiniminer
                                                 blockListContent[i, j, k, 2] -= 1;
                                                 continue;
                                             }
-                                            else if (blockList[i, j + 1, k] == (BlockType)(blockListContent[i,j,k,1]))//exit must be clear or same substance
+                                            else if (blockList[i, j + 1, k] == (BlockType)(blockListContent[i, j, k, 1]))//exit must be clear or same substance
                                             {
                                                 for (ushort m = 2; m < 10; m++)//multiply exit area to fake upward motion
                                                 {
-                                                    if (j+m < MAPSIZE)
+                                                    if (j + m < MAPSIZE)
                                                     {
-                                                        if (blockList[i,j+m,k] == BlockType.None)
+                                                        if (blockList[i, j + m, k] == BlockType.None)
                                                         {
                                                             SetBlock(i, (ushort)(j + m), k, (BlockType)(blockListContent[i, j, k, 1]), PlayerTeam.None);//places its contents in desired direction at a distance
                                                             blockListContent[i, j, k, 2] -= 1;
@@ -3515,6 +3582,7 @@ namespace Infiniminer
             if (blockList[x, y, z] == BlockType.Pipe)
             {
                 ConsoleWrite("clicked "+btn+" on pipe!");
+                ConsoleWrite("Pipe Status - Connected:" + blockListContent[x, y, z, 1] + " SourcePipe: " + blockListContent[x, y, z, 2] + " DstPipe: " + blockListContent[x, y, z, 4] + " Pipes Connected: " + blockListContent[x, y, z, 3]);
             }
             else if (blockList[x, y, z] == BlockType.Compressor)
             {
