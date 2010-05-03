@@ -2038,7 +2038,6 @@ namespace Infiniminer
                                                         player.WeightMax = 4;
                                                         player.HealthMax = 400;
                                                         player.Health = player.HealthMax;
-                                                        player.Content = new int[50];
                                                         for (int a = 0; a < 50; a++)
                                                         {
                                                             player.Content[a] = 0;
@@ -2914,7 +2913,6 @@ namespace Infiniminer
                                             {
                                                 if (a == i && b == j && c == k)
                                                 {
-                                                    //Console.Write("Continuedcenter");
                                                     continue;
                                                 }
                                                 else
@@ -2943,17 +2941,14 @@ namespace Infiniminer
                                                     {
                                                         if ((a == (ushort)(i + 1) || a == (ushort)(i - 1) || a == (ushort)(i)) && b != j && c != k)
                                                         {
-                                                            //Console.Write("Continueda");
                                                             continue;
                                                         }
                                                         else if (a != i && (b == (ushort)(j + 1) || b == (ushort)(j - 1) || b == (ushort)(j)) && c != k)
                                                         {
-                                                            //Console.Write("Continuedb");
                                                             continue;
                                                         }
                                                         else if (a != i && b != j && (c == (ushort)(k + 1) || c == (ushort)(k - 1) || c == (ushort)(k)))
                                                        {
-                                                            //Console.Write("Continuedc");
                                                             continue;
                                                         }
                                                         if (blockList[a, b, c] == BlockType.Pipe)//Found a pipe surrounding this pipe
