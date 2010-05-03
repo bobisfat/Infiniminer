@@ -2901,6 +2901,7 @@ namespace Infiniminer
                                 // Check if pipe connected to a source
 
                                 int PipesConnected = 0;
+                                int BlockIsSource = 0;
                                 BlockType PipeSourceLiquid = BlockType.None;
 
                                 for (ushort a = (ushort)(-1 + i); a < 2 + i; a++)
@@ -2920,19 +2921,20 @@ namespace Infiniminer
                                                 {
                                                     if (blockList[a, b, c] == BlockType.Water || blockList[a, b, c] == BlockType.Lava)//we are either the dst or src
                                                     {
-                                                        PipeSourceLiquid = blockList[a, b, c];
-                                                        blockListContent[i, j, k, 1] = 1; // Set as connected
+                                                        //PipeSourceLiquid = blockList[a, b, c];
+                                                        //blockListContent[i, j, k, 1] = 1; // Set as connected
                                                         //ChainConnectedToSource = 1;
                                                         if (blockListContent[i, j, k, 4] != 1 && blockListContent[i, j, k, 3] == 1)//too early to have full connection count here
                                                         {
-                                                            blockListContent[i, j, k, 2] = 1;// Set as a source pipe
+                                                            BlockIsSource = 1;
+                                                            //blockListContent[i, j, k, 2] = 1;// Set as a source pipe
 
-                                                            blockListContent[i, j, k, 5] = i;
-                                                            blockListContent[i, j, k, 6] = j;
-                                                            blockListContent[i, j, k, 7] = k;//src happens to know itself to spread the love
-                                                            SetBlock(a, b, c, BlockType.None, PlayerTeam.None);
-                                                            blockListContent[i, j, k, 9] = (byte)(blockList[a, b, c]);
-                                                            blockListContent[i, j, k, 8] += 1;//liquidin
+                                                            //blockListContent[i, j, k, 5] = i;
+                                                            //blockListContent[i, j, k, 6] = j;
+                                                            //blockListContent[i, j, k, 7] = k;//src happens to know itself to spread the love
+                                                            //SetBlock(a, b, c, BlockType.None, PlayerTeam.None);
+                                                            //blockListContent[i, j, k, 9] = (byte)(blockList[a, b, c]);
+                                                            //blockListContent[i, j, k, 8] += 1;//liquidin
                                                             // blockListContent[i, j, k, 8] = 0;//pipe starts with no liquid
                                                         }
                                                     }
@@ -2986,9 +2988,42 @@ namespace Infiniminer
                                         }
                                     }
                                 }
+                                if (BlockIsSource == 1 && blockListContent[i, j, k, 3] == 1)
+                                {
+                                    blockListContent[i, j, k, 2] = 1;// Set as a source pipe
+
+                                    blockListContent[i, j, k, 5] = i;
+                                    blockListContent[i, j, k, 6] = j;
+                                    blockListContent[i, j, k, 7] = k;//src happens to know itself to spread the love
+
+                                    for (ushort a2 = (ushort)(-1 + i); a2 < 2 + i; a2++)
+                                    {
+                                        for (ushort b2 = (ushort)(-1 + j); b2 < 2 + j; b2++)
+                                        {
+                                            for (ushort c2 = (ushort)(-1 + k); c2 < 2 + k; c2++)
+                                            {
+                                                if (a2 > 0 && b2 > 0 && c2 > 0 && a2 < 64 && b2 < 64 && c2 < 64)
+                                                {
+                                                    if (blockList[a2, b2, c2] == BlockType.Water || blockList[a2, b2, c2] == BlockType.Lava)
+                                                    {
+                                                        PipeSourceLiquid = blockList[a2, b2, c2];
+                                                        blockListContent[i, j, k, 1] = 1;
+                                                        blockListContent[i, j, k, 5] = i;
+                                                        blockListContent[i, j, k, 6] = j;
+                                                        blockListContent[i, j, k, 7] = k;//src happens to know itself to spread the love
+                                                        SetBlock(a2, b2, c2, BlockType.None, PlayerTeam.None);
+                                                        blockListContent[i, j, k, 9] = (byte)(blockList[a2, b2, c2]);
+                                                        blockListContent[i, j, k, 8] += 1;//liquidin
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
                                 if (blockListContent[i, j, k, 3] > 1)
                                 {
-                                    blockListContent[i, j, k, 2] = 0;// Set as a source pipe
+                                    blockListContent[i, j, k, 2] = 0;// do notSet as a source pipe
                                 }
 
                                 if (blockListContent[i, j, k, 1] == 1 && blockListContent[i, j, k, 3] == 1 && blockListContent[i, j, k, 2] == 0)
