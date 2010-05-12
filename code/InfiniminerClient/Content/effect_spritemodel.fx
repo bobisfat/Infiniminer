@@ -13,6 +13,7 @@ struct PixelToFrame
 float4x4 xView;
 float4x4 xProjection;
 float4x4 xWorld;
+float4	 xColor;
 
 //------- Texture Samplers --------
 Texture xTexture;
@@ -36,7 +37,7 @@ VertexToPixel BlockVS( float4 inPos : POSITION, float2 inTexCoords: TEXCOORD0)
     
 	Output.Position = mul(inPos, preWorldViewProjection);	
 	Output.TextureCoords = inTexCoords;
-	
+
 	return Output;    
 }
 
@@ -44,7 +45,7 @@ PixelToFrame BlockPS(VertexToPixel PSIn)
 {
 	PixelToFrame Output = (PixelToFrame)0;		
 	
-	Output.Color = tex2D(TextureSampler, PSIn.TextureCoords);
+	Output.Color = tex2D(TextureSampler, PSIn.TextureCoords) * xColor;
 
 	return Output;
 }

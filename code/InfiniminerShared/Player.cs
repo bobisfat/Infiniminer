@@ -33,6 +33,8 @@ namespace Infiniminer
         DeconstructionGun,
         ProspectingRadar,
         Detonator,
+        Remote,
+        SetRemote,
         SpawnItem,
         LeftHand,
         RightHand,
@@ -70,6 +72,7 @@ namespace Infiniminer
                 return false;
             }
         }
+        public PlayerClass Class;
         public bool AltColours = false;
         public Color redTeam = new Color();
         public Color blueTeam = new Color();
@@ -86,8 +89,9 @@ namespace Infiniminer
         public uint Ore = 0;
         public uint Weight = 0;
         public uint Cash = 0;
-        public int[] Content = new Int32[50];
+        public int[] Content = new Int32[100];
         public bool Alive = false;
+        public DateTime respawnTimer = DateTime.Now;
         public List<Vector3> ExplosiveList = new List<Vector3>();
         public uint ID;
         public Vector3 Heading = Vector3.Zero;
@@ -170,14 +174,15 @@ namespace Infiniminer
             {
                 deltaPosition = position;
             }
-            else if (Math.Abs(deltaPosition.X - position.X) > 5.0f)
+            else if (Math.Abs(deltaPosition.Y - position.Y) > 5.0f)
             {
                 deltaPosition = position;
             }
-            else if (Math.Abs(deltaPosition.X - position.X) > 5.0f)
+            else if (Math.Abs(deltaPosition.Z - position.Z) > 5.0f)
             {
                 deltaPosition = position;
             }
+
         }
 
         public void StepInterpolation(double gameTime)
@@ -234,6 +239,21 @@ namespace Infiniminer
                 }
             }
         }
+        public DateTime playerToolCooldown = DateTime.Now;
+        public float GetToolCooldown(PlayerTools tool)//this is only the server sides cooldown list
+        {//needs to be converted to over a time frame
+            switch (tool)
+            {
+                case PlayerTools.Pickaxe: return 0.1f;// 0.55f;
+                case PlayerTools.Detonator: return 0.01f;
+                case PlayerTools.Remote: return 0.01f;
+                case PlayerTools.ConstructionGun: return 0.5f;
+                case PlayerTools.DeconstructionGun: return 0.5f;
+                case PlayerTools.ProspectingRadar: return 0.5f;
+                case PlayerTools.SpawnItem: return 0.05f;
+                default: return 0;
+            }
+        }
 
         public Player(NetConnection netConn, Game gameInstance)
         {
@@ -244,7 +264,7 @@ namespace Infiniminer
             if (netConn != null)
                 this.IP = netConn.RemoteEndpoint.Address.ToString();
 
-            for (int a = 0; a < 50; a++)
+            for (int a = 0; a < 100; a++)
             {
                 Content[a] = 0;
             }
@@ -274,6 +294,9 @@ namespace Infiniminer
                     textureName += "construction";
                     break;
                 case PlayerTools.Detonator:
+                    textureName += "detonator";
+                    break;
+                case PlayerTools.Remote:
                     textureName += "detonator";
                     break;
                 case PlayerTools.Pickaxe:

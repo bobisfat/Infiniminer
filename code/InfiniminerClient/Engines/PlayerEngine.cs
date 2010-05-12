@@ -17,7 +17,7 @@ namespace Infiniminer
     {
         InfiniminerGame gameInstance;
         PropertyBag _P;
-
+     
         public PlayerEngine(InfiniminerGame gameInstance)
         {
             this.gameInstance = gameInstance;
@@ -40,8 +40,10 @@ namespace Infiniminer
                 if (p.TimeIdle > 0.5f)
                     p.IdleAnimation = true;
 
-                p.deltaPosition = p.deltaPosition + (((p.Position - p.deltaPosition) * (8*(float)gameTime.ElapsedGameTime.TotalSeconds)));
-
+                if (!(float.IsNaN(p.Position.X)))
+                p.deltaPosition = p.deltaPosition + (((p.Position - p.deltaPosition) * (8 * (float)gameTime.ElapsedGameTime.TotalSeconds)));
+                //.zero for NAN problems with dragging window
+                
                 p.SpriteModel.Update(gameTime);
             }
 
@@ -67,21 +69,39 @@ namespace Infiniminer
                                        _P.playerCamera.ProjectionMatrix,
                                        _P.playerCamera.Position,
                                        _P.playerCamera.GetLookVector(),
-                                       p.deltaPosition - Vector3.UnitY * 1.5f,
+                                       p.deltaPosition - Vector3.UnitY * 1.5f,//delta
                                        p.Heading,
-                                       2);
+                                       2,new Vector4(1.0f,1.0f,1.0f,1.0f));
                 }
             }
 
+            Vector4 color;
             foreach (KeyValuePair<uint, Item> i in _P.itemList)//  if (bPair.Value.Team == _P.playerTeam)//doesnt care which team
             {
+                if (i.Value.Type == ItemType.Artifact)//artifact pulse
+                {
+                    color = new Vector4((float)(i.Value.Content[1]) / 100 * this.gameInstance.propertyBag.colorPulse, (float)(i.Value.Content[2]) / 100 * this.gameInstance.propertyBag.colorPulse, (float)(i.Value.Content[3]) / 100 * this.gameInstance.propertyBag.colorPulse, 1.0f);
+                }
+                else if (i.Value.Type == ItemType.Gold)//gold twinkle
+                {
+                    float goldtwinkle = 0.75f + (this.gameInstance.propertyBag.colorPulse * 0.25f);
+                    color = new Vector4((float)(i.Value.Content[1]) / 100 * goldtwinkle, (float)(i.Value.Content[2]) / 100 * goldtwinkle, (float)(i.Value.Content[3]) / 100 * goldtwinkle, 1.0f);
+                }
+                else if (i.Value.Type == ItemType.None)//debug
+                {//item is simply set to its content color
+                    color = new Vector4(i.Value.Content[1], i.Value.Content[2], i.Value.Content[3], 1.0f);
+                }
+                else
+                {
+                    color = new Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+                }
                 if (i.Value.Billboard == true)//item always faces camera
                 {
                     i.Value.SpriteModel.DrawBillboard(_P.playerCamera.ViewMatrix,
                                       _P.playerCamera.ProjectionMatrix,
                                       _P.playerCamera.Position,
                                       _P.playerCamera.GetLookVector(),
-                                      i.Value.deltaPosition,
+                                      i.Value.deltaPosition - Vector3.UnitY * i.Value.Scale / 10,
                                       i.Value.Heading,
                                       i.Value.Scale);
                 }
@@ -91,9 +111,10 @@ namespace Infiniminer
                                       _P.playerCamera.ProjectionMatrix,
                                       _P.playerCamera.Position,
                                       _P.playerCamera.GetLookVector(),
-                                      i.Value.deltaPosition,
+                                      i.Value.deltaPosition - Vector3.UnitY * i.Value.Scale / 10,
                                       i.Value.Heading,
-                                      i.Value.Scale);
+                                      i.Value.Scale,
+                                      color);
                 }
             }
         }
@@ -132,8 +153,6 @@ namespace Infiniminer
                         playerText = p.Handle;
                         if (p.Ping > 0)
                             playerText = "*** " + playerText + " ***";
-
-                        playerText = playerText + " " + p.Health;//use content updates
 
                         p.SpriteModel.DrawText(_P.playerCamera.ViewMatrix,
                                                _P.playerCamera.ProjectionMatrix,

@@ -88,9 +88,12 @@ namespace Infiniminer.States
             if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.Pickaxe)
             {
                 _P.FirePickaxe();
-                _P.playerToolCooldown = _P.GetToolCooldown(PlayerTools.Pickaxe) * 0.4f;//(_P.playerClass == PlayerClass.Miner ? 0.4f : 1.0f);
+               //_P.playerToolCooldown = _P.GetToolCooldown(PlayerTools.Pickaxe);//(_P.playerClass == PlayerClass.Miner ? 0.4f : 1.0f);
             }
-
+            if (mouseInitialized && mouseState.LeftButton == ButtonState.Pressed && !_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.SpawnItem)
+            {
+                _P.FireSpawnItem();
+            }
             // Prospector radar stuff.
             if (!_P.playerDead && _P.playerToolCooldown == 0 && _P.playerTools[_P.playerToolSelected] == PlayerTools.ProspectingRadar)
             {
@@ -339,6 +342,13 @@ namespace Infiniminer.States
                         _P.KillPlayer(Defines.deathByLava);
                         return;
 
+                    case BlockType.Plate:
+                        if (_P.retrigger < DateTime.Now)
+                        {
+                            _P.retrigger = DateTime.Now + TimeSpan.FromSeconds(0.2);
+                            _P.SendPlayerInteract(1, (uint)(footPosition.X), (uint)(footPosition.Y), (uint)(footPosition.Z));
+                        }
+                        break;
                 }
 
                 // Logic for bumping your head on a block.
@@ -352,6 +362,10 @@ namespace Infiniminer.States
                     case BlockType.Lava:
                         _P.KillPlayer(Defines.deathByLava);
                         return;
+
+                    case BlockType.Plate:
+                        _P.SendPlayerInteract(1, (uint)(headPosition.X), (uint)(headPosition.Y), (uint)(headPosition.Z));
+                        break;
                 }
             }
             if (!_P.blockEngine.SolidAtPointForPlayer(midPosition + _P.playerVelocity * (float)gameTime.ElapsedGameTime.TotalSeconds))
@@ -415,34 +429,51 @@ namespace Infiniminer.States
                         crouching = true;
                 //}
             }
-
-            if (_P.moveVector.X != 0 || _P.moveVector.Z != 0)
+            
+            //grab item
+            foreach (KeyValuePair<uint, Item> bPair in _P.itemList)
             {
-                //grab item
-                foreach (KeyValuePair<uint, Item> bPair in _P.itemList)
+                TimeSpan diff = DateTime.Now - bPair.Value.Frozen;
+                if (diff.Milliseconds > 0)
                 {
-                    TimeSpan diff = DateTime.Now - bPair.Value.Frozen;
-                    if (diff.Milliseconds > 0)
+
+                    float dx = bPair.Value.Position.X - _P.playerPosition.X;
+                    float dy = bPair.Value.Position.Y - _P.playerPosition.Y + 1.0f;
+                    float dz = bPair.Value.Position.Z - _P.playerPosition.Z;
+
+                    float distance = (float)(Math.Sqrt(dx * dx + dy * dy + dz * dz));
+
+                    if (distance < 1.2)
                     {
-                       
-                        float dx = bPair.Value.Position.X - _P.playerPosition.X;
-                        float dy = bPair.Value.Position.Y - _P.playerPosition.Y+1.0f;
-                        float dz = bPair.Value.Position.Z - _P.playerPosition.Z;
-                       
-                        float distance = (float)(Math.Sqrt(dx * dx + dy * dy + dz * dz));
-                       
-                        if (distance < 1.2)
+                        bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds(500);//no interaction for half a second after trying once
+
+                        if (bPair.Value.Type == ItemType.Ore && _P.playerOre < _P.playerOreMax)//stops requesting items it doesnt need
                         {
-                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds(1000);//no interaction for a second after trying once
                             _P.GetItem(bPair.Value.ID);
-                            //break;
+                        }
+                        else if (bPair.Value.Type == ItemType.Gold && _P.playerWeight < _P.playerWeightMax)
+                        {
+                            _P.GetItem(bPair.Value.ID);
+                        }
+                        else if (bPair.Value.Type == ItemType.Artifact && _P.Content[10] == 0 && bPair.Value.Content[6] == 0)//[10] artifact slot, [6] locked item
+                        {
+                            _P.GetItem(bPair.Value.ID);
                         }
                         else
                         {
-                            bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds((int)(distance*50));//retry based on objects distance
+                            //we dont know what this item is
                         }
+                        //break;
+                    }
+                    else
+                    {
+                        bPair.Value.Frozen = DateTime.Now + TimeSpan.FromMilliseconds((int)(distance * 100));//retry based on objects distance
                     }
                 }
+            }
+
+            if (_P.moveVector.X != 0 || _P.moveVector.Z != 0)
+            {
                 // "Flatten" the movement vector so that we don"t move up/down.
                 if (_P.Content[5] > 0 && _P.playerClass == PlayerClass.Sapper)
                 {
@@ -454,6 +485,7 @@ namespace Infiniminer.States
                 }
                 
                 _P.moveVector.Normalize();
+                    
                 _P.moveVector *= MOVESPEED * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (movingOnRoad)
                     _P.moveVector *= 2;
@@ -475,6 +507,18 @@ namespace Infiniminer.States
                     if (!TryToMoveTo(new Vector3(_P.moveVector.X, 0, 0), gameTime)) { }
                 }
             }
+
+            if (_P.forceStrength > 0.0f)
+            {
+                if (TryToMoveTo((_P.forceVector * _P.forceStrength) * (float)gameTime.ElapsedGameTime.TotalSeconds, gameTime)) { }
+                else
+                {
+                    if (!TryToMoveTo(new Vector3(0, 0, (_P.forceVector.Z * _P.forceStrength) * (float)gameTime.ElapsedGameTime.TotalSeconds), gameTime)) { }
+                    if (!TryToMoveTo(new Vector3((_P.forceVector.X * _P.forceStrength) * (float)gameTime.ElapsedGameTime.TotalSeconds, 0, 0), gameTime)) { }
+                }
+
+                _P.forceStrength -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            }
         }
 
         private bool TryToMoveTo(Vector3 moveVector, GameTime gameTime)
@@ -493,6 +537,8 @@ namespace Infiniminer.States
             BlockType midBlock = BlockType.None;
             BlockType upperBlock = BlockType.None;
 
+            Vector3 touch = Vector3.Zero;
+
             float size = 0.1f;
             bool allow = true;
             for (int x = -1; x < 2; x++)
@@ -504,6 +550,11 @@ namespace Infiniminer.States
                         {
                             midBlock = _P.blockEngine.BlockAtPoint(movePosition + box);
                             upperBlock = _P.blockEngine.BlockAtPoint(movePosition + box);
+
+                            if (midBlock == BlockType.Plate || upperBlock == BlockType.Plate)
+                            {
+                                touch = movePosition + box;
+                            }
                             allow = false;
                         }
                     }
@@ -536,6 +587,20 @@ namespace Infiniminer.States
                 _P.KillPlayer(Defines.deathByLava);
                 return true;
             }
+            else if(upperBlock == BlockType.Plate || lowerBlock == BlockType.Plate || midBlock == BlockType.Plate)
+            {
+                if(_P.retrigger < DateTime.Now)
+                if (_P.blockEngine.blockList[(uint)(touch.X), (uint)(touch.Y), (uint)(touch.Z)] == BlockType.Plate)
+                {
+                    _P.retrigger = DateTime.Now + TimeSpan.FromSeconds(0.2);
+                    _P.SendPlayerInteract(1, (uint)(touch.X), (uint)(touch.Y), (uint)(touch.Z));
+                }
+                else
+                {
+                    _P.retrigger = DateTime.Now + TimeSpan.FromSeconds(0.2);
+                    _P.SendPlayerInteract(1, (uint)(movePosition.X + testVector.X), (uint)(movePosition.Y + testVector.Y - 0.5f), (uint)(movePosition.Z + testVector.Z));
+                }
+            }
           
             // If it's a ladder, move up.
             if (upperBlock == BlockType.Ladder || lowerBlock == BlockType.Ladder || midBlock == BlockType.Ladder)
@@ -546,7 +611,7 @@ namespace Infiniminer.States
                     _P.playerPosition.Y += 0.1f;
                 return true;
             }
-
+           
             return false;
         }
 
@@ -612,6 +677,11 @@ namespace Infiniminer.States
                                 _P.FireDetonator();
                                 break;
 
+                            case PlayerTools.Remote:
+                                _P.PlaySound(InfiniminerSound.ClickLow);
+                                _P.FireSetRemote();
+                                break;
+
                             case PlayerTools.ProspectingRadar:
                                 _P.FireRadar();
                                 break;
@@ -629,6 +699,10 @@ namespace Infiniminer.States
                         {
                             case PlayerClass.Miner:
                                 _P.StrongArm();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
+                                break;
+                            case PlayerClass.Engineer:
+                                _P.PlaySound(InfiniminerSound.ClickHigh);
+                                _P.FireRemote();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
                                 break;
                             case PlayerClass.Sapper:
                                 _P.Smash();//, !(button == MouseButton.LeftButton));//_P.FireConstructionGun(_P.playerBlocks[_P.playerBlockSelected]);
@@ -681,34 +755,65 @@ namespace Infiniminer.States
                         _P.playerToolSelected = _P.playerTools.Length;
                     break;
                 case Buttons.Tool1:
-                    _P.playerToolSelected = 0;
-                    _P.PlaySound(InfiniminerSound.ClickLow);
-                    if (_P.playerToolSelected >= _P.playerTools.Length)
-                        _P.playerToolSelected = _P.playerTools.Length - 1;
+                    if (_P.interact == BlockType.None)
+                    {
+                        _P.playerToolSelected = 0;
+                        _P.PlaySound(InfiniminerSound.ClickLow);
+                        if (_P.playerToolSelected >= _P.playerTools.Length)
+                            _P.playerToolSelected = _P.playerTools.Length - 1;
+                    }
+                    else
+                    {
+                        HandleInput(Buttons.Interact1);
+                    }
                     break;
                 case Buttons.Tool2:
-                    _P.playerToolSelected = 1;
-                    _P.PlaySound(InfiniminerSound.ClickLow);
-                    if (_P.playerToolSelected >= _P.playerTools.Length)
-                        _P.playerToolSelected = _P.playerTools.Length - 1;
+                    if (_P.interact == BlockType.None)
+                    {
+                        _P.playerToolSelected = 1;
+                        _P.PlaySound(InfiniminerSound.ClickLow);
+                        if (_P.playerToolSelected >= _P.playerTools.Length)
+                            _P.playerToolSelected = _P.playerTools.Length - 1;
+                    }
+                    else
+                    {
+                        HandleInput(Buttons.Interact2);
+                    }
                     break;
                 case Buttons.Tool3:
-                    _P.playerToolSelected = 2;
-                    _P.PlaySound(InfiniminerSound.ClickLow);
-                    if (_P.playerToolSelected >= _P.playerTools.Length)
-                        _P.playerToolSelected = _P.playerTools.Length - 1;
+                    if (_P.interact == BlockType.None)
+                    {
+                        _P.playerToolSelected = 2;
+                        _P.PlaySound(InfiniminerSound.ClickLow);
+                        if (_P.playerToolSelected >= _P.playerTools.Length)
+                            _P.playerToolSelected = _P.playerTools.Length - 1;
+                    }
+                    else
+                    {
+                        HandleInput(Buttons.Interact3);
+                    }
                     break;
                 case Buttons.Tool4:
-                    _P.playerToolSelected = 3;
-                    _P.PlaySound(InfiniminerSound.ClickLow);
-                    if (_P.playerToolSelected >= _P.playerTools.Length)
-                        _P.playerToolSelected = _P.playerTools.Length - 1;
+                    if (_P.interact == BlockType.None)
+                    {
+                        _P.playerToolSelected = 3;
+                        _P.PlaySound(InfiniminerSound.ClickLow);
+                        if (_P.playerToolSelected >= _P.playerTools.Length)
+                            _P.playerToolSelected = _P.playerTools.Length - 1;
+                    }
+                    else
+                    {
+                        HandleInput(Buttons.Interact4);
+                    }
                     break;
                 case Buttons.Tool5:
-                    _P.playerToolSelected = 4;
-                    _P.PlaySound(InfiniminerSound.ClickLow);
-                    if (_P.playerToolSelected >= _P.playerTools.Length)
-                        _P.playerToolSelected = _P.playerTools.Length - 1;
+                    if (_P.interact == BlockType.None)
+                    {
+                        _P.playerToolSelected = 4;
+                        _P.PlaySound(InfiniminerSound.ClickLow);
+                        if (_P.playerToolSelected >= _P.playerTools.Length)
+                            _P.playerToolSelected = _P.playerTools.Length - 1;
+                    }
                     break;
                 case Buttons.BlockUp:
                     if (_P.playerTools[_P.playerToolSelected] == PlayerTools.ConstructionGun)
@@ -728,7 +833,7 @@ namespace Infiniminer.States
                             _P.playerBlockSelected = _P.playerBlocks.Length-1;
                     }
                     break;
-                case Buttons.Deposit:
+                case Buttons.Interact1:
                     BlockType targetd =_P.Interact();
                     if (targetd == BlockType.BankRed && _P.playerTeam == PlayerTeam.Red || targetd == BlockType.BankBlue && _P.playerTeam == PlayerTeam.Blue)
                     {
@@ -741,7 +846,7 @@ namespace Infiniminer.States
                         _P.PlaySound(InfiniminerSound.ClickHigh);
                     }
                     break;
-                case Buttons.Withdraw:
+                case Buttons.Interact2:
                     BlockType targetw = _P.Interact();
                     if (targetw == BlockType.BankRed && _P.playerTeam == PlayerTeam.Red || targetw == BlockType.BankBlue && _P.playerTeam == PlayerTeam.Blue)
                     {
@@ -751,6 +856,32 @@ namespace Infiniminer.States
                     else
                     {
                         _P.PlayerInteract(2);
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    break;
+                case Buttons.Interact3:
+                    BlockType targeta = _P.Interact();
+                    if (targeta == BlockType.BankRed && _P.playerTeam == PlayerTeam.Red || targeta == BlockType.BankBlue && _P.playerTeam == PlayerTeam.Blue)
+                    {
+                        _P.DepositOre();
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    else
+                    {
+                        _P.PlayerInteract(3);
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    break;
+                case Buttons.Interact4:
+                    BlockType targetb = _P.Interact();
+                    if (targetb == BlockType.BankRed && _P.playerTeam == PlayerTeam.Red || targetb == BlockType.BankBlue && _P.playerTeam == PlayerTeam.Blue)
+                    {
+                        _P.WithdrawOre();
+                        _P.PlaySound(InfiniminerSound.ClickHigh);
+                    }
+                    else
+                    {
+                        _P.PlayerInteract(4);
                         _P.PlaySound(InfiniminerSound.ClickHigh);
                     }
                     break;

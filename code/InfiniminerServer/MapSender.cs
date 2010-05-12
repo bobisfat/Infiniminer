@@ -56,7 +56,14 @@ namespace Infiniminer
                         msgBuffer.Write(y);
                         for (byte dy = 0; dy < 16; dy++)//16?
                             for (byte z = 0; z < MAPSIZE; z++)
-                                msgBuffer.Write((byte)(infs.blockList[x, y + dy, z]));
+                            {
+                                if (infs.blockList[x, y + dy, z] == BlockType.Vacuum)
+                                {
+                                    msgBuffer.Write((byte)(BlockType.None));//players cannot tell between none and vacuum
+                                }
+                                else
+                                    msgBuffer.Write((byte)(infs.blockList[x, y + dy, z]));
+                            }
                         if (client.Status == NetConnectionStatus.Connected)
                             infsN.SendMessage(msgBuffer, client, NetChannel.ReliableUnordered);
                     }
@@ -76,7 +83,14 @@ namespace Infiniminer
 
                         for (byte dy = 0; dy < 16; dy++)
                             for (byte z = 0; z < MAPSIZE; z++)
-                                uncompressed.WriteByte((byte)(infs.blockList[x, y + dy, z]));
+                                if (infs.blockList[x, y + dy, z] == BlockType.Vacuum)
+                                {
+                                    uncompressed.WriteByte((byte)(BlockType.None));//players cannot tell between none and vacuum
+                                }
+                                else
+                                    uncompressed.WriteByte((byte)(infs.blockList[x, y + dy, z]));
+
+                               // uncompressed.WriteByte((byte)(infs.blockList[x, y + dy, z]));
 
                         //Compress the input
                         compresser.Write(uncompressed.ToArray(), 0, (int)uncompressed.Length);

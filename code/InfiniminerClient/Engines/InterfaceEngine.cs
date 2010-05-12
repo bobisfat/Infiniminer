@@ -83,6 +83,8 @@ namespace Infiniminer
             blockIcons[BlockType.Shock] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_spikes");
             blockIcons[BlockType.TransBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_translucent_blue");
             blockIcons[BlockType.TransRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_translucent_red");
+            blockIcons[BlockType.GlassB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_glassb");
+            blockIcons[BlockType.GlassR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_glassr");
             blockIcons[BlockType.BeaconRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_beacon");
             blockIcons[BlockType.BeaconBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_beacon");
             blockIcons[BlockType.Road] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_road");
@@ -93,14 +95,20 @@ namespace Infiniminer
             blockIcons[BlockType.StealthBlockB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_stealth");
             blockIcons[BlockType.StealthBlockR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_stealth");
             blockIcons[BlockType.TrapB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
+            blockIcons[BlockType.Metal] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_metal");
             blockIcons[BlockType.TrapR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_trap");
             blockIcons[BlockType.Dirt] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_dirt");
             blockIcons[BlockType.Pump] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_pump");
             blockIcons[BlockType.Compressor] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_compressor");
-            blockIcons[BlockType.Lever] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
-            blockIcons[BlockType.RadarRed] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
-            blockIcons[BlockType.RadarBlue] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
-            blockIcons[BlockType.Hinge] = gameInstance.Content.Load<Texture2D>("blocks/tex_block_mechanism");
+            blockIcons[BlockType.Lever] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_lever");
+            blockIcons[BlockType.Plate] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_lever");
+            blockIcons[BlockType.RadarRed] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_radar");
+            blockIcons[BlockType.RadarBlue] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_radar");
+            blockIcons[BlockType.Hinge] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_hinge");
+            blockIcons[BlockType.ArtCaseR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_artcaser");
+            blockIcons[BlockType.ArtCaseB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_artcaseb");
+            blockIcons[BlockType.ConstructionR] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
+            blockIcons[BlockType.ConstructionB] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
             //held icons
             blockIcons[BlockType.Diamond] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_diamond");
             blockIcons[BlockType.MagmaVent] = gameInstance.Content.Load<Texture2D>("icons/tex_icon_magmavent");
@@ -228,6 +236,21 @@ namespace Infiniminer
             spriteBatch.Draw(textureToUse, new Rectangle(screenWidth / 2 /*- 22 * 3*/, screenHeight - 77 * 3 + 14 * 3, 75 * 3, 77 * 3), Color.White);
         }
 
+        public void RenderRemote(GraphicsDevice graphicsDevice, SpriteBatch spriteBatch)
+        {
+            int screenWidth = graphicsDevice.Viewport.Width;
+            int screenHeight = graphicsDevice.Viewport.Height;
+            graphicsDevice.SamplerStates[0].MagFilter = TextureFilter.Point;
+
+            Texture2D textureToUse;
+            if (Mouse.GetState().RightButton == ButtonState.Pressed)
+                textureToUse = _P.playerTeam == PlayerTeam.Red ? texToolDetonatorDownRed : texToolDetonatorDownBlue;
+            else
+                textureToUse = _P.playerTeam == PlayerTeam.Red ? texToolDetonatorUpRed : texToolDetonatorUpBlue;
+
+            spriteBatch.Draw(textureToUse, new Rectangle(screenWidth / 2 /*- 22 * 3*/, screenHeight - 77 * 3 + 14 * 3, 75 * 3, 77 * 3), Color.White);
+        }
+
         public void RenderProspectron(GraphicsDevice graphicsDevice, SpriteBatch spriteBatch)
         {
             int screenWidth = graphicsDevice.Viewport.Width;
@@ -334,6 +357,10 @@ namespace Infiniminer
             {
                 case PlayerTools.Detonator:
                     RenderDetonator(graphicsDevice, spriteBatch);
+                    break;
+
+                case PlayerTools.Remote:
+                    RenderRemote(graphicsDevice, spriteBatch);
                     break;
 
                 case PlayerTools.ProspectingRadar:

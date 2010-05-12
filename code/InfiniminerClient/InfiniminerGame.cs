@@ -281,6 +281,9 @@ namespace Infiniminer
                                             newItem.Team = (PlayerTeam)msgBuffer.ReadByte();
                                             newItem.Heading = msgBuffer.ReadVector3();
                                             newItem.deltaPosition = newItem.Position;
+                                            newItem.Content[1] = msgBuffer.ReadInt32();
+                                            newItem.Content[2] = msgBuffer.ReadInt32();
+                                            newItem.Content[3] = msgBuffer.ReadInt32();
                                             propertyBag.itemList.Add(newItem.ID, newItem);
                                         }
                                         break;
@@ -299,6 +302,15 @@ namespace Infiniminer
 
                                             //if (propertyBag.itemList.ContainsKey(id))
                                             propertyBag.itemList[id].Scale = msgBuffer.ReadFloat();
+                                        }
+                                        break;
+                                    case InfiniminerMessage.ItemContentSpecificUpdate:
+                                        {
+
+                                            uint id = msgBuffer.ReadUInt32();
+                                            uint cc = msgBuffer.ReadUInt32();
+                                            //if (propertyBag.itemList.ContainsKey(id))
+                                            propertyBag.itemList[id].Content[cc] = msgBuffer.ReadInt32();
                                         }
                                         break;
                                     case InfiniminerMessage.SetItemRemove:
@@ -338,6 +350,28 @@ namespace Infiniminer
                                     case InfiniminerMessage.HealthUpdate:
                                         {
                                             propertyBag.playerHealth = msgBuffer.ReadUInt32();
+                                        }
+                                        break;
+                                    case InfiniminerMessage.PlayerSlap:
+                                        {
+                                            uint pID = msgBuffer.ReadUInt32();
+                                            uint aID = msgBuffer.ReadUInt32();
+
+                                            if (pID == propertyBag.playerMyId)
+                                            {
+                                                propertyBag.screenEffect = ScreenEffect.Fall;
+                                                propertyBag.screenEffectCounter = 2 - 0.5;
+                                                propertyBag.particleEngine.CreateBloodSplatter(propertyBag.playerPosition, propertyBag.playerTeam == PlayerTeam.Red ? Color.Red : Color.Blue, 0.2f);
+                                                propertyBag.forceVector = propertyBag.playerList[aID].Heading;
+                                                propertyBag.forceVector.Y = 0;
+                                                //propertyBag.forceVector.Normalize();
+                                                propertyBag.forceStrength = 2.0f;
+                                            }
+                                            else
+                                            {
+                                                propertyBag.particleEngine.CreateBloodSplatter(propertyBag.playerList[pID].Position, propertyBag.playerList[pID].Team == PlayerTeam.Red ? Color.Red : Color.Blue, 0.2f);
+                                            }
+                                            
                                         }
                                         break;
                                     case InfiniminerMessage.WeightUpdate:

@@ -31,6 +31,9 @@ namespace Infiniminer
         public bool[,] mapLoadProgress = null;
         public string serverName = "";
 
+        public DateTime retrigger;//prevents constant triggering of interactives
+        public float colorPulse = 1.0f;//color fading
+        bool colorDirection = true;//increases when true
         //Input stuff.
         public KeyBindHandler keyBinds = null;
 
@@ -55,9 +58,11 @@ namespace Infiniminer
         public uint playerCash = 0;
         public uint playerWeight = 0;
         public uint playerOreMax = 0;
+        public Vector3 forceVector = Vector3.Zero;
+        public float forceStrength = 0.0f;
         public AudioListener listenPos = new AudioListener();
         public int[] Content = new Int32[50];
-
+        public BlockType interact = BlockType.None;
         public uint playerWeightMax = 0;
         public float playerHoldBreath = 20;
         public DateTime lastBreath = DateTime.Now;
@@ -170,7 +175,13 @@ namespace Infiniminer
                 case BlockType.StealthBlockB:
                 case BlockType.TrapB:
                 case BlockType.RadarBlue:
+                case BlockType.ArtCaseB:
+                case BlockType.GlassR:
+                case BlockType.ConstructionB:
                     return PlayerTeam.Blue;
+                case BlockType.ConstructionR:
+                case BlockType.GlassB:
+                case BlockType.ArtCaseR:
                 case BlockType.TransRed:
                 case BlockType.SolidRed:
                 case BlockType.SolidRed2:
@@ -375,6 +386,20 @@ namespace Infiniminer
         // Version used during updates.
         public void UpdateCamera(GameTime gameTime)
         {
+            if (gameTime != null)
+            if (colorDirection)
+            {
+                colorPulse += (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (colorPulse > 1.5f)
+                    colorDirection = !colorDirection;
+            }
+            else
+            {
+                colorPulse -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if (colorPulse < 0.5f)
+                    colorDirection = !colorDirection;
+            }
+
             // If we have a gameTime object, apply screen jitter.
             if (screenEffect == ScreenEffect.Explosion)
             {
@@ -534,29 +559,33 @@ namespace Infiniminer
                 PlayerTools.ConstructionGun,
                 PlayerTools.DeconstructionGun,
                 PlayerTools.ProspectingRadar,
-                PlayerTools.Detonator,
-                PlayerTools.SpawnItem };
+                PlayerTools.Remote,
+                PlayerTools.Detonator
+                };
 
-                playerBlocks = new BlockType[18] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                playerBlocks = new BlockType[22] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.TransRed : BlockType.TransBlue,
                                              BlockType.Road,
                                              BlockType.Ladder,
                                              BlockType.Jump,
                                              BlockType.Shock,
+                                             playerTeam == PlayerTeam.Red ? BlockType.ArtCaseR : BlockType.ArtCaseB,
                                              playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue,
                                              playerTeam == PlayerTeam.Red ? BlockType.StealthBlockR : BlockType.StealthBlockB,
                                              playerTeam == PlayerTeam.Red ? BlockType.TrapR : BlockType.TrapB,
                                              BlockType.Explosive,
-                                             BlockType.Road,
-                                             //BlockType.Lava,
-                                             //BlockType.Dirt, 
+                                              //BlockType.Lava,
+                                             BlockType.Pipe, 
                                              BlockType.Hinge,
+                                             BlockType.Metal,
                                              BlockType.Lever,
+                                             BlockType.Plate,
                                              BlockType.Pump,
                                              BlockType.Compressor,
                                              playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
-                                             BlockType.Water };
+                                             BlockType.Water,
+                                             BlockType.GlassR };
             }
             else
             {
@@ -585,17 +614,19 @@ namespace Infiniminer
                         break;
 
                     case PlayerClass.Engineer:
-                        playerTools = new PlayerTools[3] {  PlayerTools.Pickaxe,
+                        playerTools = new PlayerTools[4] {  PlayerTools.Pickaxe,
                                                             PlayerTools.ConstructionGun,     
-                                                            PlayerTools.DeconstructionGun };
+                                                            PlayerTools.DeconstructionGun,
+                                                            PlayerTools.Remote };
 
-                        playerBlocks = new BlockType[9] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
+                        playerBlocks = new BlockType[10] {   playerTeam == PlayerTeam.Red ? BlockType.SolidRed : BlockType.SolidBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.RadarRed : BlockType.RadarBlue,
                                                         BlockType.Ladder,
                                                         BlockType.Jump,
                                                         BlockType.Pump,
                                                         BlockType.Pipe,
                                                         BlockType.Lever,
+                                                        playerTeam == PlayerTeam.Red ? BlockType.ArtCaseR : BlockType.ArtCaseB,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BeaconRed : BlockType.BeaconBlue,
                                                         playerTeam == PlayerTeam.Red ? BlockType.BankRed : BlockType.BankBlue  };
                         break;
@@ -672,8 +703,32 @@ namespace Infiniminer
             //play sound locally
             Vector3 hitPoint = Vector3.Zero;
             Vector3 buildPoint = Vector3.Zero;
-            if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2, 10, ref hitPoint, ref buildPoint, BlockType.Water))
+
+            bool dig = blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2, 10, ref hitPoint, ref buildPoint, BlockType.Water);
+            
+            Vector3 attackVector = playerPosition + (playerCamera.GetLookVector()*0.8f);
+
+            foreach (Player p in playerList.Values)
+            {
+                if(p.ID != playerMyId && p.Team != playerTeam)
+                if((attackVector - (p.deltaPosition-Vector3.UnitY*0.2f)).Length() < 0.7f)
+                {
+                    NetBuffer msgBuffer = netClient.CreateBuffer();
+                    msgBuffer.Write((byte)InfiniminerMessage.PlayerSlap);
+                    msgBuffer.Write(playerPosition);
+                    msgBuffer.Write(playerCamera.GetLookVector());
+                    msgBuffer.Write((byte)PlayerTools.Pickaxe);
+                    msgBuffer.Write(p.ID);
+                    netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+
+                    playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+                    return;//dig = false;//allows you to hit multiple enemies.. if it wasnt for tool cooldown!
+                }
+            }
+
+            if (dig == false)
                 return;
+            
             ushort x = (ushort)hitPoint.X;
             ushort y = (ushort)hitPoint.Y;
             ushort z = (ushort)hitPoint.Z;
@@ -779,7 +834,7 @@ namespace Infiniminer
                 msgBuffer.Write((byte)PlayerTools.Pickaxe);
                 msgBuffer.Write((byte)BlockType.None);
                 netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
-                blockEngine.RemoveBlock(x,y,z);//local block removal//needs a sync check
+                blockEngine.RemoveBlock(x,y,z);//local block removal
                 particleEngine.CreateDiggingDebris(hitPoint - (playerCamera.GetLookVector()*0.3f),block);
                 particleEngine.CreateBlockDebris(new Vector3(x+0.5f,y+0.5f,z+0.5f), block, 10.0f);
                 PlaySound(sound);//local sound effect
@@ -787,6 +842,7 @@ namespace Infiniminer
             else if(Damage > 0)
             {
                 playerToolCooldown = GetToolCooldown(PlayerTools.Pickaxe);
+
                 NetBuffer msgBuffer = netClient.CreateBuffer();
                 msgBuffer.Write((byte)InfiniminerMessage.UseTool);
                 msgBuffer.Write(playerPosition);
@@ -915,8 +971,8 @@ namespace Infiniminer
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
 
-            playerToolCooldown = GetToolCooldown(PlayerTools.SpawnItem);
-            constructionGunAnimation = -5;
+            //playerToolCooldown = GetToolCooldown(PlayerTools.SpawnItem);
+            //constructionGunAnimation = -5;
 
             // Send the message.
             NetBuffer msgBuffer = netClient.CreateBuffer();
@@ -964,6 +1020,39 @@ namespace Infiniminer
             netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
         }
 
+        public void FireRemote()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+            playerToolCooldown = GetToolCooldown(PlayerTools.Remote);
+
+            // Send the message.
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+            msgBuffer.Write(playerPosition);
+            msgBuffer.Write(playerCamera.GetLookVector());
+            msgBuffer.Write((byte)PlayerTools.Remote);
+            msgBuffer.Write((byte)BlockType.None);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
+
+        public void FireSetRemote()
+        {
+            if (netClient.Status != NetConnectionStatus.Connected)
+                return;
+
+            playerToolCooldown = GetToolCooldown(PlayerTools.SetRemote);
+
+            // Send the message.
+            NetBuffer msgBuffer = netClient.CreateBuffer();
+            msgBuffer.Write((byte)InfiniminerMessage.UseTool);
+            msgBuffer.Write(playerPosition);
+            msgBuffer.Write(playerCamera.GetLookVector());
+            msgBuffer.Write((byte)PlayerTools.SetRemote);
+            msgBuffer.Write((byte)BlockType.None);
+            netClient.SendMessage(msgBuffer, NetChannel.ReliableUnordered);
+        }
         public void ToggleRadar()
         {
             playerRadarMute = !playerRadarMute;
@@ -990,6 +1079,11 @@ namespace Infiniminer
                             distanceReading = Math.Min(distanceReading, 0.5f * k);
                             valueReading = Math.Max(valueReading, 200);
                         }
+                        else if (blockType == BlockType.ArtCaseR || blockType == BlockType.ArtCaseB)
+                        {
+                            distanceReading = Math.Min(distanceReading, 0.5f * k);
+                            valueReading = Math.Max(valueReading, 200);
+                        }
                         else if (blockType == BlockType.Diamond)
                         {
                             distanceReading = Math.Min(distanceReading, 0.5f * k);
@@ -1004,43 +1098,70 @@ namespace Infiniminer
         {
             Vector3 hitPoint = Vector3.Zero;
             Vector3 buildPoint = Vector3.Zero;
+            interact = BlockType.None;
+
             if (!blockEngine.RayCollision(playerPosition, playerCamera.GetLookVector(), 2.5f, 25, ref hitPoint, ref buildPoint))
+            {
                 return "";
+            }
 
             // If it's a valid bank object, we're good!
             BlockType blockType = blockEngine.BlockAtPoint(hitPoint);
-
+            
             if (blockType == BlockType.BankRed && playerTeam == PlayerTeam.Red)
             {
-                return "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE";
+                interact = blockType;
+                return "1: DEPOSIT 50 ORE  2: WITHDRAW 50 ORE";
+            }
+            else if (blockType == BlockType.ArtCaseR && playerTeam == PlayerTeam.Red)
+            {
+                interact = blockType;
+                return "1: PLACE ARTIFACT  2: RETRIEVE ARTIFACT";
+            }
+            else if (blockType == BlockType.ArtCaseB && playerTeam == PlayerTeam.Blue)
+            {
+                interact = blockType;
+                return "1: PLACE ARTIFACT  2: RETRIEVE ARTIFACT";
             }
             else if (blockType == BlockType.BankBlue && playerTeam == PlayerTeam.Blue)
             {
-                return "8: DEPOSIT 50 ORE  9: WITHDRAW 50 ORE";
+                interact = blockType;
+                return "1: DEPOSIT 50 ORE  2: WITHDRAW 50 ORE";
             }
             else if (blockType == BlockType.Generator)
             {
-                return "8: Generator On  9: Generator Off";
+                interact = blockType;
+                return "1: Generator On  2: Generator Off";
             }
             else if (blockType == BlockType.Pipe)
             {
-                return "8: Rotate Left 9: Rotate Right";
+                interact = blockType;
+                return "1: Rotate Left 2: Rotate Right";
             }
             else if (blockType == BlockType.Pump)
             {
-                return "8: On/Off 9: Change direction";
+                interact = blockType;
+                return "1: On/Off 2: Change direction";
             }
             else if (blockType == BlockType.Compressor)
             {
-                return "8: Compress/Decompress";
+                interact = blockType;
+                return "1: Compress/Decompress";
             }
             else if (blockType == BlockType.Hinge)
             {
-                return "8: Set 9: Rotate";
+                interact = blockType;
+                return "1: Set 2: Rotate";
             }
             else if (blockType == BlockType.Lever)
             {
-                return "8: Pull Lever 9: Link";
+                interact = blockType;
+                return "1: Pull Lever 2: Link";
+            }
+            else if (blockType == BlockType.Plate)
+            {
+                interact = blockType;
+                return "1: Press 2: Link 3: Decrease retrigger time 4: Increase retrigger time";
             }
             return "";
         }
@@ -1118,8 +1239,9 @@ namespace Infiniminer
         {
             switch (tool)
             {
-                case PlayerTools.Pickaxe: return 1.0f;// 0.55f;
-                case PlayerTools.Detonator: return 0.01f;
+                case PlayerTools.Pickaxe: return 0.4f;// 0.55f;
+                case PlayerTools.Detonator: return 0.1f;
+                case PlayerTools.Remote: return 0.01f;
                 case PlayerTools.ConstructionGun: return 0.5f;
                 case PlayerTools.DeconstructionGun: return 0.5f;
                 case PlayerTools.ProspectingRadar: return 0.5f;
@@ -1132,7 +1254,7 @@ namespace Infiniminer
         {
             if (netClient.Status != NetConnectionStatus.Connected)
                 return;
-
+            if(!playerDead)
             if (lastPosition != playerPosition)//do full network update
             {
                 lastPosition = playerPosition;
